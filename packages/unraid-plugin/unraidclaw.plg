@@ -8,10 +8,11 @@
 <!ENTITY repo      "emaspa/unraidclaw">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/unraidclaw.plg">
 <!ENTITY pkgURL    "https://github.com/&repo;/releases/download/v&version;/&name;-&version;-x86_64-1.txz">
+<!ENTITY icon      "/usr/local/emhttp/plugins/&name;/&name;.png">
 <!ENTITY md5       "85098151932989c2a6d79a8e2ea796d2">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" max="7.99.99" support="https://github.com/&repo;">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" icon="&icon;" min="6.12.0" max="7.99.99" support="https://github.com/&repo;">
 
 <CHANGES>
 ### &version;
