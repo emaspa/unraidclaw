@@ -42,35 +42,29 @@ export function registerSystemTools(api: any, client: UnraidClient): void {
     },
   });
 
-  api.registerTool(
-    {
-      name: "unraid_system_reboot",
-      description: "Reboot the Unraid server. This is a destructive operation that will interrupt all running services, VMs, and containers.",
-      parameters: { type: "object" },
-      execute: async () => {
-        try {
-          return textResult(await client.post("/api/system/reboot"));
-        } catch (err) {
-          return errorResult(err);
-        }
-      },
+  api.registerTool({
+    name: "unraid_system_reboot",
+    description: "Reboot the Unraid server. This is a destructive operation that will interrupt all running services, VMs, and containers.",
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.post("/api/system/reboot"));
+      } catch (err) {
+        return errorResult(err);
+      }
     },
-    { optional: true }
-  );
+  });
 
-  api.registerTool(
-    {
-      name: "unraid_system_shutdown",
-      description: "Shut down the Unraid server. This is a destructive operation that will power off the server.",
-      parameters: { type: "object" },
-      execute: async () => {
-        try {
-          return textResult(await client.post("/api/system/shutdown"));
-        } catch (err) {
-          return errorResult(err);
-        }
-      },
+  api.registerTool({
+    name: "unraid_system_shutdown",
+    description: "Shut down the Unraid server. This is a destructive operation that will power off the server.",
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.post("/api/system/shutdown"));
+      } catch (err) {
+        return errorResult(err);
+      }
     },
-    { optional: true }
-  );
+  });
 }

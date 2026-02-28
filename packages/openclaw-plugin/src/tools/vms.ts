@@ -130,28 +130,24 @@ export function registerVMTools(api: any, client: UnraidClient): void {
         }
       },
     },
-    { optional: true }
   );
 
-  api.registerTool(
-    {
-      name: "unraid_vm_reboot",
-      description: "Reboot a running virtual machine (ACPI reboot).",
-      parameters: {
-        type: "object",
-        properties: {
-          id: { type: "string", description: "VM ID or name" },
-        },
-        required: ["id"],
+  api.registerTool({
+    name: "unraid_vm_reboot",
+    description: "Reboot a running virtual machine (ACPI reboot).",
+    parameters: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "VM ID or name" },
       },
-      execute: async (_id, params) => {
-        try {
-          return textResult(await client.post(`/api/vms/${params.id}/reboot`));
-        } catch (err) {
-          return errorResult(err);
-        }
-      },
+      required: ["id"],
     },
-    { optional: true }
-  );
+    execute: async (_id, params) => {
+      try {
+        return textResult(await client.post(`/api/vms/${params.id}/reboot`));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  });
 }

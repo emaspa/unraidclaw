@@ -17,6 +17,32 @@ export function registerArrayTools(api: any, client: UnraidClient): void {
   });
 
   api.registerTool({
+    name: "unraid_array_start",
+    description: "Start the Unraid array. This will mount all disks and start Docker/VMs if configured.",
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.post("/api/array/start"));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  });
+
+  api.registerTool({
+    name: "unraid_array_stop",
+    description: "Stop the Unraid array. This will stop all Docker containers and VMs, then unmount all disks.",
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.post("/api/array/stop"));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  });
+
+  api.registerTool({
     name: "unraid_parity_status",
     description: "Get the current parity check status (running, progress, speed, errors).",
     parameters: { type: "object" },

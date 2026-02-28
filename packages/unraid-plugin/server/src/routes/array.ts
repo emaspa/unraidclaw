@@ -29,6 +29,14 @@ const STATUS_QUERY = `query {
   }
 }`;
 
+const SET_STATE_MUTATION = `mutation ($input: ArrayStateInput!) {
+  array {
+    setState(input: $input) {
+      state
+    }
+  }
+}`;
+
 const PARITY_STATUS_QUERY = `query {
   array {
     parityCheckStatus {
@@ -56,6 +64,30 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
     handler: async (_req, reply) => {
       const data = await gql.query<{ array: { parityCheckStatus: unknown } }>(PARITY_STATUS_QUERY);
       return reply.send({ ok: true, data: data.array.parityCheckStatus });
+    },
+  });
+
+  // Start array
+  app.post("/api/array/start", {
+    preHandler: requirePermission(Resource.ARRAY, Action.UPDATE),
+    handler: async (_req, reply) => {
+      const data = await gql.query<{ array: { setState: { state: string } } }>(
+        SET_STATE_MUTATION,
+        { input: { desiredState: "START" } },
+      );
+      return reply.send({ ok: true, data: data.array.setState });
+    },
+  });
+
+  // Stop array
+  app.post("/api/array/stop", {
+    preHandler: requirePermission(Resource.ARRAY, Action.UPDATE),
+    handler: async (_req, reply) => {
+      const data = await gql.query<{ array: { setState: { state: string } } }>(
+        SET_STATE_MUTATION,
+        { input: { desiredState: "STOP" } },
+      );
+      return reply.send({ ok: true, data: data.array.setState });
     },
   });
 
