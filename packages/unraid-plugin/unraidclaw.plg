@@ -3,19 +3,20 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraidclaw">
 <!ENTITY author    "emaspa">
-<!ENTITY version   "0.1.5">
+<!ENTITY version   "0.1.6">
 <!ENTITY launch    "Settings/unraidclaw">
 <!ENTITY repo      "emaspa/unraidclaw">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/unraidclaw.plg">
 <!ENTITY pkgURL    "https://github.com/&repo;/releases/download/v&version;/&name;-&version;-x86_64-1.txz">
-<!ENTITY md5       "52e130b1e9e5c2616d492ef36f04ec4c">
+<!ENTITY md5       "13d76027ad2ecfe6c8c7e8c2808a8d70">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" max="7.99.99" support="https://github.com/&repo;" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
-### 0.1.5
+### 0.1.6
 - Fix VMs query: remove non-existent fields (coreCount, ramAllocation, primaryGPU, description, autoStart)
+- Auto-restart service on plugin upgrade
 
 ### 0.1.4
 - Fix all GraphQL queries to match Unraid 7 actual schema
@@ -119,9 +120,12 @@ fi
 chmod +x /etc/rc.d/rc.${PLUGIN} 2>/dev/null
 chmod +x /usr/local/emhttp/plugins/${PLUGIN}/event/* 2>/dev/null
 
-# Auto-start if enabled
+# Restart service if it was running, or start if enabled
 CONFIG="${CFG_DIR}/unraidclaw.cfg"
-if [ -f "$CONFIG" ]; then
+if /etc/rc.d/rc.${PLUGIN} status >/dev/null 2>/dev/null; then
+  echo "Restarting ${PLUGIN} service after upgrade..."
+  /etc/rc.d/rc.${PLUGIN} restart
+elif [ -f "$CONFIG" ]; then
   SERVICE=$(grep -oP 'SERVICE="\K[^"]+' "$CONFIG")
   if [ "$SERVICE" = "enable" ]; then
     /etc/rc.d/rc.${PLUGIN} start
