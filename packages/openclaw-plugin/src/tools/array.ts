@@ -28,4 +28,70 @@ export function registerArrayTools(api: any, client: UnraidClient): void {
       }
     },
   });
+
+  api.registerTool(
+    {
+      name: "unraid_parity_start",
+      description: "Start a parity check. Defaults to non-correcting (read-only) for safety. Set correct=true for a correcting check.",
+      parameters: {
+        type: "object",
+        properties: {
+          correct: {
+            type: "boolean",
+            description: "If true, run a correcting parity check. Defaults to false (non-correcting).",
+          },
+        },
+      },
+      execute: async (_id: string, params: { correct?: boolean }) => {
+        try {
+          return textResult(await client.post("/api/array/parity/start", { correct: params.correct ?? false }));
+        } catch (err) {
+          return errorResult(err);
+        }
+      },
+    },
+    { optional: true },
+  );
+
+  api.registerTool({
+    name: "unraid_parity_pause",
+    description: "Pause a running parity check.",
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.post("/api/array/parity/pause"));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  });
+
+  api.registerTool({
+    name: "unraid_parity_resume",
+    description: "Resume a paused parity check.",
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.post("/api/array/parity/resume"));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  });
+
+  api.registerTool(
+    {
+      name: "unraid_parity_cancel",
+      description: "Cancel a running or paused parity check.",
+      parameters: { type: "object" },
+      execute: async () => {
+        try {
+          return textResult(await client.post("/api/array/parity/cancel"));
+        } catch (err) {
+          return errorResult(err);
+        }
+      },
+    },
+    { optional: true },
+  );
 }
