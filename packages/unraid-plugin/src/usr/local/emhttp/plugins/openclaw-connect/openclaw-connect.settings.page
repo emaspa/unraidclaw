@@ -14,6 +14,7 @@ $cfg = file_exists($cfgFile)
 <link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css">
 
 <div class="occ-settings">
+  <div class="occ-nav"><a href="/Settings/openclaw-connect">&larr; Back to Dashboard</a></div>
   <h2>OpenClaw Connect Settings</h2>
 
   <form id="occ-settings-form" method="POST" action="/plugins/<?=$plugin?>/php/save-settings.php" target="progressFrame">
