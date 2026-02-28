@@ -58,16 +58,4 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
     },
   });
 
-  // Parity actions: start, pause, resume, cancel
-  for (const action of ["start", "pause", "resume", "cancel"] as const) {
-    app.post(`/api/array/parity/${action}`, {
-      preHandler: requirePermission(Resource.ARRAY, Action.UPDATE),
-      handler: async (_req, reply) => {
-        const mutationName = `parity${action[0].toUpperCase() + action.slice(1)}`;
-        const mutation = `mutation { array { ${mutationName} { success message } } }`;
-        const data = await gql.query<{ array: Record<string, unknown> }>(mutation);
-        return reply.send({ ok: true, data: data.array[mutationName] });
-      },
-    });
-  }
 }
