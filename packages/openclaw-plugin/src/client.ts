@@ -1,10 +1,5 @@
 import type { ApiResponse } from "@unraidclaw/shared";
 
-export interface ClientConfig {
-  serverUrl: string;
-  apiKey: string;
-}
-
 export class UnraidApiError extends Error {
   constructor(
     message: string,
@@ -14,35 +9,29 @@ export class UnraidApiError extends Error {
     super(message);
     this.name = "UnraidApiError";
   }
-
-  get isPermissionDenied(): boolean {
-    return this.statusCode === 403;
-  }
-
-  get isUnauthorized(): boolean {
-    return this.statusCode === 401;
-  }
-
-  get isNotFound(): boolean {
-    return this.statusCode === 404;
-  }
-
-  get isServerError(): boolean {
-    return this.statusCode >= 500;
-  }
 }
 
 export class UnraidClient {
-  private baseUrl: string;
-  private apiKey: string;
+  private configResolver: () => { serverUrl: string; apiKey: string };
 
-  constructor(config: ClientConfig) {
-    this.baseUrl = config.serverUrl.replace(/\/+$/, "");
-    this.apiKey = config.apiKey;
+  constructor(configResolver: () => { serverUrl: string; apiKey: string }) {
+    this.configResolver = configResolver;
+  }
+
+  private getConfig() {
+    const cfg = this.configResolver();
+    if (!cfg.serverUrl) {
+      throw new UnraidApiError("UnraidClaw serverUrl not configured", 0, "CONFIG_ERROR");
+    }
+    return {
+      baseUrl: cfg.serverUrl.replace(/\/+$/, ""),
+      apiKey: cfg.apiKey || "",
+    };
   }
 
   async get<T>(path: string, query?: Record<string, string>): Promise<T> {
-    let url = `${this.baseUrl}${path}`;
+    const { baseUrl } = this.getConfig();
+    let url = `${baseUrl}${path}`;
     if (query) {
       const params = new URLSearchParams(query);
       url += `?${params.toString()}`;
@@ -51,20 +40,24 @@ export class UnraidClient {
   }
 
   async post<T>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>("POST", `${this.baseUrl}${path}`, body);
+    const { baseUrl } = this.getConfig();
+    return this.request<T>("POST", `${baseUrl}${path}`, body);
   }
 
   async patch<T>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>("PATCH", `${this.baseUrl}${path}`, body);
+    const { baseUrl } = this.getConfig();
+    return this.request<T>("PATCH", `${baseUrl}${path}`, body);
   }
 
   async delete<T>(path: string): Promise<T> {
-    return this.request<T>("DELETE", `${this.baseUrl}${path}`);
+    const { baseUrl } = this.getConfig();
+    return this.request<T>("DELETE", `${baseUrl}${path}`);
   }
 
   private async request<T>(method: string, url: string, body?: unknown): Promise<T> {
+    const { apiKey } = this.getConfig();
     const headers: Record<string, string> = {
-      "x-api-key": this.apiKey,
+      "x-api-key": apiKey,
       "Content-Type": "application/json",
     };
 

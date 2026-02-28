@@ -10,7 +10,7 @@ import { registerNotificationTools } from "./tools/notifications.js";
 import { registerNetworkTools } from "./tools/network.js";
 import { registerUserTools } from "./tools/users.js";
 
-function resolveConfig(api: any): { serverUrl: string; apiKey: string } | null {
+function resolveConfig(api: any): { serverUrl: string; apiKey: string } {
   // Try direct plugin config
   if (api.config?.serverUrl) return api.config;
   // Try pluginConfig
@@ -18,23 +18,15 @@ function resolveConfig(api: any): { serverUrl: string; apiKey: string } | null {
   // Try nested in full config
   const nested = api.config?.plugins?.entries?.unraidclaw?.config;
   if (nested?.serverUrl) return nested;
-  return null;
+  // Return empty — will fail at tool execution time with a clear error
+  return { serverUrl: "", apiKey: "" };
 }
 
 export default function register(api: any): void {
   const log = api.logger || console;
-  const cfg = resolveConfig(api);
 
-  if (!cfg) {
-    log.error("UnraidClaw: could not find serverUrl/apiKey in config. Keys on api:", Object.keys(api));
-    log.error("UnraidClaw: api.config =", JSON.stringify(api.config)?.substring(0, 500));
-    return;
-  }
-
-  const client = new UnraidClient({
-    serverUrl: cfg.serverUrl,
-    apiKey: cfg.apiKey,
-  });
+  // Lazy config resolution — config may not be available at install time
+  const client = new UnraidClient(() => resolveConfig(api));
 
   registerHealthTools(api, client);
   registerDockerTools(api, client);
@@ -47,5 +39,6 @@ export default function register(api: any): void {
   registerNetworkTools(api, client);
   registerUserTools(api, client);
 
-  log.info("UnraidClaw: registered 37 tools, server:", cfg.serverUrl);
+  const cfg = resolveConfig(api);
+  log.info(`UnraidClaw: registered 37 tools${cfg.serverUrl ? ", server: " + cfg.serverUrl : " (config will resolve at runtime)"}`);
 }
