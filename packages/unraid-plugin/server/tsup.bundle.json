@@ -1,0 +1,4 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/npm/tsup/schema.json",
+  "noExternal": ["@unraidclaw/shared"]
+}
