@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "openclaw-connect">
 <!ENTITY author    "emaspa">
-<!ENTITY version   "2026.02.28.5">
+<!ENTITY version   "2026.02.28.6">
 <!ENTITY launch    "Settings/openclaw-connect">
 <!ENTITY repo      "emaspa/unraidclaw">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/openclaw-connect.plg">
