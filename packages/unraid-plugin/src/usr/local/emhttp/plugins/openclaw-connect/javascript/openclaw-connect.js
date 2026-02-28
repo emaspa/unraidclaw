@@ -163,22 +163,33 @@ function occSavePermissions() {
   }
 
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/plugins/openclaw-connect/php/save-permissions.php', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
+  var data = encodeURIComponent(JSON.stringify(permissions));
+  xhr.open('GET', '/plugins/openclaw-connect/php/save-permissions.php?data=' + data, true);
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
       var status = document.getElementById('occ-perm-status');
       if (xhr.status === 200) {
-        status.textContent = 'Saved!';
-        status.style.color = '#51cf66';
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          if (resp.success) {
+            status.textContent = 'Saved! (' + resp.count + ' permissions enabled)';
+            status.style.color = '#51cf66';
+          } else {
+            status.textContent = 'Error: ' + (resp.error || 'Unknown');
+            status.style.color = '#ff6b6b';
+          }
+        } catch(e) {
+          status.textContent = 'Error: ' + xhr.responseText.substring(0, 100);
+          status.style.color = '#ff6b6b';
+        }
       } else {
         status.textContent = 'Error saving (HTTP ' + xhr.status + ')';
         status.style.color = '#ff6b6b';
       }
-      setTimeout(function() { status.textContent = ''; }, 3000);
+      setTimeout(function() { status.textContent = ''; }, 5000);
     }
   };
-  xhr.send(JSON.stringify(permissions));
+  xhr.send();
 }
 
 // ── Activity log ──
@@ -223,14 +234,13 @@ function occRefreshLog() {
 function occClearLog() {
   if (!confirm('Clear the activity log?')) return;
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/plugins/openclaw-connect/php/clear-log.php', true);
-  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.open('GET', '/plugins/openclaw-connect/php/clear-log.php', true);
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
       occRefreshLog();
     }
   };
-  xhr.send('csrf_token=' + encodeURIComponent(OCC_CSRF));
+  xhr.send();
 }
 
 function occFilterLog() {

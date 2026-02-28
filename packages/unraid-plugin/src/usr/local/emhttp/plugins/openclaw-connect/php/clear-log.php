@@ -1,4 +1,5 @@
 <?php
+/* Clear activity log - supports GET and POST */
 header('Content-Type: application/json');
 
 $logFile = '/boot/config/plugins/openclaw-connect/activity.jsonl';
