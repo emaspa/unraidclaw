@@ -1,4 +1,5 @@
-Title="OpenClaw Connect Permissions"
+Menu="OtherSettings:OpenClaw Connect"
+Title="Permissions"
 ---
 <?PHP
 $plugin = "openclaw-connect";
@@ -9,7 +10,6 @@ $permissions = file_exists($permFile) ? json_decode(file_get_contents($permFile)
 <link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/openclaw-connect.css")?>">
 
 <div class="occ-permissions">
-  <div class="occ-nav"><a href="/Settings/openclaw-connect">&larr; Back to Dashboard</a></div>
   <h2>Permission Matrix</h2>
   <p>Configure which actions the AI agent is allowed to perform.</p>
 

@@ -1,4 +1,4 @@
-Menu="OtherSettings"
+Menu="OtherSettings:OpenClaw Connect"
 Title="OpenClaw Connect"
 Icon="openclaw-connect.png"
 Tag="plug"
