@@ -40,5 +40,5 @@ export default function register(api: any): void {
   registerUserTools(api, client);
 
   const cfg = resolveConfig(api);
-  log.info(`UnraidClaw: registered 37 tools${cfg.serverUrl ? ", server: " + cfg.serverUrl : " (config will resolve at runtime)"}`);
+  log.info(`UnraidClaw: registered 35 tools${cfg.serverUrl ? ", server: " + cfg.serverUrl : " (config will resolve at runtime)"}`);
 }
