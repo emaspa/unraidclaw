@@ -2,13 +2,13 @@
 
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "openclaw-connect">
-<!ENTITY author    "UnraidClaw">
+<!ENTITY author    "emaspa">
 <!ENTITY version   "2026.02.28">
 <!ENTITY launch    "Settings/openclaw-connect">
-<!ENTITY gitURL    "https://raw.githubusercontent.com/unraidclaw/openclaw-connect/main">
-<!ENTITY pluginURL "&gitURL;/openclaw-connect.plg">
-<!ENTITY pkgURL    "&gitURL;/packages/&name;-&version;-x86_64-1.txz">
-<!ENTITY md5URL    "&gitURL;/packages/&name;-&version;-x86_64-1.txz.md5">
+<!ENTITY repo      "emaspa/unraidclaw">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/openclaw-connect.plg">
+<!ENTITY pkgURL    "https://github.com/&repo;/releases/download/v&version;/&name;-&version;-x86_64-1.txz">
+<!ENTITY md5       "">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" max="7.99.99">
@@ -48,7 +48,7 @@ echo "Node.js v${NODE_VERSION} detected. OK."
 <!-- Download and install the package -->
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
 <URL>&pkgURL;</URL>
-<MD5>&md5URL;</MD5>
+<MD5>&md5;</MD5>
 </FILE>
 
 <!-- Create default config if not present -->

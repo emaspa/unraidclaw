@@ -58,6 +58,13 @@ echo "[4/4] Creating .txz package..."
 cd "$STAGE"
 tar cJf "${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz" .
 
+PKG_FILE="${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz"
+
+# Generate MD5 checksum
+MD5=$(md5sum "$PKG_FILE" | awk '{print $1}')
+echo "$MD5" > "${PKG_FILE}.md5"
+
 echo "=== Build complete ==="
-echo "Package: ${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz"
-ls -lh "${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz"
+echo "Package: ${PKG_FILE}"
+echo "MD5:     ${MD5}"
+ls -lh "${PKG_FILE}"

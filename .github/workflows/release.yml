@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Extract version from tag (v2026.02.28 -> 2026.02.28)
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Build the .txz package
+      - name: Build package
+        run: bash packages/unraid-plugin/scripts/build.sh "${{ steps.version.outputs.VERSION }}"
+
+      # Read MD5 for the .plg update
+      - name: Read MD5
+        id: md5
+        run: echo "MD5=$(cat packages/unraid-plugin/build/openclaw-connect-${{ steps.version.outputs.VERSION }}-x86_64-1.txz.md5)" >> "$GITHUB_OUTPUT"
+
+      # Update .plg with version and MD5, then commit to main
+      - name: Update .plg
+        run: |
+          PLG="packages/unraid-plugin/openclaw-connect.plg"
+          sed -i 's/<!ENTITY version   "[^"]*">/<!ENTITY version   "${{ steps.version.outputs.VERSION }}">/' "$PLG"
+          sed -i 's/<!ENTITY md5       "[^"]*">/<!ENTITY md5       "${{ steps.md5.outputs.MD5 }}">/' "$PLG"
+
+      - name: Commit .plg update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout main
+          git add packages/unraid-plugin/openclaw-connect.plg
+          git diff --cached --quiet && echo "No .plg changes to commit" || \
+            git commit -m "Update .plg to v${{ steps.version.outputs.VERSION }} with MD5"
+          git push origin main
+
+      # Create GitHub Release with assets
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          PKG="packages/unraid-plugin/build/openclaw-connect-${VERSION}-x86_64-1.txz"
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --generate-notes \
+            "${PKG}" \
+            "${PKG}.md5"
