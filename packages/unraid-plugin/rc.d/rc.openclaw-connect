@@ -9,6 +9,22 @@ SERVER="/usr/local/emhttp/plugins/${PLUGIN}/server/index.js"
 PIDFILE="/var/run/${PLUGIN}.pid"
 LOGFILE="/var/log/${PLUGIN}.log"
 
+# Find Node.js binary
+NODE_BIN=""
+for p in /usr/local/bin/node /usr/bin/node; do
+  if [ -x "$p" ]; then
+    NODE_BIN="$p"
+    break
+  fi
+done
+if [ -z "$NODE_BIN" ]; then
+  NODE_BIN=$(which node 2>/dev/null || true)
+fi
+if [ -z "$NODE_BIN" ]; then
+  echo "Error: Node.js not found"
+  exit 1
+fi
+
 # Source config
 if [ -f "$CONFIG" ]; then
   . "$CONFIG" 2>/dev/null
@@ -37,7 +53,7 @@ start() {
   export OCC_LOG_FILE="${LOG_FILE:-/boot/config/plugins/${PLUGIN}/activity.jsonl}"
   export OCC_MAX_LOG_SIZE="${MAX_LOG_SIZE:-10485760}"
 
-  nohup /usr/bin/node "$SERVER" >> "$LOGFILE" 2>&1 &
+  nohup "$NODE_BIN" "$SERVER" >> "$LOGFILE" 2>&1 &
   echo $! > "$PIDFILE"
   echo "${PLUGIN} started (PID $(cat "$PIDFILE"))"
 }

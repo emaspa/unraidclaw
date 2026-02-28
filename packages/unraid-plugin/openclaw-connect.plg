@@ -27,12 +27,23 @@
 <FILE Run="/bin/bash">
 <INLINE>
 #!/bin/bash
-# Check if Node.js is available
-NODE_VERSION=$(/usr/bin/node --version 2>/dev/null | sed 's/v//')
+# Check if Node.js is available (check multiple common paths)
+NODE_BIN=""
+for p in /usr/local/bin/node /usr/bin/node; do
+  if [ -x "$p" ]; then
+    NODE_BIN="$p"
+    break
+  fi
+done
+if [ -z "$NODE_BIN" ]; then
+  NODE_BIN=$(which node 2>/dev/null || true)
+fi
+NODE_VERSION=$($NODE_BIN --version 2>/dev/null | sed 's/v//')
 if [ -z "$NODE_VERSION" ]; then
   echo "ERROR: Node.js is not installed."
   echo "For Unraid 6.x, install Node.js via NerdPack."
-  echo "Unraid 7.x ships with Node.js built-in."
+  echo "Unraid 7.x should have Node.js built-in."
+  echo "Searched: /usr/local/bin/node, /usr/bin/node, PATH"
   exit 1
 fi
 
