@@ -8,11 +8,10 @@
 <!ENTITY repo      "emaspa/unraidclaw">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/unraidclaw.plg">
 <!ENTITY pkgURL    "https://github.com/&repo;/releases/download/v&version;/&name;-&version;-x86_64-1.txz">
-<!ENTITY icon      "/usr/local/emhttp/plugins/&name;/&name;.png">
 <!ENTITY md5       "a5ed70736053578b390617011b4993ae">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" icon="&icon;" min="6.12.0" max="7.99.99" support="https://github.com/&repo;">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" max="7.99.99" support="https://github.com/&repo;">
 
 <CHANGES>
 ### &version;
@@ -79,16 +78,59 @@ echo "Node.js v${NODE_VERSION} detected. OK."
 </INLINE>
 </FILE>
 
+<!-- Clean up old openclaw-connect plugin if present -->
+<FILE Run="/bin/bash">
+<INLINE>
+#!/bin/bash
+OLD="openclaw-connect"
+NEW="&name;"
+# Stop old service
+/etc/rc.d/rc.${OLD} stop 2>/dev/null
+# Remove old package
+removepkg ${OLD}-*-x86_64-1 2>/dev/null
+# Remove old emhttp files
+rm -rf /usr/local/emhttp/plugins/${OLD}
+rm -f /etc/rc.d/rc.${OLD}
+# Migrate old config if new config doesn't exist yet
+OLD_CFG="/boot/config/plugins/${OLD}"
+NEW_CFG="/boot/config/plugins/${NEW}"
+if [ -d "$OLD_CFG" ] &amp;&amp; [ ! -f "${NEW_CFG}/unraidclaw.cfg" ]; then
+  mkdir -p "$NEW_CFG"
+  # Copy old config files to new location
+  for f in openclaw-connect.cfg unraidclaw.cfg; do
+    if [ -f "${OLD_CFG}/${f}" ]; then
+      cp "${OLD_CFG}/${f}" "${NEW_CFG}/unraidclaw.cfg"
+      break
+    fi
+  done
+  [ -f "${OLD_CFG}/permissions.json" ] &amp;&amp; cp "${OLD_CFG}/permissions.json" "${NEW_CFG}/permissions.json"
+  [ -f "${OLD_CFG}/activity.jsonl" ] &amp;&amp; cp "${OLD_CFG}/activity.jsonl" "${NEW_CFG}/activity.jsonl"
+  echo "Migrated config from ${OLD} to ${NEW}."
+fi
+# Remove old plugin .plg reference
+rm -f /boot/config/plugins/${OLD}.plg
+rm -f /boot/config/plugins/openclaw-connect.plg
+echo "Old openclaw-connect cleanup done."
+</INLINE>
+</FILE>
+
 <!-- Download and install the package -->
 <FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
 <URL>&pkgURL;</URL>
 <MD5>&md5;</MD5>
 </FILE>
 
-<!-- Create default config if not present -->
-<FILE Name="/boot/config/plugins/&name;/unraidclaw.cfg">
+<!-- Create default config and permissions (only if not present) -->
+<FILE Run="/bin/bash">
 <INLINE>
-<![CDATA[
+#!/bin/bash
+PLUGIN="&name;"
+CFG_DIR="/boot/config/plugins/${PLUGIN}"
+mkdir -p "$CFG_DIR"
+
+# Create default config if not present
+if [ ! -f "${CFG_DIR}/unraidclaw.cfg" ]; then
+  cat > "${CFG_DIR}/unraidclaw.cfg" &lt;&lt; 'CFGEOF'
 SERVICE="disable"
 PORT="9876"
 HOST="0.0.0.0"
@@ -97,31 +139,22 @@ GRAPHQL_URL="http://localhost/graphql"
 UNRAID_API_KEY=""
 LOG_FILE="/boot/config/plugins/unraidclaw/activity.jsonl"
 MAX_LOG_SIZE="10485760"
-]]>
-</INLINE>
-</FILE>
+CFGEOF
+  echo "Created default config."
+fi
 
-<!-- Create default permissions if not present -->
-<FILE Name="/boot/config/plugins/&name;/permissions.json">
-<INLINE>
-<![CDATA[
-{}
-]]>
-</INLINE>
-</FILE>
-
-<!-- Post-install: set permissions and optionally start service -->
-<FILE Run="/bin/bash">
-<INLINE>
-#!/bin/bash
-PLUGIN="&name;"
+# Create default permissions if not present
+if [ ! -f "${CFG_DIR}/permissions.json" ]; then
+  echo '{}' > "${CFG_DIR}/permissions.json"
+  echo "Created default permissions."
+fi
 
 # Make scripts executable
 chmod +x /etc/rc.d/rc.${PLUGIN} 2>/dev/null
 chmod +x /usr/local/emhttp/plugins/${PLUGIN}/event/* 2>/dev/null
 
 # Auto-start if enabled
-CONFIG="/boot/config/plugins/${PLUGIN}/unraidclaw.cfg"
+CONFIG="${CFG_DIR}/unraidclaw.cfg"
 if [ -f "$CONFIG" ]; then
   SERVICE=$(grep -oP 'SERVICE="\K[^"]+' "$CONFIG")
   if [ "$SERVICE" = "enable" ]; then
