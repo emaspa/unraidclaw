@@ -1,7 +1,6 @@
 Menu="OtherSettings"
 Title="UnraidClaw"
 Icon="unraidclaw.png"
-Tag="plug"
 ---
 <?PHP
 $plugin = "unraidclaw";
