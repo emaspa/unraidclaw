@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { execSync } from "child_process";
 import { Resource, Action } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
@@ -61,8 +62,14 @@ export function registerSystemRoutes(app: FastifyInstance, gql: GraphQLClient): 
   app.post("/api/system/reboot", {
     preHandler: requirePermission(Resource.OS, Action.UPDATE),
     handler: async (_req, reply) => {
-      await gql.query(`mutation { reboot { success message } }`);
-      return reply.send({ ok: true, data: { message: "Reboot initiated" } });
+      try {
+        // Send response before rebooting
+        reply.send({ ok: true, data: { message: "Reboot initiated" } });
+        execSync("nohup /sbin/reboot &", { timeout: 5000 });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return reply.status(500).send({ ok: false, error: { code: "REBOOT_ERROR", message: msg } });
+      }
     },
   });
 
@@ -70,8 +77,13 @@ export function registerSystemRoutes(app: FastifyInstance, gql: GraphQLClient): 
   app.post("/api/system/shutdown", {
     preHandler: requirePermission(Resource.OS, Action.UPDATE),
     handler: async (_req, reply) => {
-      await gql.query(`mutation { shutdown { success message } }`);
-      return reply.send({ ok: true, data: { message: "Shutdown initiated" } });
+      try {
+        reply.send({ ok: true, data: { message: "Shutdown initiated" } });
+        execSync("nohup /sbin/poweroff &", { timeout: 5000 });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return reply.status(500).send({ ok: false, error: { code: "SHUTDOWN_ERROR", message: msg } });
+      }
     },
   });
 }
