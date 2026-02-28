@@ -11,6 +11,9 @@
       "import": "./dist/index.js"
     }
   },
+  "openclaw": {
+    "extensions": ["./dist/index.js"]
+  },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
