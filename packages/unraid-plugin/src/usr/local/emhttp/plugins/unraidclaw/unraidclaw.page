@@ -217,11 +217,6 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
           <span class="occ-perm-label">Control</span>
           <span class="occ-perm-desc">Start, stop, restart, pause, unpause containers</span>
         </label>
-        <label class="occ-perm-item">
-          <input type="checkbox" name="docker:create" <?=!empty($permissions['docker:create']) ? 'checked' : ''?>>
-          <span class="occ-perm-label">Create</span>
-          <span class="occ-perm-desc">Create new containers</span>
-        </label>
         <label class="occ-perm-item occ-destructive">
           <input type="checkbox" name="docker:delete" <?=!empty($permissions['docker:delete']) ? 'checked' : ''?>>
           <span class="occ-perm-label">Remove</span>
@@ -252,11 +247,6 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
           <span class="occ-perm-label">Control</span>
           <span class="occ-perm-desc">Start, stop, pause, resume, reboot VMs</span>
         </label>
-        <label class="occ-perm-item">
-          <input type="checkbox" name="vms:create" <?=!empty($permissions['vms:create']) ? 'checked' : ''?>>
-          <span class="occ-perm-label">Create</span>
-          <span class="occ-perm-desc">Create new VMs</span>
-        </label>
         <label class="occ-perm-item occ-destructive">
           <input type="checkbox" name="vms:delete" <?=!empty($permissions['vms:delete']) ? 'checked' : ''?>>
           <span class="occ-perm-label">Remove</span>
@@ -278,13 +268,9 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
       </div>
       <div class="occ-perm-body" style="display:none;">
         <label class="occ-perm-item"><input type="checkbox" name="array:read" data-category="storage" <?=!empty($permissions['array:read']) ? 'checked' : ''?>><span class="occ-perm-label">Array Status</span><span class="occ-perm-desc">View array state, capacity, and disk status</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="array:update" data-category="storage" <?=!empty($permissions['array:update']) ? 'checked' : ''?>><span class="occ-perm-label">Array Operations</span><span class="occ-perm-desc">Start/stop parity checks</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="array:update" data-category="storage" <?=!empty($permissions['array:update']) ? 'checked' : ''?>><span class="occ-perm-label">Array Operations</span><span class="occ-perm-desc">Start/stop/pause/resume/cancel parity checks</span></label>
         <label class="occ-perm-item"><input type="checkbox" name="disk:read" data-category="storage" <?=!empty($permissions['disk:read']) ? 'checked' : ''?>><span class="occ-perm-label">Disk Info</span><span class="occ-perm-desc">View individual disk details and SMART data</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="disk:update" data-category="storage" <?=!empty($permissions['disk:update']) ? 'checked' : ''?>><span class="occ-perm-label">Disk Operations</span><span class="occ-perm-desc">Disk management operations</span></label>
         <label class="occ-perm-item"><input type="checkbox" name="share:read" data-category="storage" <?=!empty($permissions['share:read']) ? 'checked' : ''?>><span class="occ-perm-label">List Shares</span><span class="occ-perm-desc">List and view share configurations</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="share:create" data-category="storage" <?=!empty($permissions['share:create']) ? 'checked' : ''?>><span class="occ-perm-label">Create Shares</span><span class="occ-perm-desc">Create new shares</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="share:update" data-category="storage" <?=!empty($permissions['share:update']) ? 'checked' : ''?>><span class="occ-perm-label">Update Shares</span><span class="occ-perm-desc">Modify share settings</span></label>
-        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="share:delete" data-category="storage" <?=!empty($permissions['share:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Delete Shares</span><span class="occ-perm-desc">Delete shares (destructive)</span></label>
       </div>
     </div>
 
@@ -301,11 +287,8 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
       </div>
       <div class="occ-perm-body" style="display:none;">
         <label class="occ-perm-item"><input type="checkbox" name="info:read" data-category="system" <?=!empty($permissions['info:read']) ? 'checked' : ''?>><span class="occ-perm-label">System Info</span><span class="occ-perm-desc">View system info, CPU, memory, uptime</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="config:read" data-category="system" <?=!empty($permissions['config:read']) ? 'checked' : ''?>><span class="occ-perm-label">Read Config</span><span class="occ-perm-desc">View system configuration</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="config:update" data-category="system" <?=!empty($permissions['config:update']) ? 'checked' : ''?>><span class="occ-perm-label">Update Config</span><span class="occ-perm-desc">Modify system configuration</span></label>
         <label class="occ-perm-item occ-destructive"><input type="checkbox" name="os:update" data-category="system" <?=!empty($permissions['os:update']) ? 'checked' : ''?>><span class="occ-perm-label">Power Control</span><span class="occ-perm-desc">Reboot or shutdown the server (destructive)</span></label>
         <label class="occ-perm-item"><input type="checkbox" name="services:read" data-category="system" <?=!empty($permissions['services:read']) ? 'checked' : ''?>><span class="occ-perm-label">List Services</span><span class="occ-perm-desc">View running services</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="services:update" data-category="system" <?=!empty($permissions['services:update']) ? 'checked' : ''?>><span class="occ-perm-label">Control Services</span><span class="occ-perm-desc">Start/stop system services</span></label>
       </div>
     </div>
 
@@ -341,15 +324,14 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
       </div>
       <div class="occ-perm-body" style="display:none;">
         <label class="occ-perm-item"><input type="checkbox" name="network:read" <?=!empty($permissions['network:read']) ? 'checked' : ''?>><span class="occ-perm-label">View</span><span class="occ-perm-desc">View network interfaces and configuration</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="network:update" <?=!empty($permissions['network:update']) ? 'checked' : ''?>><span class="occ-perm-label">Manage</span><span class="occ-perm-desc">Modify network settings</span></label>
       </div>
     </div>
 
-    <!-- Users & Access -->
+    <!-- Users -->
     <div class="occ-perm-category">
       <div class="occ-perm-header" onclick="occToggleCategory(this)">
         <span class="occ-expand-icon">&#9654;</span>
-        <h3>Users & Access</h3>
+        <h3>Users</h3>
         <span class="occ-perm-summary" data-category="users"></span>
         <div class="occ-cat-toggle">
           <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('users', true)">All</button>
@@ -358,18 +340,14 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
       </div>
       <div class="occ-perm-body" style="display:none;">
         <label class="occ-perm-item"><input type="checkbox" name="me:read" data-category="users" <?=!empty($permissions['me:read']) ? 'checked' : ''?>><span class="occ-perm-label">My Info</span><span class="occ-perm-desc">View current user information</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="api_key:read" data-category="users" <?=!empty($permissions['api_key:read']) ? 'checked' : ''?>><span class="occ-perm-label">List Keys</span><span class="occ-perm-desc">List API keys</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="api_key:create" data-category="users" <?=!empty($permissions['api_key:create']) ? 'checked' : ''?>><span class="occ-perm-label">Create Keys</span><span class="occ-perm-desc">Generate new API keys</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="api_key:update" data-category="users" <?=!empty($permissions['api_key:update']) ? 'checked' : ''?>><span class="occ-perm-label">Update Keys</span><span class="occ-perm-desc">Modify API key settings</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="api_key:delete" data-category="users" <?=!empty($permissions['api_key:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Revoke Keys</span><span class="occ-perm-desc">Revoke API keys</span></label>
       </div>
     </div>
 
-    <!-- Logs & Diagnostics -->
+    <!-- Logs -->
     <div class="occ-perm-category">
       <div class="occ-perm-header" onclick="occToggleCategory(this)">
         <span class="occ-expand-icon">&#9654;</span>
-        <h3>Logs & Diagnostics</h3>
+        <h3>Logs</h3>
         <span class="occ-perm-summary" data-category="logs"></span>
         <div class="occ-cat-toggle">
           <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('logs', true)">All</button>
@@ -377,9 +355,7 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
         </div>
       </div>
       <div class="occ-perm-body" style="display:none;">
-        <label class="occ-perm-item"><input type="checkbox" name="logs:read" data-category="logs" <?=!empty($permissions['logs:read']) ? 'checked' : ''?>><span class="occ-perm-label">System Logs</span><span class="occ-perm-desc">View system and application logs</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="flash:read" data-category="logs" <?=!empty($permissions['flash:read']) ? 'checked' : ''?>><span class="occ-perm-label">Flash Info</span><span class="occ-perm-desc">View flash drive information</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="vars:read" data-category="logs" <?=!empty($permissions['vars:read']) ? 'checked' : ''?>><span class="occ-perm-label">System Vars</span><span class="occ-perm-desc">View system variables (emhttp vars)</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="logs:read" data-category="logs" <?=!empty($permissions['logs:read']) ? 'checked' : ''?>><span class="occ-perm-label">System Logs</span><span class="occ-perm-desc">View syslog entries</span></label>
       </div>
     </div>
 

@@ -9,6 +9,7 @@ import { registerSystemTools } from "./tools/system.js";
 import { registerNotificationTools } from "./tools/notifications.js";
 import { registerNetworkTools } from "./tools/network.js";
 import { registerUserTools } from "./tools/users.js";
+import { registerLogTools } from "./tools/logs.js";
 
 function resolveConfig(api: any): { serverUrl: string; apiKey: string } {
   // Try direct plugin config
@@ -38,7 +39,8 @@ export default function register(api: any): void {
   registerNotificationTools(api, client);
   registerNetworkTools(api, client);
   registerUserTools(api, client);
+  registerLogTools(api, client);
 
   const cfg = resolveConfig(api);
-  log.info(`UnraidClaw: registered 35 tools${cfg.serverUrl ? ", server: " + cfg.serverUrl : " (config will resolve at runtime)"}`);
+  log.info(`UnraidClaw: registered 36 tools${cfg.serverUrl ? ", server: " + cfg.serverUrl : " (config will resolve at runtime)"}`);
 }
