@@ -15,21 +15,15 @@
 
 <CHANGES>
 ### &version;
-- Full rename from OpenClaw Connect to UnraidClaw
-- All paths, URLs, and plugin name updated to unraidclaw
-- Tabbed settings UI (Dashboard, Settings, Permissions, Activity Log)
-- AJAX settings save with inline feedback
-- Fix API key generation (empty response issue)
-- Dark theme CSS fixes with explicit light text colors
-- Node.js path detection for Unraid 7.x (/usr/local/bin/node)
-
-### 2026.02.28
-- Initial release
-- REST API gateway for AI agents (OpenClaw)
-- Full permission matrix with WebGUI management
+- Initial public release
+- REST API gateway for AI agents on Unraid
+- Full resource:action permission matrix with WebGUI management
 - Docker, VM, Array, System, Shares, Notifications, Network management
 - SHA-256 API key authentication
 - Activity logging with JSONL format
+- Single-page tabbed UI (Dashboard, Settings, Permissions, Activity Log)
+- CJS server bundle with all dependencies included
+- Node.js 22+ (built-in on Unraid 7.x)
 </CHANGES>
 
 <README>

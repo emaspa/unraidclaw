@@ -264,11 +264,17 @@ function occLoadRecentActivity() {
         container.innerHTML = '<em>No recent activity</em>';
         return;
       }
-      var html = '<table style="width:100%; font-size:12px;"><tr><th>Time</th><th>Method</th><th>Path</th><th>Status</th></tr>';
+      var html = '<table class="occ-recent-table"><thead><tr><th>Time</th><th>Method</th><th>Path</th><th>Status</th></tr></thead><tbody>';
       for (var i = entries.length - 1; i >= 0; i--) {
         var e = entries[i];
-        html += '<tr><td>' + escapeHtml(e.timestamp) + '</td><td>' + escapeHtml(e.method) + '</td><td>' + escapeHtml(e.path) + '</td><td>' + e.statusCode + '</td></tr>';
+        var t = e.timestamp || '';
+        // Format: "HH:MM:SS" from ISO timestamp
+        var m = t.match(/T(\d{2}:\d{2}:\d{2})/);
+        var short_t = m ? m[1] : t.substring(11, 19);
+        var statusCls = e.statusCode >= 200 && e.statusCode < 300 ? 'occ-status-2xx' : (e.statusCode >= 400 ? 'occ-status-4xx' : '');
+        html += '<tr><td>' + escapeHtml(short_t) + '</td><td>' + escapeHtml(e.method) + '</td><td>' + escapeHtml(e.path) + '</td><td class="' + statusCls + '">' + e.statusCode + '</td></tr>';
       }
+      html += '</tbody>';
       html += '</table>';
       container.innerHTML = html;
     }

@@ -299,6 +299,30 @@
 .occ-status-4xx { color: #fcc419; }
 .occ-status-5xx { color: #ff6b6b; }
 
+/* Recent activity table (dashboard) */
+.occ-recent-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.occ-recent-table th,
+.occ-recent-table td {
+  padding: 4px 8px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.occ-recent-table th { color: #ddd; border-bottom: 1px solid rgba(255,255,255,0.12); }
+.occ-recent-table td { color: #bbb; }
+.occ-recent-table th:nth-child(1),
+.occ-recent-table td:nth-child(1) { width: 70px; }
+.occ-recent-table th:nth-child(2),
+.occ-recent-table td:nth-child(2) { width: 60px; }
+.occ-recent-table th:nth-child(4),
+.occ-recent-table td:nth-child(4) { width: 55px; text-align: center; }
+
 /* Inputs & selects */
 .occ-settings input[type="text"],
 .occ-settings input[type="number"],
