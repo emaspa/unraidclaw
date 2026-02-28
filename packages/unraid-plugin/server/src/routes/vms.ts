@@ -11,11 +11,6 @@ const LIST_QUERY = `query {
       name
       state
       uuid
-      coreCount
-      ramAllocation
-      primaryGPU
-      description
-      autoStart
     }
   }
 }`;
@@ -27,11 +22,6 @@ const DETAIL_QUERY = `query ($id: String!) {
       name
       state
       uuid
-      coreCount
-      ramAllocation
-      primaryGPU
-      description
-      autoStart
     }
   }
 }`;
