@@ -1,6 +1,4 @@
-Menu="OtherSettings:OpenClaw Connect"
 Title="OpenClaw Connect Activity Log"
-Tag="list-alt"
 ---
 <?PHP
 $plugin = "openclaw-connect";

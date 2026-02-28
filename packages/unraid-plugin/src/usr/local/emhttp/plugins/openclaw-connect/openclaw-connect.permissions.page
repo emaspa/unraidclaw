@@ -1,6 +1,4 @@
-Menu="OtherSettings:OpenClaw Connect"
 Title="OpenClaw Connect Permissions"
-Tag="shield"
 ---
 <?PHP
 $plugin = "openclaw-connect";

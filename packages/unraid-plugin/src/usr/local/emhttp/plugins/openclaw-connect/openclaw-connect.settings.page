@@ -1,6 +1,4 @@
-Menu="OtherSettings:OpenClaw Connect"
 Title="OpenClaw Connect Settings"
-Tag="cog"
 ---
 <?PHP
 $plugin = "openclaw-connect";
