@@ -1,8 +1,8 @@
-import type { OpenClawApi } from "../types.js";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import type { UnraidClient } from "../client.js";
 import { textResult, errorResult } from "./util.js";
 
-export function registerNotificationTools(api: OpenClawApi, client: UnraidClient): void {
+export function registerNotificationTools(api: any, client: UnraidClient): void {
   api.registerTool({
     name: "unraid_notification_list",
     description: "List all system notifications with their importance level and archive status.",

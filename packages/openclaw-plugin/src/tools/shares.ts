@@ -1,8 +1,8 @@
-import type { OpenClawApi } from "../types.js";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import type { UnraidClient } from "../client.js";
 import { textResult, errorResult } from "./util.js";
 
-export function registerShareTools(api: OpenClawApi, client: UnraidClient): void {
+export function registerShareTools(api: any, client: UnraidClient): void {
   api.registerTool({
     name: "unraid_share_list",
     description: "List all user shares on the Unraid server with their settings and usage.",

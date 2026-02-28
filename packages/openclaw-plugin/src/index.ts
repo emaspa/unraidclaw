@@ -1,4 +1,3 @@
-import type { OpenClawApi } from "./types.js";
 import { UnraidClient } from "./client.js";
 import { registerHealthTools } from "./tools/health.js";
 import { registerDockerTools } from "./tools/docker.js";
@@ -11,10 +10,30 @@ import { registerNotificationTools } from "./tools/notifications.js";
 import { registerNetworkTools } from "./tools/network.js";
 import { registerUserTools } from "./tools/users.js";
 
-export default function register(api: OpenClawApi): void {
+function resolveConfig(api: any): { serverUrl: string; apiKey: string } | null {
+  // Try direct plugin config
+  if (api.config?.serverUrl) return api.config;
+  // Try pluginConfig
+  if (api.pluginConfig?.serverUrl) return api.pluginConfig;
+  // Try nested in full config
+  const nested = api.config?.plugins?.entries?.unraidclaw?.config;
+  if (nested?.serverUrl) return nested;
+  return null;
+}
+
+export default function register(api: any): void {
+  const log = api.logger || console;
+  const cfg = resolveConfig(api);
+
+  if (!cfg) {
+    log.error("UnraidClaw: could not find serverUrl/apiKey in config. Keys on api:", Object.keys(api));
+    log.error("UnraidClaw: api.config =", JSON.stringify(api.config)?.substring(0, 500));
+    return;
+  }
+
   const client = new UnraidClient({
-    serverUrl: api.config.serverUrl,
-    apiKey: api.config.apiKey,
+    serverUrl: cfg.serverUrl,
+    apiKey: cfg.apiKey,
   });
 
   registerHealthTools(api, client);
@@ -28,5 +47,5 @@ export default function register(api: OpenClawApi): void {
   registerNetworkTools(api, client);
   registerUserTools(api, client);
 
-  api.logger.info("UnraidClaw plugin registered 37 tools");
+  log.info("UnraidClaw: registered 37 tools, server:", cfg.serverUrl);
 }

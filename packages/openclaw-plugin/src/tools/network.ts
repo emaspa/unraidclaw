@@ -1,8 +1,8 @@
-import type { OpenClawApi } from "../types.js";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import type { UnraidClient } from "../client.js";
 import { textResult, errorResult } from "./util.js";
 
-export function registerNetworkTools(api: OpenClawApi, client: UnraidClient): void {
+export function registerNetworkTools(api: any, client: UnraidClient): void {
   api.registerTool({
     name: "unraid_network_info",
     description: "Get network information including hostname, gateway, DNS servers, and all network interfaces.",

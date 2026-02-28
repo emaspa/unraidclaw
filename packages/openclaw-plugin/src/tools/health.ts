@@ -1,8 +1,8 @@
-import type { OpenClawApi } from "../types.js";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import type { UnraidClient } from "../client.js";
 import { textResult, errorResult } from "./util.js";
 
-export function registerHealthTools(api: OpenClawApi, client: UnraidClient): void {
+export function registerHealthTools(api: any, client: UnraidClient): void {
   api.registerTool({
     name: "unraid_health_check",
     description: "Check the health status of the Unraid server connection, including API and GraphQL reachability.",

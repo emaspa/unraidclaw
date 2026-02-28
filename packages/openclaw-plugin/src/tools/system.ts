@@ -1,8 +1,8 @@
-import type { OpenClawApi } from "../types.js";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import type { UnraidClient } from "../client.js";
 import { textResult, errorResult } from "./util.js";
 
-export function registerSystemTools(api: OpenClawApi, client: UnraidClient): void {
+export function registerSystemTools(api: any, client: UnraidClient): void {
   api.registerTool({
     name: "unraid_system_info",
     description: "Get system information including OS, CPU, memory, and Unraid/kernel versions.",

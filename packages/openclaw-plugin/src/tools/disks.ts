@@ -1,8 +1,8 @@
-import type { OpenClawApi } from "../types.js";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import type { UnraidClient } from "../client.js";
 import { textResult, errorResult } from "./util.js";
 
-export function registerDiskTools(api: OpenClawApi, client: UnraidClient): void {
+export function registerDiskTools(api: any, client: UnraidClient): void {
   api.registerTool({
     name: "unraid_disk_list",
     description: "List all disks in the Unraid server with basic info (name, size, temp, status).",
