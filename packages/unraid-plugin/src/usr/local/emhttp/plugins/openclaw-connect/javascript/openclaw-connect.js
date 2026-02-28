@@ -276,6 +276,57 @@ function occLoadRecentActivity() {
   xhr.send();
 }
 
+function occSaveSettings(e) {
+  e.preventDefault();
+  var form = document.getElementById('occ-settings-form');
+  var btn = document.getElementById('occ-apply-btn');
+  var status = document.getElementById('occ-settings-status');
+
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  status.textContent = '';
+
+  // Collect form fields as query params
+  var params = ['ajax=1'];
+  var inputs = form.querySelectorAll('input[name], select[name]');
+  for (var i = 0; i < inputs.length; i++) {
+    var inp = inputs[i];
+    if (inp.name && inp.name !== 'csrf_token') {
+      params.push(encodeURIComponent(inp.name) + '=' + encodeURIComponent(inp.value));
+    }
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/plugins/openclaw-connect/php/save-settings.php?' + params.join('&'), true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      btn.disabled = false;
+      btn.textContent = 'Apply';
+      if (xhr.status === 200 && xhr.responseText) {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          if (resp.success) {
+            status.textContent = 'Settings saved! Service ' + resp.service + '.';
+            status.style.color = '#51cf66';
+          } else {
+            status.textContent = 'Error saving settings';
+            status.style.color = '#ff6b6b';
+          }
+        } catch(ex) {
+          status.textContent = 'Error: ' + xhr.responseText.substring(0, 100);
+          status.style.color = '#ff6b6b';
+        }
+      } else {
+        status.textContent = 'Error (HTTP ' + xhr.status + ')';
+        status.style.color = '#ff6b6b';
+      }
+      setTimeout(function() { status.textContent = ''; }, 5000);
+    }
+  };
+  xhr.send();
+  return false;
+}
+
 function occResetDefaults() {
   if (!confirm('Reset all settings to defaults?')) return;
   var form = document.getElementById('occ-settings-form');
