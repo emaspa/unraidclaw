@@ -58,11 +58,11 @@ export class UnraidClient {
     const { apiKey } = this.getConfig();
     const headers: Record<string, string> = {
       "x-api-key": apiKey,
-      "Content-Type": "application/json",
     };
 
     const init: RequestInit = { method, headers };
     if (body !== undefined) {
+      headers["Content-Type"] = "application/json";
       init.body = JSON.stringify(body);
     }
 
