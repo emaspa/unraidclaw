@@ -11,7 +11,7 @@
 <!ENTITY md5       "094aeb4373deb0ab67ca3a4c8e2b6149">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" max="7.99.99">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" max="7.99.99" support="https://github.com/&repo;">
 
 <CHANGES>
 ### &version;
@@ -31,6 +31,19 @@
 - SHA-256 API key authentication
 - Activity logging with JSONL format
 </CHANGES>
+
+<README>
+**UnraidClaw** is a permission-enforcing REST API gateway that lets AI agents manage your Unraid server.
+
+It proxies requests to Unraid's built-in GraphQL API with fine-grained access control, so you can safely expose Docker, VMs, Array, Shares, System, Notifications, and Network management to AI tools.
+
+**Features:**
+- Full resource:action permission matrix configurable from the WebGUI
+- SHA-256 API key authentication
+- Activity logging with JSONL format
+- Tabbed settings UI (Dashboard, Settings, Permissions, Activity Log)
+- Requires Node.js 22+ (built-in on Unraid 7.x)
+</README>
 
 <!-- Check for Node.js 22+ -->
 <FILE Run="/bin/bash">
