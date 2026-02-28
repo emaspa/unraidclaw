@@ -26,7 +26,7 @@ pnpm build
 echo "[2/4] Bundling server..."
 cd "$ROOT_DIR/packages/unraid-plugin/server"
 pnpm bundle
-BUNDLE_FILE="$ROOT_DIR/packages/unraid-plugin/server/dist/index.js"
+BUNDLE_FILE="$ROOT_DIR/packages/unraid-plugin/server/dist/index.cjs"
 
 if [ ! -f "$BUNDLE_FILE" ]; then
   echo "Error: Server bundle not found at ${BUNDLE_FILE}"
@@ -40,7 +40,7 @@ mkdir -p "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/server"
 mkdir -p "${STAGE}/etc/rc.d"
 
 # Copy server bundle
-cp "$BUNDLE_FILE" "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/server/index.js"
+cp "$BUNDLE_FILE" "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/server/index.cjs"
 
 # Copy emhttp plugin files (pages, php, js, css, etc.)
 cp -r "$PLUGIN_DIR/src/usr/local/emhttp/plugins/${PKG_NAME}/"* \

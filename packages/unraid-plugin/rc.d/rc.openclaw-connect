@@ -5,7 +5,7 @@
 
 PLUGIN="openclaw-connect"
 CONFIG="/boot/config/plugins/${PLUGIN}/openclaw-connect.cfg"
-SERVER="/usr/local/emhttp/plugins/${PLUGIN}/server/index.js"
+SERVER="/usr/local/emhttp/plugins/${PLUGIN}/server/index.cjs"
 PIDFILE="/var/run/${PLUGIN}.pid"
 LOGFILE="/var/log/${PLUGIN}.log"
 

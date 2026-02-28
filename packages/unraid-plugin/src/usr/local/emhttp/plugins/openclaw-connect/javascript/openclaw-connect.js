@@ -36,15 +36,27 @@ var OCC_CSRF = '';
 
 // ── Service control ──
 function occServiceControl(action) {
+  var btn = event ? event.target : null;
+  if (btn) { btn.disabled = true; btn.textContent = action + 'ing...'; }
+
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/plugins/openclaw-connect/php/service-control.php', true);
-  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.open('GET', '/plugins/openclaw-connect/php/service-control.php?action=' + encodeURIComponent(action), true);
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
+      if (xhr.status === 200 && xhr.responseText) {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          if (resp.returnCode !== 0) {
+            alert('Service ' + action + ' failed (code ' + resp.returnCode + '):\n' + resp.output);
+          }
+        } catch(e) {}
+      } else if (xhr.responseText === '') {
+        alert('Empty response from service control - PHP may not be executing');
+      }
       location.reload();
     }
   };
-  xhr.send('action=' + encodeURIComponent(action) + '&csrf_token=' + encodeURIComponent(OCC_CSRF));
+  xhr.send();
 }
 
 // ── API key generation ──

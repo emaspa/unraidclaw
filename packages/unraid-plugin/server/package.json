@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsup src/index.ts --format esm --target node22 --dts --clean --external @unraidclaw/shared",
-    "bundle": "tsup src/index.ts --format esm --target node22 --clean --no-splitting --config tsup.bundle.json",
+    "bundle": "tsup src/index.ts --format cjs --target node22 --clean --no-splitting --config tsup.bundle.json",
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
