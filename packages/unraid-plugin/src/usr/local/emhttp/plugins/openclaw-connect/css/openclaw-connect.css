@@ -1,4 +1,5 @@
-/* OpenClaw Connect - WebGUI Styles */
+/* OpenClaw Connect - WebGUI Styles
+   Uses Unraid CSS custom properties where available, with dark-safe fallbacks */
 
 .occ-dashboard,
 .occ-settings,
@@ -7,14 +8,16 @@
   max-width: 960px;
   margin: 0 auto;
   padding: 16px;
+  color: var(--text-color, #333);
 }
 
 .occ-header h2 {
   margin: 0 0 4px 0;
+  color: var(--header-text-color, #333);
 }
 .occ-header p {
   margin: 0 0 20px 0;
-  color: #666;
+  opacity: 0.7;
 }
 
 /* Badges */
@@ -26,22 +29,24 @@
   font-weight: bold;
   text-transform: uppercase;
 }
-.occ-badge-ok { background: #d4edda; color: #155724; }
-.occ-badge-stopped { background: #f8d7da; color: #721c24; }
-.occ-badge-warn { background: #fff3cd; color: #856404; }
+.occ-badge-ok { background: #28a745; color: #fff; }
+.occ-badge-stopped { background: #dc3545; color: #fff; }
+.occ-badge-warn { background: #ffc107; color: #333; }
 
 /* Status card */
 .occ-status-card {
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--content-background, rgba(255,255,255,0.07));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.15));
   border-radius: 6px;
   padding: 16px;
   margin-bottom: 16px;
+  color: var(--text-color, #333);
 }
 .occ-status-card h3 {
   margin: 0 0 12px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.15));
   padding-bottom: 8px;
+  color: var(--header-text-color, #333);
 }
 .occ-status-row {
   display: flex;
@@ -56,7 +61,7 @@
 .occ-hint {
   display: block;
   font-size: 11px;
-  color: #888;
+  opacity: 0.6;
   margin-top: 2px;
 }
 
@@ -67,23 +72,29 @@
 }
 .occ-links li {
   padding: 6px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.1));
 }
 .occ-links li:last-child { border-bottom: none; }
+.occ-links a {
+  color: var(--link-color, #4a90d9);
+  text-decoration: none;
+  font-weight: bold;
+}
+.occ-links a:hover { text-decoration: underline; }
 
 /* Buttons */
 .occ-btn {
   display: inline-block;
   padding: 6px 16px;
-  border: 1px solid #ccc;
+  border: 1px solid rgba(255,255,255,0.2);
   border-radius: 4px;
-  background: #f5f5f5;
+  background: var(--button-background, rgba(255,255,255,0.1));
   cursor: pointer;
   font-size: 13px;
   text-decoration: none;
-  color: #333;
+  color: var(--text-color, #333);
 }
-.occ-btn:hover { background: #e8e8e8; }
+.occ-btn:hover { opacity: 0.85; }
 .occ-btn-primary { background: #4a90d9; color: #fff; border-color: #3a7bc8; }
 .occ-btn-primary:hover { background: #3a7bc8; }
 .occ-btn-success { background: #5cb85c; color: #fff; border-color: #4cae4c; }
@@ -106,7 +117,7 @@
   border-radius: 4px;
   margin-bottom: 10px;
 }
-.occ-alert-warning { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
+.occ-alert-warning { background: #ffc107; border: 1px solid #e0a800; color: #333; }
 
 /* Permission matrix */
 .occ-presets {
@@ -115,12 +126,13 @@
   gap: 8px;
   margin-bottom: 20px;
   padding: 10px;
-  background: #f9f9f9;
+  background: var(--content-background, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.15));
   border-radius: 4px;
 }
 
 .occ-perm-category {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.15));
   border-radius: 6px;
   margin-bottom: 8px;
   overflow: hidden;
@@ -130,15 +142,17 @@
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  background: #f5f5f5;
+  background: var(--content-background, rgba(255,255,255,0.08));
   cursor: pointer;
   user-select: none;
+  color: var(--text-color, #333);
 }
-.occ-perm-header:hover { background: #ececec; }
+.occ-perm-header:hover { opacity: 0.9; }
 .occ-perm-header h3 {
   margin: 0;
   flex: 1;
   font-size: 14px;
+  color: var(--header-text-color, #333);
 }
 .occ-expand-icon {
   font-size: 10px;
@@ -150,7 +164,7 @@
 }
 .occ-perm-summary {
   font-size: 12px;
-  color: #888;
+  opacity: 0.6;
 }
 .occ-cat-toggle {
   display: flex;
@@ -159,14 +173,16 @@
 
 .occ-perm-body {
   padding: 8px 14px;
+  background: var(--content-background, rgba(255,255,255,0.04));
 }
 .occ-perm-item {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.08));
   cursor: pointer;
+  color: var(--text-color, #333);
 }
 .occ-perm-item:last-child { border-bottom: none; }
 .occ-perm-item input[type="checkbox"] {
@@ -179,11 +195,11 @@
   font-size: 13px;
 }
 .occ-perm-desc {
-  color: #666;
+  opacity: 0.65;
   font-size: 12px;
 }
 .occ-destructive .occ-perm-label {
-  color: #d9534f;
+  color: #ff6b6b;
 }
 .occ-perm-actions {
   margin-top: 20px;
@@ -204,14 +220,30 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  color: var(--text-color, #333);
 }
 #occ-log-table {
   width: 100%;
   font-size: 12px;
+  color: var(--text-color, #333);
 }
 #occ-log-table td, #occ-log-table th {
   padding: 4px 8px;
 }
-.occ-status-2xx { color: #155724; }
-.occ-status-4xx { color: #856404; }
-.occ-status-5xx { color: #721c24; }
+.occ-status-2xx { color: #51cf66; }
+.occ-status-4xx { color: #fcc419; }
+.occ-status-5xx { color: #ff6b6b; }
+
+/* Inputs & selects inherit theme */
+.occ-settings input[type="text"],
+.occ-settings input[type="number"],
+.occ-settings input[type="password"],
+.occ-settings select,
+.occ-log-controls input,
+.occ-log-controls select {
+  background: var(--input-background, rgba(255,255,255,0.1));
+  color: var(--text-color, #333);
+  border: 1px solid var(--border-color, rgba(255,255,255,0.2));
+  border-radius: 3px;
+  padding: 4px 8px;
+}
