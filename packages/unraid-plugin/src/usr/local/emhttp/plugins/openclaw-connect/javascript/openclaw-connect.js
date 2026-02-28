@@ -1,4 +1,4 @@
-/* OpenClaw Connect - WebGUI JavaScript */
+/* OpenClaw Connect - WebGUI JavaScript v2 */
 
 // ── Permission presets (mirror of shared/permissions.ts) ──
 var OCC_PRESETS = {
@@ -31,6 +31,9 @@ var OCC_CATEGORIES = {
   'logs':         ['logs:read','flash:read','vars:read']
 };
 
+// ── CSRF token (set from .page files) ──
+var OCC_CSRF = '';
+
 // ── Service control ──
 function occServiceControl(action) {
   var xhr = new XMLHttpRequest();
@@ -41,38 +44,47 @@ function occServiceControl(action) {
       location.reload();
     }
   };
-  xhr.send('action=' + encodeURIComponent(action));
+  xhr.send('action=' + encodeURIComponent(action) + '&csrf_token=' + encodeURIComponent(OCC_CSRF));
 }
 
 // ── API key generation ──
 function occGenerateKey() {
   if (!confirm('Generate a new API key? The old key will be invalidated.')) return;
+
+  var display = document.getElementById('occ-key-display');
+  var keyInput = document.getElementById('occ-new-key');
+  display.style.display = 'block';
+  keyInput.value = 'Generating...';
+  keyInput.style.color = '#aaa';
+
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/plugins/openclaw-connect/php/generate-key.php', true);
+  // Use GET to avoid CSRF issues with emhttp
+  xhr.open('GET', '/plugins/openclaw-connect/php/generate-key.php?action=generate&csrf_token=' + encodeURIComponent(OCC_CSRF), true);
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
-      var display = document.getElementById('occ-key-display');
-      var keyInput = document.getElementById('occ-new-key');
-      if (xhr.status === 200) {
-        try {
-          var resp = JSON.parse(xhr.responseText);
-          if (resp.key) {
-            display.style.display = 'block';
-            keyInput.value = resp.key;
-            keyInput.style.color = '#51cf66';
-          } else if (resp.error) {
-            display.style.display = 'block';
-            keyInput.value = 'Error: ' + resp.error;
-            keyInput.style.color = '#ff6b6b';
-          }
-        } catch(e) {
-          display.style.display = 'block';
-          keyInput.value = 'Error parsing response: ' + xhr.responseText.substring(0, 200);
+      var raw = xhr.responseText || '';
+      var debugInfo = '[HTTP ' + xhr.status + ', len=' + raw.length + ']';
+
+      if (raw.length === 0) {
+        keyInput.value = 'Empty response ' + debugInfo + ' - PHP may not be executing. Check Unraid syslog.';
+        keyInput.style.color = '#ff6b6b';
+        return;
+      }
+
+      try {
+        var resp = JSON.parse(raw);
+        if (resp.key) {
+          keyInput.value = resp.key;
+          keyInput.style.color = '#51cf66';
+        } else if (resp.error) {
+          keyInput.value = 'Error: ' + resp.error;
+          keyInput.style.color = '#ff6b6b';
+        } else {
+          keyInput.value = 'Unexpected: ' + raw.substring(0, 300);
           keyInput.style.color = '#ff6b6b';
         }
-      } else {
-        display.style.display = 'block';
-        keyInput.value = 'HTTP Error ' + xhr.status + ': ' + xhr.responseText.substring(0, 200);
+      } catch(e) {
+        keyInput.value = 'Not JSON ' + debugInfo + ': ' + raw.substring(0, 300);
         keyInput.style.color = '#ff6b6b';
       }
     }
@@ -146,10 +158,10 @@ function occSavePermissions() {
       var status = document.getElementById('occ-perm-status');
       if (xhr.status === 200) {
         status.textContent = 'Saved!';
-        status.style.color = '#155724';
+        status.style.color = '#51cf66';
       } else {
-        status.textContent = 'Error saving permissions';
-        status.style.color = '#721c24';
+        status.textContent = 'Error saving (HTTP ' + xhr.status + ')';
+        status.style.color = '#ff6b6b';
       }
       setTimeout(function() { status.textContent = ''; }, 3000);
     }
@@ -200,12 +212,13 @@ function occClearLog() {
   if (!confirm('Clear the activity log?')) return;
   var xhr = new XMLHttpRequest();
   xhr.open('POST', '/plugins/openclaw-connect/php/clear-log.php', true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
       occRefreshLog();
     }
   };
-  xhr.send();
+  xhr.send('csrf_token=' + encodeURIComponent(OCC_CSRF));
 }
 
 function occFilterLog() {

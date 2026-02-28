@@ -7,7 +7,7 @@ $plugin = "openclaw-connect";
 $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
 ?>
 
-<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css">
+<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/openclaw-connect.css")?>">
 
 <div class="occ-log-viewer">
   <div class="occ-nav"><a href="/Settings/openclaw-connect">&larr; Back to Dashboard</a></div>
@@ -49,8 +49,9 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
   </table>
 </div>
 
-<script src="/plugins/<?=$plugin?>/javascript/openclaw-connect.js"></script>
+<script src="/plugins/<?=$plugin?>/javascript/openclaw-connect.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/openclaw-connect.js")?>"></script>
 <script>
+OCC_CSRF = '<?=$_SERVER['HTTP_CSRF_TOKEN'] ?? ''?>';
 document.addEventListener('DOMContentLoaded', function() {
   occRefreshLog();
 });
