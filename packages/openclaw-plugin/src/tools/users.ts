@@ -1,14 +1,18 @@
-import type { ToolRegistrar } from "./health.js";
+import type { OpenClawApi } from "../types.js";
 import type { UnraidClient } from "../client.js";
-import type { UserInfo } from "@unraidclaw/shared";
+import { textResult, errorResult } from "./util.js";
 
-export function registerUserTools(api: ToolRegistrar, client: UnraidClient): void {
-  api.register({
+export function registerUserTools(api: OpenClawApi, client: UnraidClient): void {
+  api.registerTool({
     name: "unraid_user_me",
     description: "Get information about the current authenticated user.",
-    parameters: {},
-    handler: async () => {
-      return client.get<UserInfo>("/api/users/me");
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.get("/api/users/me"));
+      } catch (err) {
+        return errorResult(err);
+      }
     },
   });
 }

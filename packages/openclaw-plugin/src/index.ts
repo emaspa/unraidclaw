@@ -1,5 +1,5 @@
-import { UnraidClient, type ClientConfig } from "./client.js";
-import type { ToolRegistrar } from "./tools/health.js";
+import type { OpenClawApi } from "./types.js";
+import { UnraidClient } from "./client.js";
 import { registerHealthTools } from "./tools/health.js";
 import { registerDockerTools } from "./tools/docker.js";
 import { registerVMTools } from "./tools/vms.js";
@@ -11,22 +11,11 @@ import { registerNotificationTools } from "./tools/notifications.js";
 import { registerNetworkTools } from "./tools/network.js";
 import { registerUserTools } from "./tools/users.js";
 
-export { UnraidClient, UnraidApiError } from "./client.js";
-export type { ClientConfig } from "./client.js";
-export type { ToolRegistrar, ToolDefinition, ParameterDef } from "./tools/health.js";
-
-export interface PluginConfig {
-  serverUrl: string;
-  apiKey: string;
-}
-
-export function register(api: ToolRegistrar, config: PluginConfig): void {
-  const clientConfig: ClientConfig = {
-    serverUrl: config.serverUrl,
-    apiKey: config.apiKey,
-  };
-
-  const client = new UnraidClient(clientConfig);
+export default function register(api: OpenClawApi): void {
+  const client = new UnraidClient({
+    serverUrl: api.config.serverUrl,
+    apiKey: api.config.apiKey,
+  });
 
   registerHealthTools(api, client);
   registerDockerTools(api, client);
@@ -38,4 +27,6 @@ export function register(api: ToolRegistrar, config: PluginConfig): void {
   registerNotificationTools(api, client);
   registerNetworkTools(api, client);
   registerUserTools(api, client);
+
+  api.logger.info("UnraidClaw plugin registered 37 tools");
 }

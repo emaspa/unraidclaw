@@ -1,14 +1,18 @@
-import type { ToolRegistrar } from "./health.js";
+import type { OpenClawApi } from "../types.js";
 import type { UnraidClient } from "../client.js";
-import type { NetworkInfo } from "@unraidclaw/shared";
+import { textResult, errorResult } from "./util.js";
 
-export function registerNetworkTools(api: ToolRegistrar, client: UnraidClient): void {
-  api.register({
+export function registerNetworkTools(api: OpenClawApi, client: UnraidClient): void {
+  api.registerTool({
     name: "unraid_network_info",
     description: "Get network information including hostname, gateway, DNS servers, and all network interfaces.",
-    parameters: {},
-    handler: async () => {
-      return client.get<NetworkInfo>("/api/network");
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.get("/api/network"));
+      } catch (err) {
+        return errorResult(err);
+      }
     },
   });
 }

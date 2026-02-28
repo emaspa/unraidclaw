@@ -1,32 +1,18 @@
+import type { OpenClawApi } from "../types.js";
 import type { UnraidClient } from "../client.js";
-import type { HealthResponse } from "@unraidclaw/shared";
+import { textResult, errorResult } from "./util.js";
 
-export interface ToolRegistrar {
-  register(tool: ToolDefinition): void;
-}
-
-export interface ToolDefinition {
-  name: string;
-  description: string;
-  parameters: Record<string, ParameterDef>;
-  handler: (params: Record<string, unknown>) => Promise<unknown>;
-  optional?: boolean;
-}
-
-export interface ParameterDef {
-  type: string;
-  description: string;
-  required?: boolean;
-  default?: unknown;
-}
-
-export function registerHealthTools(api: ToolRegistrar, client: UnraidClient): void {
-  api.register({
+export function registerHealthTools(api: OpenClawApi, client: UnraidClient): void {
+  api.registerTool({
     name: "unraid_health_check",
     description: "Check the health status of the Unraid server connection, including API and GraphQL reachability.",
-    parameters: {},
-    handler: async () => {
-      return client.get<HealthResponse>("/api/health");
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.get("/api/health"));
+      } catch (err) {
+        return errorResult(err);
+      }
     },
   });
 }

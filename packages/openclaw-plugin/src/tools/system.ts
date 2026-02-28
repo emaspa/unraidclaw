@@ -1,52 +1,76 @@
-import type { ToolRegistrar } from "./health.js";
+import type { OpenClawApi } from "../types.js";
 import type { UnraidClient } from "../client.js";
-import type { SystemInfo, SystemMetrics, ServiceInfo } from "@unraidclaw/shared";
+import { textResult, errorResult } from "./util.js";
 
-export function registerSystemTools(api: ToolRegistrar, client: UnraidClient): void {
-  api.register({
+export function registerSystemTools(api: OpenClawApi, client: UnraidClient): void {
+  api.registerTool({
     name: "unraid_system_info",
     description: "Get system information including OS, CPU, memory, and Unraid/kernel versions.",
-    parameters: {},
-    handler: async () => {
-      return client.get<SystemInfo>("/api/system/info");
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.get("/api/system/info"));
+      } catch (err) {
+        return errorResult(err);
+      }
     },
   });
 
-  api.register({
+  api.registerTool({
     name: "unraid_system_metrics",
     description: "Get live system metrics: CPU usage, memory usage, load average, and uptime.",
-    parameters: {},
-    handler: async () => {
-      return client.get<SystemMetrics>("/api/system/metrics");
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.get("/api/system/metrics"));
+      } catch (err) {
+        return errorResult(err);
+      }
     },
   });
 
-  api.register({
+  api.registerTool({
     name: "unraid_service_list",
     description: "List system services and their current state.",
-    parameters: {},
-    handler: async () => {
-      return client.get<ServiceInfo[]>("/api/system/services");
+    parameters: { type: "object" },
+    execute: async () => {
+      try {
+        return textResult(await client.get("/api/system/services"));
+      } catch (err) {
+        return errorResult(err);
+      }
     },
   });
 
-  api.register({
-    name: "unraid_system_reboot",
-    description: "Reboot the Unraid server. This is a destructive operation that will interrupt all running services, VMs, and containers.",
-    parameters: {},
-    optional: true,
-    handler: async () => {
-      return client.post("/api/system/reboot");
+  api.registerTool(
+    {
+      name: "unraid_system_reboot",
+      description: "Reboot the Unraid server. This is a destructive operation that will interrupt all running services, VMs, and containers.",
+      parameters: { type: "object" },
+      execute: async () => {
+        try {
+          return textResult(await client.post("/api/system/reboot"));
+        } catch (err) {
+          return errorResult(err);
+        }
+      },
     },
-  });
+    { optional: true }
+  );
 
-  api.register({
-    name: "unraid_system_shutdown",
-    description: "Shut down the Unraid server. This is a destructive operation that will power off the server.",
-    parameters: {},
-    optional: true,
-    handler: async () => {
-      return client.post("/api/system/shutdown");
+  api.registerTool(
+    {
+      name: "unraid_system_shutdown",
+      description: "Shut down the Unraid server. This is a destructive operation that will power off the server.",
+      parameters: { type: "object" },
+      execute: async () => {
+        try {
+          return textResult(await client.post("/api/system/shutdown"));
+        } catch (err) {
+          return errorResult(err);
+        }
+      },
     },
-  });
+    { optional: true }
+  );
 }
