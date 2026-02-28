@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { Resource, Action } from "@unraidclaw/shared";
-import type { SystemInfo, SystemMetrics, ServiceInfo } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 
@@ -10,40 +9,23 @@ const INFO_QUERY = `query {
       platform
       hostname
       uptime
-      version
     }
     cpu {
       model
       cores
       threads
-      frequency
     }
     memory {
-      total
-      used
-      free
-      cached
+      __typename
     }
-    versions {
-      unraid
-      kernel
-    }
-  }
-}`;
-
-const METRICS_QUERY = `query {
-  info {
-    cpu { usage loadAverage }
-    memory { totalBytes usedBytes freeBytes usagePercent }
-    uptime
   }
 }`;
 
 const SERVICES_QUERY = `query {
   services {
     name
-    state
-    autoStart
+    id
+    online
   }
 }`;
 
@@ -52,16 +34,16 @@ export function registerSystemRoutes(app: FastifyInstance, gql: GraphQLClient): 
   app.get("/api/system/info", {
     preHandler: requirePermission(Resource.INFO, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ info: SystemInfo }>(INFO_QUERY);
+      const data = await gql.query<{ info: unknown }>(INFO_QUERY);
       return reply.send({ ok: true, data: data.info });
     },
   });
 
-  // System metrics (live)
+  // System metrics (same as info — Unraid 7 doesn't have separate metrics query)
   app.get("/api/system/metrics", {
     preHandler: requirePermission(Resource.INFO, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ info: SystemMetrics }>(METRICS_QUERY);
+      const data = await gql.query<{ info: unknown }>(INFO_QUERY);
       return reply.send({ ok: true, data: data.info });
     },
   });
@@ -70,7 +52,7 @@ export function registerSystemRoutes(app: FastifyInstance, gql: GraphQLClient): 
   app.get("/api/system/services", {
     preHandler: requirePermission(Resource.SERVICES, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ services: ServiceInfo[] }>(SERVICES_QUERY);
+      const data = await gql.query<{ services: unknown[] }>(SERVICES_QUERY);
       return reply.send({ ok: true, data: data.services });
     },
   });

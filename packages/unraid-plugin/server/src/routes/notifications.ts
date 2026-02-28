@@ -1,87 +1,55 @@
 import type { FastifyInstance } from "fastify";
 import { Resource, Action } from "@unraidclaw/shared";
-import type { Notification, CreateNotificationRequest } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 
-const LIST_QUERY = `query {
+const LIST_QUERY = `query ($type: NotificationType!, $offset: Int!, $limit: Int!) {
   notifications {
-    id
-    title
-    subject
-    description
-    importance
-    type
-    timestamp
-    archived
+    list(filter: { type: $type, offset: $offset, limit: $limit }) {
+      id
+      subject
+      description
+      importance
+      timestamp
+      type
+    }
   }
 }`;
 
-const CREATE_MUTATION = `mutation ($input: CreateNotificationInput!) {
-  createNotification(input: $input) {
-    id
-    title
-    subject
-  }
-}`;
-
-const ARCHIVE_MUTATION = `mutation ($id: String!) {
-  archiveNotification(id: $id) {
-    id
-    archived
-  }
-}`;
-
-const DELETE_MUTATION = `mutation ($id: String!) {
-  deleteNotification(id: $id) {
-    success
-    message
+const OVERVIEW_QUERY = `query {
+  notifications {
+    overview {
+      unread {
+        total
+        warning
+        alert
+      }
+    }
   }
 }`;
 
 export function registerNotificationRoutes(app: FastifyInstance, gql: GraphQLClient): void {
   // List notifications
-  app.get("/api/notifications", {
+  app.get<{ Querystring: { type?: string; limit?: string; offset?: string } }>("/api/notifications", {
+    preHandler: requirePermission(Resource.NOTIFICATION, Action.READ),
+    handler: async (req, reply) => {
+      const type = (req.query.type || "UNREAD").toUpperCase();
+      const limit = req.query.limit ? parseInt(req.query.limit, 10) : 50;
+      const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
+      const data = await gql.query<{ notifications: { list: unknown[] } }>(
+        LIST_QUERY,
+        { type, offset, limit }
+      );
+      return reply.send({ ok: true, data: data.notifications.list });
+    },
+  });
+
+  // Notification overview/counts
+  app.get("/api/notifications/overview", {
     preHandler: requirePermission(Resource.NOTIFICATION, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ notifications: Notification[] }>(LIST_QUERY);
-      return reply.send({ ok: true, data: data.notifications });
-    },
-  });
-
-  // Create notification
-  app.post<{ Body: CreateNotificationRequest }>("/api/notifications", {
-    preHandler: requirePermission(Resource.NOTIFICATION, Action.CREATE),
-    handler: async (req, reply) => {
-      const data = await gql.query<{ createNotification: { id: string } }>(
-        CREATE_MUTATION,
-        { input: req.body }
-      );
-      return reply.code(201).send({ ok: true, data: data.createNotification });
-    },
-  });
-
-  // Archive notification
-  app.post<{ Params: { id: string } }>("/api/notifications/:id/archive", {
-    preHandler: requirePermission(Resource.NOTIFICATION, Action.UPDATE),
-    handler: async (req, reply) => {
-      const data = await gql.query<{ archiveNotification: { id: string; archived: boolean } }>(
-        ARCHIVE_MUTATION,
-        { id: req.params.id }
-      );
-      return reply.send({ ok: true, data: data.archiveNotification });
-    },
-  });
-
-  // Delete notification
-  app.delete<{ Params: { id: string } }>("/api/notifications/:id", {
-    preHandler: requirePermission(Resource.NOTIFICATION, Action.DELETE),
-    handler: async (req, reply) => {
-      const data = await gql.query<{ deleteNotification: { success: boolean } }>(
-        DELETE_MUTATION,
-        { id: req.params.id }
-      );
-      return reply.send({ ok: true, data: data.deleteNotification });
+      const data = await gql.query<{ notifications: { overview: unknown } }>(OVERVIEW_QUERY);
+      return reply.send({ ok: true, data: data.notifications.overview });
     },
   });
 }

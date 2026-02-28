@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { Resource, Action } from "@unraidclaw/shared";
-import type { Share, CreateShareRequest, UpdateShareRequest } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 
@@ -11,49 +10,9 @@ const LIST_QUERY = `query {
     allocator
     floor
     splitLevel
-    include
-    exclude
-    useCache
+    cache
     free
-    used
     size
-  }
-}`;
-
-const DETAIL_QUERY = `query ($name: String!) {
-  share(name: $name) {
-    name
-    comment
-    allocator
-    floor
-    splitLevel
-    include
-    exclude
-    useCache
-    free
-    used
-    size
-  }
-}`;
-
-const CREATE_MUTATION = `mutation ($input: CreateShareInput!) {
-  createShare(input: $input) {
-    name
-    comment
-  }
-}`;
-
-const UPDATE_MUTATION = `mutation ($name: String!, $input: UpdateShareInput!) {
-  updateShare(name: $name, input: $input) {
-    name
-    comment
-  }
-}`;
-
-const DELETE_MUTATION = `mutation ($name: String!) {
-  deleteShare(name: $name) {
-    success
-    message
   }
 }`;
 
@@ -62,53 +21,26 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
   app.get("/api/shares", {
     preHandler: requirePermission(Resource.SHARE, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ shares: Share[] }>(LIST_QUERY);
+      const data = await gql.query<{ shares: unknown[] }>(LIST_QUERY);
       return reply.send({ ok: true, data: data.shares });
     },
   });
 
-  // Get share details
+  // Get share by name (filter from list — no singular share query in Unraid 7)
   app.get<{ Params: { name: string } }>("/api/shares/:name", {
     preHandler: requirePermission(Resource.SHARE, Action.READ),
     handler: async (req, reply) => {
-      const data = await gql.query<{ share: Share }>(DETAIL_QUERY, { name: req.params.name });
-      return reply.send({ ok: true, data: data.share });
-    },
-  });
-
-  // Create share
-  app.post<{ Body: CreateShareRequest }>("/api/shares", {
-    preHandler: requirePermission(Resource.SHARE, Action.CREATE),
-    handler: async (req, reply) => {
-      const data = await gql.query<{ createShare: { name: string; comment: string } }>(
-        CREATE_MUTATION,
-        { input: req.body }
+      const data = await gql.query<{ shares: Array<{ name: string }> }>(LIST_QUERY);
+      const share = data.shares.find(
+        (s) => s.name.toLowerCase() === req.params.name.toLowerCase()
       );
-      return reply.code(201).send({ ok: true, data: data.createShare });
-    },
-  });
-
-  // Update share
-  app.patch<{ Params: { name: string }; Body: UpdateShareRequest }>("/api/shares/:name", {
-    preHandler: requirePermission(Resource.SHARE, Action.UPDATE),
-    handler: async (req, reply) => {
-      const data = await gql.query<{ updateShare: { name: string; comment: string } }>(
-        UPDATE_MUTATION,
-        { name: req.params.name, input: req.body }
-      );
-      return reply.send({ ok: true, data: data.updateShare });
-    },
-  });
-
-  // Delete share
-  app.delete<{ Params: { name: string } }>("/api/shares/:name", {
-    preHandler: requirePermission(Resource.SHARE, Action.DELETE),
-    handler: async (req, reply) => {
-      const data = await gql.query<{ deleteShare: { success: boolean; message: string } }>(
-        DELETE_MUTATION,
-        { name: req.params.name }
-      );
-      return reply.send({ ok: true, data: data.deleteShare });
+      if (!share) {
+        return reply.code(404).send({
+          ok: false,
+          error: { code: "NOT_FOUND", message: `Share '${req.params.name}' not found` },
+        });
+      }
+      return reply.send({ ok: true, data: share });
     },
   });
 }

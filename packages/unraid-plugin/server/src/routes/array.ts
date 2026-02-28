@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { Resource, Action } from "@unraidclaw/shared";
-import type { ArrayStatus, ParityActionResponse } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 
@@ -9,10 +8,8 @@ const STATUS_QUERY = `query {
     state
     capacity {
       kilobytes { free used total }
-      disks { free used total }
     }
     disks {
-      id
       name
       device
       size
@@ -21,46 +18,33 @@ const STATUS_QUERY = `query {
       fsType
       color
     }
-    parityChecks {
-      date
-      duration
-      speed
+    parities {
+      name
+      device
+      size
       status
-      errors
+      numErrors
     }
   }
 }`;
 
 const PARITY_STATUS_QUERY = `query {
   array {
-    parityStatus {
+    parityCheckStatus {
       running
       progress
       speed
       errors
-      elapsed
-      estimated
     }
   }
 }`;
-
-function parityMutation(action: string): string {
-  return `mutation {
-    array {
-      parity${action[0].toUpperCase() + action.slice(1)} {
-        success
-        message
-      }
-    }
-  }`;
-}
 
 export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): void {
   // Array status
   app.get("/api/array/status", {
     preHandler: requirePermission(Resource.ARRAY, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ array: ArrayStatus }>(STATUS_QUERY);
+      const data = await gql.query<{ array: unknown }>(STATUS_QUERY);
       return reply.send({ ok: true, data: data.array });
     },
   });
@@ -69,8 +53,8 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
   app.get("/api/array/parity/status", {
     preHandler: requirePermission(Resource.ARRAY, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ array: { parityStatus: unknown } }>(PARITY_STATUS_QUERY);
-      return reply.send({ ok: true, data: data.array.parityStatus });
+      const data = await gql.query<{ array: { parityCheckStatus: unknown } }>(PARITY_STATUS_QUERY);
+      return reply.send({ ok: true, data: data.array.parityCheckStatus });
     },
   });
 
@@ -80,9 +64,8 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
       preHandler: requirePermission(Resource.ARRAY, Action.UPDATE),
       handler: async (_req, reply) => {
         const mutationName = `parity${action[0].toUpperCase() + action.slice(1)}`;
-        const data = await gql.query<{ array: Record<string, ParityActionResponse> }>(
-          parityMutation(action)
-        );
+        const mutation = `mutation { array { ${mutationName} { success message } } }`;
+        const data = await gql.query<{ array: Record<string, unknown> }>(mutation);
         return reply.send({ ok: true, data: data.array[mutationName] });
       },
     });
