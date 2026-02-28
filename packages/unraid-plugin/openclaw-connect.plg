@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "openclaw-connect">
 <!ENTITY author    "emaspa">
-<!ENTITY version   "2026.02.28">
+<!ENTITY version   "2026.02.28.1">
 <!ENTITY launch    "Settings/openclaw-connect">
 <!ENTITY repo      "emaspa/unraidclaw">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/openclaw-connect.plg">
@@ -15,6 +15,13 @@
 
 <CHANGES>
 ### &version;
+- Fix API key generation (empty response issue)
+- Improved error reporting in key generation UI
+- Dark theme CSS fixes with explicit light text colors
+- Added back navigation links on all sub-pages
+- Node.js path detection for Unraid 7.x (/usr/local/bin/node)
+
+### 2026.02.28
 - Initial release
 - REST API gateway for AI agents (OpenClaw)
 - Full permission matrix with WebGUI management
