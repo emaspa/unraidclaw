@@ -1,5 +1,5 @@
-Menu="OtherSettings:OpenClaw Connect"
-Title="OpenClaw Connect"
+Menu="OtherSettings:UnraidClaw"
+Title="UnraidClaw"
 Icon="openclaw-connect.png"
 Tag="plug"
 ---
@@ -14,7 +14,7 @@ $isRunning = ($running === "running");
 
 <div class="occ-dashboard">
   <div class="occ-header">
-    <h2>OpenClaw Connect</h2>
+    <h2>UnraidClaw</h2>
     <p>AI Agent Gateway for Unraid</p>
   </div>
 
@@ -42,15 +42,6 @@ $isRunning = ($running === "running");
         <button class="occ-btn occ-btn-success" onclick="occServiceControl('start')">Start</button>
       <?php endif; ?>
     </div>
-  </div>
-
-  <div class="occ-status-card">
-    <h3>Quick Links</h3>
-    <ul class="occ-links">
-      <li><a href="/Settings/openclaw-connect.settings">Settings</a> — Port, API keys, auto-start</li>
-      <li><a href="/Settings/openclaw-connect.permissions">Permissions</a> — Configure allowed actions</li>
-      <li><a href="/Settings/openclaw-connect.log">Activity Log</a> — View API activity</li>
-    </ul>
   </div>
 
   <div class="occ-status-card">

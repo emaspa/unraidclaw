@@ -1,4 +1,4 @@
-Menu="OtherSettings:OpenClaw Connect"
+Menu="OtherSettings:UnraidClaw"
 Title="Settings"
 ---
 <?PHP
@@ -13,7 +13,7 @@ $cfg = file_exists($cfgFile)
 <link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/openclaw-connect.css")?>">
 
 <div class="occ-settings">
-  <h2>OpenClaw Connect Settings</h2>
+  <h2>UnraidClaw Settings</h2>
 
   <form id="occ-settings-form" onsubmit="return occSaveSettings(event);">
     <input type="hidden" name="csrf_token" value="<?=$_SERVER['HTTP_CSRF_TOKEN'] ?? ''?>">
