@@ -2,7 +2,7 @@
 /* Clear activity log - supports GET and POST */
 header('Content-Type: application/json');
 
-$logFile = '/boot/config/plugins/openclaw-connect/activity.jsonl';
+$logFile = '/boot/config/plugins/unraidclaw/activity.jsonl';
 
 if (file_exists($logFile)) {
     file_put_contents($logFile, '');

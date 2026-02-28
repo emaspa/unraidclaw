@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 
-$logFile = '/boot/config/plugins/openclaw-connect/activity.jsonl';
+$logFile = '/boot/config/plugins/unraidclaw/activity.jsonl';
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
 $limit = max(1, min(1000, $limit));
 

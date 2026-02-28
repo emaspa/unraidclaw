@@ -2,12 +2,12 @@ Menu="OtherSettings:UnraidClaw"
 Title="Permissions"
 ---
 <?PHP
-$plugin = "openclaw-connect";
+$plugin = "unraidclaw";
 $permFile = "/boot/config/plugins/{$plugin}/permissions.json";
 $permissions = file_exists($permFile) ? json_decode(file_get_contents($permFile), true) : [];
 ?>
 
-<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/openclaw-connect.css")?>">
+<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/unraidclaw.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/unraidclaw.css")?>">
 
 <div class="occ-permissions">
   <h2>Permission Matrix</h2>
@@ -331,7 +331,7 @@ $permissions = file_exists($permFile) ? json_decode(file_get_contents($permFile)
   </form>
 </div>
 
-<script src="/plugins/<?=$plugin?>/javascript/openclaw-connect.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/openclaw-connect.js")?>"></script>
+<script src="/plugins/<?=$plugin?>/javascript/unraidclaw.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/unraidclaw.js")?>"></script>
 <script>
 OCC_CSRF = '<?=$_SERVER['HTTP_CSRF_TOKEN'] ?? ''?>';
 document.addEventListener('DOMContentLoaded', function() {

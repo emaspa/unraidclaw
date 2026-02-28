@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# build.sh - Build the openclaw-connect .txz package for Unraid
+# build.sh - Build the unraidclaw .txz package for Unraid
 #
 set -euo pipefail
 
@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ROOT_DIR="$(cd "$PLUGIN_DIR/../.." && pwd)"
 BUILD_DIR="${PLUGIN_DIR}/build"
-PKG_NAME="openclaw-connect"
+PKG_NAME="unraidclaw"
 VERSION="${1:-0.1.0}"
 
 echo "=== Building ${PKG_NAME} v${VERSION} ==="

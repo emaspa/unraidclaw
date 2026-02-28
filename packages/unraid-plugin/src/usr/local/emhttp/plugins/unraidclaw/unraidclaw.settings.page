@@ -2,15 +2,15 @@ Menu="OtherSettings:UnraidClaw"
 Title="Settings"
 ---
 <?PHP
-$plugin = "openclaw-connect";
-$cfgFile = "/boot/config/plugins/{$plugin}/openclaw-connect.cfg";
+$plugin = "unraidclaw";
+$cfgFile = "/boot/config/plugins/{$plugin}/unraidclaw.cfg";
 $defaultFile = "/usr/local/emhttp/plugins/{$plugin}/default.cfg";
 $cfg = file_exists($cfgFile)
   ? parse_ini_file($cfgFile)
   : parse_ini_file($defaultFile);
 ?>
 
-<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/openclaw-connect.css")?>">
+<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/unraidclaw.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/unraidclaw.css")?>">
 
 <div class="occ-settings">
   <h2>UnraidClaw Settings</h2>
@@ -116,5 +116,5 @@ $cfg = file_exists($cfgFile)
   </form>
 </div>
 
-<script src="/plugins/<?=$plugin?>/javascript/openclaw-connect.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/openclaw-connect.js")?>"></script>
+<script src="/plugins/<?=$plugin?>/javascript/unraidclaw.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/unraidclaw.js")?>"></script>
 <script>OCC_CSRF = '<?=$_SERVER['HTTP_CSRF_TOKEN'] ?? ''?>';</script>

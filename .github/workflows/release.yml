@@ -38,12 +38,12 @@ jobs:
       # Read MD5 for the .plg update
       - name: Read MD5
         id: md5
-        run: echo "MD5=$(cat packages/unraid-plugin/build/openclaw-connect-${{ steps.version.outputs.VERSION }}-x86_64-1.txz.md5)" >> "$GITHUB_OUTPUT"
+        run: echo "MD5=$(cat packages/unraid-plugin/build/unraidclaw-${{ steps.version.outputs.VERSION }}-x86_64-1.txz.md5)" >> "$GITHUB_OUTPUT"
 
       # Update .plg with version and MD5, then commit to main
       - name: Update .plg
         run: |
-          PLG="packages/unraid-plugin/openclaw-connect.plg"
+          PLG="packages/unraid-plugin/unraidclaw.plg"
           sed -i 's/<!ENTITY version   "[^"]*">/<!ENTITY version   "${{ steps.version.outputs.VERSION }}">/' "$PLG"
           sed -i 's/<!ENTITY md5       "[^"]*">/<!ENTITY md5       "${{ steps.md5.outputs.MD5 }}">/' "$PLG"
 
@@ -52,7 +52,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout main
-          git add packages/unraid-plugin/openclaw-connect.plg
+          git add packages/unraid-plugin/unraidclaw.plg
           git diff --cached --quiet && echo "No .plg changes to commit" || \
             git commit -m "Update .plg to v${{ steps.version.outputs.VERSION }} with MD5"
           git push origin main
@@ -63,7 +63,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
-          PKG="packages/unraid-plugin/build/openclaw-connect-${VERSION}-x86_64-1.txz"
+          PKG="packages/unraid-plugin/build/unraidclaw-${VERSION}-x86_64-1.txz"
           gh release create "v${VERSION}" \
             --title "v${VERSION}" \
             --generate-notes \

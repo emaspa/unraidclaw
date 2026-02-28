@@ -1,16 +1,16 @@
 Menu="OtherSettings:UnraidClaw"
 Title="UnraidClaw"
-Icon="openclaw-connect.png"
+Icon="unraidclaw.png"
 Tag="plug"
 ---
 <?PHP
-$plugin = "openclaw-connect";
-$cfg = parse_ini_file("/boot/config/plugins/{$plugin}/openclaw-connect.cfg");
+$plugin = "unraidclaw";
+$cfg = parse_ini_file("/boot/config/plugins/{$plugin}/unraidclaw.cfg");
 $running = trim(exec("/etc/rc.d/rc.{$plugin} status 2>/dev/null"));
 $isRunning = ($running === "running");
 ?>
 
-<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/openclaw-connect.css")?>">
+<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/unraidclaw.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/unraidclaw.css")?>">
 
 <div class="occ-dashboard">
   <div class="occ-header">
@@ -52,7 +52,7 @@ $isRunning = ($running === "running");
   </div>
 </div>
 
-<script src="/plugins/<?=$plugin?>/javascript/openclaw-connect.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/openclaw-connect.js")?>"></script>
+<script src="/plugins/<?=$plugin?>/javascript/unraidclaw.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/unraidclaw.js")?>"></script>
 <script>
 OCC_CSRF = '<?=$_SERVER['HTTP_CSRF_TOKEN'] ?? ''?>';
 document.addEventListener('DOMContentLoaded', function() {

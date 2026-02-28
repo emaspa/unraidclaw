@@ -1,0 +1,9 @@
+#!/bin/bash
+# Auto-start unraidclaw when array starts (if enabled)
+CONFIG="/boot/config/plugins/unraidclaw/unraidclaw.cfg"
+if [ -f "$CONFIG" ]; then
+  SERVICE=$(grep -oP 'SERVICE="\K[^"]+' "$CONFIG")
+  if [ "$SERVICE" = "enable" ]; then
+    /etc/rc.d/rc.unraidclaw start
+  fi
+fi

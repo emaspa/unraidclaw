@@ -1,9 +1,0 @@
-#!/bin/bash
-# Auto-start openclaw-connect when array starts (if enabled)
-CONFIG="/boot/config/plugins/openclaw-connect/openclaw-connect.cfg"
-if [ -f "$CONFIG" ]; then
-  SERVICE=$(grep -oP 'SERVICE="\K[^"]+' "$CONFIG")
-  if [ "$SERVICE" = "enable" ]; then
-    /etc/rc.d/rc.openclaw-connect start
-  fi
-fi

@@ -2,11 +2,11 @@ Menu="OtherSettings:UnraidClaw"
 Title="Activity Log"
 ---
 <?PHP
-$plugin = "openclaw-connect";
+$plugin = "unraidclaw";
 $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
 ?>
 
-<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/openclaw-connect.css")?>">
+<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/unraidclaw.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/unraidclaw.css")?>">
 
 <div class="occ-log-viewer">
   <h2>Activity Log</h2>
@@ -47,7 +47,7 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
   </table>
 </div>
 
-<script src="/plugins/<?=$plugin?>/javascript/openclaw-connect.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/openclaw-connect.js")?>"></script>
+<script src="/plugins/<?=$plugin?>/javascript/unraidclaw.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/unraidclaw.js")?>"></script>
 <script>
 OCC_CSRF = '<?=$_SERVER['HTTP_CSRF_TOKEN'] ?? ''?>';
 document.addEventListener('DOMContentLoaded', function() {

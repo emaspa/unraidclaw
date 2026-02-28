@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-# rc.openclaw-connect - Start/stop/restart/status for openclaw-connect
+# rc.unraidclaw - Start/stop/restart/status for unraidclaw
 #
 
-PLUGIN="openclaw-connect"
-CONFIG="/boot/config/plugins/${PLUGIN}/openclaw-connect.cfg"
+PLUGIN="unraidclaw"
+CONFIG="/boot/config/plugins/${PLUGIN}/unraidclaw.cfg"
 SERVER="/usr/local/emhttp/plugins/${PLUGIN}/server/index.cjs"
 PIDFILE="/var/run/${PLUGIN}.pid"
 LOGFILE="/var/log/${PLUGIN}.log"

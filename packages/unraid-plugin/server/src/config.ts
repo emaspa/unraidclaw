@@ -12,8 +12,8 @@ export interface ServerConfig {
   maxLogSize: number;
 }
 
-const FLASH_BASE = process.env.FLASH_BASE ?? "/boot/config/plugins/openclaw-connect";
-const CFG_FILE = join(FLASH_BASE, "openclaw-connect.cfg");
+const FLASH_BASE = process.env.FLASH_BASE ?? "/boot/config/plugins/unraidclaw";
+const CFG_FILE = join(FLASH_BASE, "unraidclaw.cfg");
 const PERMISSIONS_FILE = join(FLASH_BASE, "permissions.json");
 
 function ensureFlashDir(): void {

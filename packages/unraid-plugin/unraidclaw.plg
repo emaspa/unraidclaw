@@ -1,12 +1,12 @@
 <?xml version='1.0' standalone='yes'?>
 
 <!DOCTYPE PLUGIN [
-<!ENTITY name      "openclaw-connect">
+<!ENTITY name      "unraidclaw">
 <!ENTITY author    "emaspa">
 <!ENTITY version   "2026.02.28.9">
-<!ENTITY launch    "Settings/openclaw-connect">
+<!ENTITY launch    "Settings/unraidclaw">
 <!ENTITY repo      "emaspa/unraidclaw">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/openclaw-connect.plg">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/unraidclaw.plg">
 <!ENTITY pkgURL    "https://github.com/&repo;/releases/download/v&version;/&name;-&version;-x86_64-1.txz">
 <!ENTITY md5       "c87dc1471810ce74a2b11705d24c13b3">
 ]>
@@ -15,10 +15,12 @@
 
 <CHANGES>
 ### &version;
+- Full rename from OpenClaw Connect to UnraidClaw
+- All paths, URLs, and plugin name updated to unraidclaw
+- Tabbed settings UI (Dashboard, Settings, Permissions, Activity Log)
+- AJAX settings save with inline feedback
 - Fix API key generation (empty response issue)
-- Improved error reporting in key generation UI
 - Dark theme CSS fixes with explicit light text colors
-- Added back navigation links on all sub-pages
 - Node.js path detection for Unraid 7.x (/usr/local/bin/node)
 
 ### 2026.02.28
@@ -70,7 +72,7 @@ echo "Node.js v${NODE_VERSION} detected. OK."
 </FILE>
 
 <!-- Create default config if not present -->
-<FILE Name="/boot/config/plugins/&name;/openclaw-connect.cfg">
+<FILE Name="/boot/config/plugins/&name;/unraidclaw.cfg">
 <INLINE>
 <![CDATA[
 SERVICE="disable"
@@ -79,7 +81,7 @@ HOST="0.0.0.0"
 API_KEY_HASH=""
 GRAPHQL_URL="http://localhost/graphql"
 UNRAID_API_KEY=""
-LOG_FILE="/boot/config/plugins/openclaw-connect/activity.jsonl"
+LOG_FILE="/boot/config/plugins/unraidclaw/activity.jsonl"
 MAX_LOG_SIZE="10485760"
 ]]>
 </INLINE>
@@ -105,7 +107,7 @@ chmod +x /etc/rc.d/rc.${PLUGIN} 2>/dev/null
 chmod +x /usr/local/emhttp/plugins/${PLUGIN}/event/* 2>/dev/null
 
 # Auto-start if enabled
-CONFIG="/boot/config/plugins/${PLUGIN}/openclaw-connect.cfg"
+CONFIG="/boot/config/plugins/${PLUGIN}/unraidclaw.cfg"
 if [ -f "$CONFIG" ]; then
   SERVICE=$(grep -oP 'SERVICE="\K[^"]+' "$CONFIG")
   if [ "$SERVICE" = "enable" ]; then

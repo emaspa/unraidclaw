@@ -1,0 +1,3 @@
+#!/bin/bash
+# Stop unraidclaw when array is stopping
+/etc/rc.d/rc.unraidclaw stop

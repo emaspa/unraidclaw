@@ -2,7 +2,7 @@
 /* Save permissions - supports GET and POST */
 header('Content-Type: application/json');
 
-$permFile = '/boot/config/plugins/openclaw-connect/permissions.json';
+$permFile = '/boot/config/plugins/unraidclaw/permissions.json';
 
 // Accept JSON from query param (GET) or body (POST)
 $raw = $_GET['data'] ?? null;

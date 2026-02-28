@@ -14,7 +14,7 @@ function respond($data) {
 }
 
 try {
-    $cfgFile = '/boot/config/plugins/openclaw-connect/openclaw-connect.cfg';
+    $cfgFile = '/boot/config/plugins/unraidclaw/unraidclaw.cfg';
 
     // Generate a 32-byte random key
     $rawKey = bin2hex(random_bytes(32));

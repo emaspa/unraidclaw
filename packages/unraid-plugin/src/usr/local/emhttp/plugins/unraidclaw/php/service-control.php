@@ -13,7 +13,7 @@ if (!in_array($action, $allowed, true)) {
 
 $output = [];
 $returnCode = 0;
-exec("/etc/rc.d/rc.openclaw-connect {$action} 2>&1", $output, $returnCode);
+exec("/etc/rc.d/rc.unraidclaw {$action} 2>&1", $output, $returnCode);
 
 echo json_encode([
     'action' => $action,

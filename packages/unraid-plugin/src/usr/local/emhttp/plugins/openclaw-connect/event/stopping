@@ -1,3 +1,0 @@
-#!/bin/bash
-# Stop openclaw-connect when array is stopping
-/etc/rc.d/rc.openclaw-connect stop
