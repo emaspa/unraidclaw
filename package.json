@@ -1,0 +1,19 @@
+{
+  "name": "unraidclaw",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Unraid plugin + OpenClaw AI agent tools for managing Unraid servers",
+  "scripts": {
+    "build": "pnpm -r build",
+    "build:shared": "pnpm --filter @unraidclaw/shared build",
+    "build:server": "pnpm --filter @unraidclaw/server build",
+    "build:openclaw": "pnpm --filter @openclaw/plugin-unraid build",
+    "dev:server": "pnpm --filter @unraidclaw/server dev",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r clean"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

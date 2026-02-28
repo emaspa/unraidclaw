@@ -1,0 +1,118 @@
+Menu="OtherSettings:OpenClaw Connect"
+Title="OpenClaw Connect Settings"
+Tag="cog"
+---
+<?PHP
+$plugin = "openclaw-connect";
+$cfgFile = "/boot/config/plugins/{$plugin}/openclaw-connect.cfg";
+$defaultFile = "/usr/local/emhttp/plugins/{$plugin}/default.cfg";
+$cfg = file_exists($cfgFile)
+  ? parse_ini_file($cfgFile)
+  : parse_ini_file($defaultFile);
+?>
+
+<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css">
+
+<div class="occ-settings">
+  <h2>OpenClaw Connect Settings</h2>
+
+  <form id="occ-settings-form" method="POST" action="/plugins/<?=$plugin?>/php/save-settings.php" target="progressFrame">
+    <input type="hidden" name="csrf_token" value="<?=$_SERVER['HTTP_CSRF_TOKEN'] ?? ''?>">
+
+    <table class="tablesorter shift ups">
+      <thead>
+        <tr><th colspan="2">Service Configuration</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Enable Service:</td>
+          <td>
+            <select name="SERVICE">
+              <option value="enable" <?=($cfg['SERVICE'] ?? '') === 'enable' ? 'selected' : ''?>>Yes</option>
+              <option value="disable" <?=($cfg['SERVICE'] ?? 'disable') === 'disable' ? 'selected' : ''?>>No</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td>Listen Port:</td>
+          <td>
+            <input type="number" name="PORT" value="<?=$cfg['PORT'] ?? '9876'?>" min="1024" max="65535">
+          </td>
+        </tr>
+        <tr>
+          <td>Listen Host:</td>
+          <td>
+            <input type="text" name="HOST" value="<?=$cfg['HOST'] ?? '0.0.0.0'?>">
+          </td>
+        </tr>
+        <tr>
+          <td>GraphQL URL:</td>
+          <td>
+            <input type="text" name="GRAPHQL_URL" value="<?=$cfg['GRAPHQL_URL'] ?? 'http://localhost/graphql'?>" size="50">
+          </td>
+        </tr>
+        <tr>
+          <td>Unraid API Key:</td>
+          <td>
+            <input type="password" name="UNRAID_API_KEY" value="<?=$cfg['UNRAID_API_KEY'] ?? ''?>" size="50" autocomplete="off">
+            <span class="occ-hint">API key for authenticating to Unraid's GraphQL API</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="tablesorter shift ups" style="margin-top: 20px;">
+      <thead>
+        <tr><th colspan="2">API Key Management</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Current API Key:</td>
+          <td>
+            <?php if (empty($cfg['API_KEY_HASH'])): ?>
+              <em>No key configured</em>
+            <?php else: ?>
+              <span class="occ-badge occ-badge-ok">Active</span>
+              <span class="occ-hint">SHA-256: <?=substr($cfg['API_KEY_HASH'], 0, 16)?>...</span>
+            <?php endif; ?>
+          </td>
+        </tr>
+        <tr>
+          <td>Generate New Key:</td>
+          <td>
+            <button type="button" class="occ-btn occ-btn-primary" onclick="occGenerateKey()">Generate API Key</button>
+            <div id="occ-key-display" style="display:none; margin-top: 10px;">
+              <div class="occ-alert occ-alert-warning">
+                <strong>Save this key now!</strong> It will not be shown again.
+              </div>
+              <input type="text" id="occ-new-key" readonly style="width: 400px; font-family: monospace;">
+              <button type="button" onclick="occCopyKey()">Copy</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="tablesorter shift ups" style="margin-top: 20px;">
+      <thead>
+        <tr><th colspan="2">Logging</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Max Log Size (bytes):</td>
+          <td>
+            <input type="number" name="MAX_LOG_SIZE" value="<?=$cfg['MAX_LOG_SIZE'] ?? '10485760'?>" min="1048576" max="104857600">
+            <span class="occ-hint">Default: 10 MB (10485760)</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 20px;">
+      <button type="submit" class="occ-btn occ-btn-primary">Apply</button>
+      <button type="button" class="occ-btn" onclick="occResetDefaults()">Reset to Defaults</button>
+    </div>
+  </form>
+</div>
+
+<script src="/plugins/<?=$plugin?>/javascript/openclaw-connect.js"></script>

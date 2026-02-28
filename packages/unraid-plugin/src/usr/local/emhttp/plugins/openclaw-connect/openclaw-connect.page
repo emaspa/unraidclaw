@@ -1,0 +1,69 @@
+Menu="OtherSettings"
+Title="OpenClaw Connect"
+Icon="openclaw-connect.png"
+Tag="plug"
+---
+<?PHP
+$plugin = "openclaw-connect";
+$cfg = parse_ini_file("/boot/config/plugins/{$plugin}/openclaw-connect.cfg");
+$running = trim(exec("/etc/rc.d/rc.{$plugin} status 2>/dev/null"));
+$isRunning = ($running === "running");
+?>
+
+<link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/openclaw-connect.css">
+
+<div class="occ-dashboard">
+  <div class="occ-header">
+    <h2>OpenClaw Connect</h2>
+    <p>AI Agent Gateway for Unraid</p>
+  </div>
+
+  <div class="occ-status-card">
+    <h3>Service Status</h3>
+    <div class="occ-status-row">
+      <span class="occ-label">Status:</span>
+      <span id="occ-service-status" class="occ-badge <?=$isRunning ? 'occ-badge-ok' : 'occ-badge-stopped'?>">
+        <?=$isRunning ? 'Running' : 'Stopped'?>
+      </span>
+    </div>
+    <div class="occ-status-row">
+      <span class="occ-label">Port:</span>
+      <span><?=$cfg['PORT'] ?? '9876'?></span>
+    </div>
+    <div class="occ-status-row">
+      <span class="occ-label">API Key:</span>
+      <span><?=empty($cfg['API_KEY_HASH']) ? '<em>Not configured</em>' : 'Configured'?></span>
+    </div>
+    <div class="occ-actions">
+      <?php if ($isRunning): ?>
+        <button class="occ-btn occ-btn-danger" onclick="occServiceControl('stop')">Stop</button>
+        <button class="occ-btn occ-btn-warning" onclick="occServiceControl('restart')">Restart</button>
+      <?php else: ?>
+        <button class="occ-btn occ-btn-success" onclick="occServiceControl('start')">Start</button>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <div class="occ-status-card">
+    <h3>Quick Links</h3>
+    <ul class="occ-links">
+      <li><a href="/Settings/openclaw-connect.settings">Settings</a> — Port, API keys, auto-start</li>
+      <li><a href="/Settings/openclaw-connect.permissions">Permissions</a> — Configure allowed actions</li>
+      <li><a href="/Settings/openclaw-connect.log">Activity Log</a> — View API activity</li>
+    </ul>
+  </div>
+
+  <div class="occ-status-card">
+    <h3>Recent Activity</h3>
+    <div id="occ-recent-activity">
+      <em>Loading...</em>
+    </div>
+  </div>
+</div>
+
+<script src="/plugins/<?=$plugin?>/javascript/openclaw-connect.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  occLoadRecentActivity();
+});
+</script>

@@ -1,0 +1,4 @@
+packages:
+  - "packages/shared"
+  - "packages/unraid-plugin/server"
+  - "packages/openclaw-plugin"

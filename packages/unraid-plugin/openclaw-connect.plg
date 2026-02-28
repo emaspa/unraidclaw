@@ -1,0 +1,124 @@
+<?xml version='1.0' standalone='yes'?>
+
+<!DOCTYPE PLUGIN [
+<!ENTITY name      "openclaw-connect">
+<!ENTITY author    "UnraidClaw">
+<!ENTITY version   "2026.02.28">
+<!ENTITY launch    "Settings/openclaw-connect">
+<!ENTITY gitURL    "https://raw.githubusercontent.com/unraidclaw/openclaw-connect/main">
+<!ENTITY pluginURL "&gitURL;/openclaw-connect.plg">
+<!ENTITY pkgURL    "&gitURL;/packages/&name;-&version;-x86_64-1.txz">
+<!ENTITY md5URL    "&gitURL;/packages/&name;-&version;-x86_64-1.txz.md5">
+]>
+
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" max="7.99.99">
+
+<CHANGES>
+### &version;
+- Initial release
+- REST API gateway for AI agents (OpenClaw)
+- Full permission matrix with WebGUI management
+- Docker, VM, Array, System, Shares, Notifications, Network management
+- SHA-256 API key authentication
+- Activity logging with JSONL format
+</CHANGES>
+
+<!-- Check for Node.js 22+ -->
+<FILE Run="/bin/bash">
+<INLINE>
+#!/bin/bash
+# Check if Node.js is available
+NODE_VERSION=$(/usr/bin/node --version 2>/dev/null | sed 's/v//')
+if [ -z "$NODE_VERSION" ]; then
+  echo "ERROR: Node.js is not installed."
+  echo "For Unraid 6.x, install Node.js via NerdPack."
+  echo "Unraid 7.x ships with Node.js built-in."
+  exit 1
+fi
+
+NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d. -f1)
+if [ "$NODE_MAJOR" -lt 22 ]; then
+  echo "WARNING: Node.js v${NODE_VERSION} detected. v22+ recommended."
+  echo "Some features may not work correctly."
+fi
+echo "Node.js v${NODE_VERSION} detected. OK."
+</INLINE>
+</FILE>
+
+<!-- Download and install the package -->
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
+<URL>&pkgURL;</URL>
+<MD5>&md5URL;</MD5>
+</FILE>
+
+<!-- Create default config if not present -->
+<FILE Name="/boot/config/plugins/&name;/openclaw-connect.cfg">
+<INLINE>
+<![CDATA[
+SERVICE="disable"
+PORT="9876"
+HOST="0.0.0.0"
+API_KEY_HASH=""
+GRAPHQL_URL="http://localhost/graphql"
+UNRAID_API_KEY=""
+LOG_FILE="/boot/config/plugins/openclaw-connect/activity.jsonl"
+MAX_LOG_SIZE="10485760"
+]]>
+</INLINE>
+</FILE>
+
+<!-- Create default permissions if not present -->
+<FILE Name="/boot/config/plugins/&name;/permissions.json">
+<INLINE>
+<![CDATA[
+{}
+]]>
+</INLINE>
+</FILE>
+
+<!-- Post-install: set permissions and optionally start service -->
+<FILE Run="/bin/bash">
+<INLINE>
+#!/bin/bash
+PLUGIN="&name;"
+
+# Make scripts executable
+chmod +x /etc/rc.d/rc.${PLUGIN} 2>/dev/null
+chmod +x /usr/local/emhttp/plugins/${PLUGIN}/event/* 2>/dev/null
+
+# Auto-start if enabled
+CONFIG="/boot/config/plugins/${PLUGIN}/openclaw-connect.cfg"
+if [ -f "$CONFIG" ]; then
+  SERVICE=$(grep -oP 'SERVICE="\K[^"]+' "$CONFIG")
+  if [ "$SERVICE" = "enable" ]; then
+    /etc/rc.d/rc.${PLUGIN} start
+  fi
+fi
+
+echo "&name; v&version; installed."
+</INLINE>
+</FILE>
+
+<!-- Uninstall -->
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+#!/bin/bash
+PLUGIN="&name;"
+
+# Stop service
+/etc/rc.d/rc.${PLUGIN} stop 2>/dev/null
+
+# Remove package
+removepkg ${PLUGIN}-&version;-x86_64-1 2>/dev/null
+
+# Remove plugin files (keep config on flash for re-install)
+rm -rf /usr/local/emhttp/plugins/${PLUGIN}
+rm -f /etc/rc.d/rc.${PLUGIN}
+
+echo "&name; removed."
+echo "Config files preserved in /boot/config/plugins/${PLUGIN}/"
+echo "To fully remove, delete /boot/config/plugins/${PLUGIN}/ manually."
+</INLINE>
+</FILE>
+
+</PLUGIN>

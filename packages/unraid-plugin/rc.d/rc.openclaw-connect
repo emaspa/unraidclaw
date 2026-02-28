@@ -1,0 +1,96 @@
+#!/bin/bash
+#
+# rc.openclaw-connect - Start/stop/restart/status for openclaw-connect
+#
+
+PLUGIN="openclaw-connect"
+CONFIG="/boot/config/plugins/${PLUGIN}/openclaw-connect.cfg"
+SERVER="/usr/local/emhttp/plugins/${PLUGIN}/server/index.js"
+PIDFILE="/var/run/${PLUGIN}.pid"
+LOGFILE="/var/log/${PLUGIN}.log"
+
+# Source config
+if [ -f "$CONFIG" ]; then
+  . "$CONFIG" 2>/dev/null
+fi
+
+start() {
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "${PLUGIN} is already running (PID $(cat "$PIDFILE"))"
+    return 0
+  fi
+
+  if [ ! -f "$SERVER" ]; then
+    echo "Error: Server bundle not found at ${SERVER}"
+    return 1
+  fi
+
+  echo "Starting ${PLUGIN}..."
+
+  # Export config as env vars for the Node.js process
+  export OCC_PORT="${PORT:-9876}"
+  export OCC_HOST="${HOST:-0.0.0.0}"
+  export OCC_API_KEY_HASH="${API_KEY_HASH:-}"
+  export OCC_GRAPHQL_URL="${GRAPHQL_URL:-http://localhost/graphql}"
+  export OCC_UNRAID_API_KEY="${UNRAID_API_KEY:-}"
+  export FLASH_BASE="/boot/config/plugins/${PLUGIN}"
+  export OCC_LOG_FILE="${LOG_FILE:-/boot/config/plugins/${PLUGIN}/activity.jsonl}"
+  export OCC_MAX_LOG_SIZE="${MAX_LOG_SIZE:-10485760}"
+
+  nohup /usr/bin/node "$SERVER" >> "$LOGFILE" 2>&1 &
+  echo $! > "$PIDFILE"
+  echo "${PLUGIN} started (PID $(cat "$PIDFILE"))"
+}
+
+stop() {
+  if [ ! -f "$PIDFILE" ]; then
+    echo "${PLUGIN} is not running"
+    return 0
+  fi
+
+  local PID
+  PID=$(cat "$PIDFILE")
+  if kill -0 "$PID" 2>/dev/null; then
+    echo "Stopping ${PLUGIN} (PID ${PID})..."
+    kill -SIGTERM "$PID"
+    # Wait up to 10 seconds for graceful shutdown
+    local i=0
+    while [ $i -lt 10 ] && kill -0 "$PID" 2>/dev/null; do
+      sleep 1
+      i=$((i + 1))
+    done
+    if kill -0 "$PID" 2>/dev/null; then
+      echo "Force killing ${PLUGIN}..."
+      kill -9 "$PID"
+    fi
+    echo "${PLUGIN} stopped"
+  else
+    echo "${PLUGIN} was not running (stale PID file)"
+  fi
+  rm -f "$PIDFILE"
+}
+
+restart() {
+  stop
+  sleep 1
+  start
+}
+
+status() {
+  if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    echo "running"
+  else
+    echo "stopped"
+  fi
+}
+
+case "$1" in
+  start)   start ;;
+  stop)    stop ;;
+  restart) restart ;;
+  status)  status ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit 1
+    ;;
+esac

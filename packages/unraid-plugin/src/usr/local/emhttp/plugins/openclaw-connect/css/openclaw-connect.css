@@ -1,0 +1,217 @@
+/* OpenClaw Connect - WebGUI Styles */
+
+.occ-dashboard,
+.occ-settings,
+.occ-permissions,
+.occ-log-viewer {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.occ-header h2 {
+  margin: 0 0 4px 0;
+}
+.occ-header p {
+  margin: 0 0 20px 0;
+  color: #666;
+}
+
+/* Badges */
+.occ-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.occ-badge-ok { background: #d4edda; color: #155724; }
+.occ-badge-stopped { background: #f8d7da; color: #721c24; }
+.occ-badge-warn { background: #fff3cd; color: #856404; }
+
+/* Status card */
+.occ-status-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.occ-status-card h3 {
+  margin: 0 0 12px 0;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+.occ-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.occ-label {
+  font-weight: bold;
+  min-width: 80px;
+}
+.occ-hint {
+  display: block;
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.occ-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.occ-links li {
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.occ-links li:last-child { border-bottom: none; }
+
+/* Buttons */
+.occ-btn {
+  display: inline-block;
+  padding: 6px 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: none;
+  color: #333;
+}
+.occ-btn:hover { background: #e8e8e8; }
+.occ-btn-primary { background: #4a90d9; color: #fff; border-color: #3a7bc8; }
+.occ-btn-primary:hover { background: #3a7bc8; }
+.occ-btn-success { background: #5cb85c; color: #fff; border-color: #4cae4c; }
+.occ-btn-success:hover { background: #4cae4c; }
+.occ-btn-warning { background: #f0ad4e; color: #fff; border-color: #eea236; }
+.occ-btn-warning:hover { background: #eea236; }
+.occ-btn-danger { background: #d9534f; color: #fff; border-color: #d43f3a; }
+.occ-btn-danger:hover { background: #d43f3a; }
+.occ-btn-sm { padding: 3px 10px; font-size: 12px; }
+.occ-btn-xs { padding: 1px 6px; font-size: 11px; }
+.occ-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+/* Alerts */
+.occ-alert {
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.occ-alert-warning { background: #fff3cd; border: 1px solid #ffc107; color: #856404; }
+
+/* Permission matrix */
+.occ-presets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+.occ-perm-category {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.occ-perm-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f5f5f5;
+  cursor: pointer;
+  user-select: none;
+}
+.occ-perm-header:hover { background: #ececec; }
+.occ-perm-header h3 {
+  margin: 0;
+  flex: 1;
+  font-size: 14px;
+}
+.occ-expand-icon {
+  font-size: 10px;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.occ-perm-header.expanded .occ-expand-icon {
+  transform: rotate(90deg);
+}
+.occ-perm-summary {
+  font-size: 12px;
+  color: #888;
+}
+.occ-cat-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.occ-perm-body {
+  padding: 8px 14px;
+}
+.occ-perm-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+.occ-perm-item:last-child { border-bottom: none; }
+.occ-perm-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+.occ-perm-label {
+  font-weight: bold;
+  min-width: 120px;
+  font-size: 13px;
+}
+.occ-perm-desc {
+  color: #666;
+  font-size: 12px;
+}
+.occ-destructive .occ-perm-label {
+  color: #d9534f;
+}
+.occ-perm-actions {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Log viewer */
+.occ-log-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.occ-log-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#occ-log-table {
+  width: 100%;
+  font-size: 12px;
+}
+#occ-log-table td, #occ-log-table th {
+  padding: 4px 8px;
+}
+.occ-status-2xx { color: #155724; }
+.occ-status-4xx { color: #856404; }
+.occ-status-5xx { color: #721c24; }
