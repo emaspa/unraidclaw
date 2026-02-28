@@ -59,7 +59,7 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
     description: "Array operations and disk information",
     permissions: [
       { key: "array:read", label: "Array Status", description: "View array state, capacity, and disk status" },
-      { key: "array:update", label: "Array Operations", description: "Start/stop/pause/resume/cancel parity checks" },
+      { key: "array:update", label: "Array Operations", description: "Start/stop array, parity check control" },
       { key: "disk:read", label: "Disk Info", description: "View individual disk details and SMART data" },
       { key: "share:read", label: "List Shares", description: "List and view share configurations" },
     ],
