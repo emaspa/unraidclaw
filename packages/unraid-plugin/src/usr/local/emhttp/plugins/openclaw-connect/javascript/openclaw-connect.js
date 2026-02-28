@@ -50,11 +50,30 @@ function occGenerateKey() {
   var xhr = new XMLHttpRequest();
   xhr.open('POST', '/plugins/openclaw-connect/php/generate-key.php', true);
   xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-      var resp = JSON.parse(xhr.responseText);
-      if (resp.key) {
-        document.getElementById('occ-key-display').style.display = 'block';
-        document.getElementById('occ-new-key').value = resp.key;
+    if (xhr.readyState === 4) {
+      var display = document.getElementById('occ-key-display');
+      var keyInput = document.getElementById('occ-new-key');
+      if (xhr.status === 200) {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          if (resp.key) {
+            display.style.display = 'block';
+            keyInput.value = resp.key;
+            keyInput.style.color = '#51cf66';
+          } else if (resp.error) {
+            display.style.display = 'block';
+            keyInput.value = 'Error: ' + resp.error;
+            keyInput.style.color = '#ff6b6b';
+          }
+        } catch(e) {
+          display.style.display = 'block';
+          keyInput.value = 'Error parsing response: ' + xhr.responseText.substring(0, 200);
+          keyInput.style.color = '#ff6b6b';
+        }
+      } else {
+        display.style.display = 'block';
+        keyInput.value = 'HTTP Error ' + xhr.status + ': ' + xhr.responseText.substring(0, 200);
+        keyInput.style.color = '#ff6b6b';
       }
     }
   };
