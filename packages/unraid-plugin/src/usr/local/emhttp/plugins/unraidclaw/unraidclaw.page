@@ -207,21 +207,9 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
         </div>
       </div>
       <div class="occ-perm-body" style="display:none;">
-        <label class="occ-perm-item">
-          <input type="checkbox" name="docker:read" <?=!empty($permissions['docker:read']) ? 'checked' : ''?>>
-          <span class="occ-perm-label">List & Inspect</span>
-          <span class="occ-perm-desc">List containers, view details and logs</span>
-        </label>
-        <label class="occ-perm-item">
-          <input type="checkbox" name="docker:update" <?=!empty($permissions['docker:update']) ? 'checked' : ''?>>
-          <span class="occ-perm-label">Control</span>
-          <span class="occ-perm-desc">Start, stop, restart, pause, unpause containers</span>
-        </label>
-        <label class="occ-perm-item occ-destructive">
-          <input type="checkbox" name="docker:delete" <?=!empty($permissions['docker:delete']) ? 'checked' : ''?>>
-          <span class="occ-perm-label">Remove</span>
-          <span class="occ-perm-desc">Remove containers (destructive)</span>
-        </label>
+        <label class="occ-perm-item"><input type="checkbox" name="docker:read" data-category="docker" <?=!empty($permissions['docker:read']) ? 'checked' : ''?>><span class="occ-perm-label">List & Inspect</span><span class="occ-perm-desc">List containers, view details and logs</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="docker:update" data-category="docker" <?=!empty($permissions['docker:update']) ? 'checked' : ''?>><span class="occ-perm-label">Control</span><span class="occ-perm-desc">Start, stop, restart, pause, unpause containers</span></label>
+        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="docker:delete" data-category="docker" <?=!empty($permissions['docker:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Remove</span><span class="occ-perm-desc">Remove containers (destructive)</span></label>
       </div>
     </div>
 
@@ -237,21 +225,9 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
         </div>
       </div>
       <div class="occ-perm-body" style="display:none;">
-        <label class="occ-perm-item">
-          <input type="checkbox" name="vms:read" <?=!empty($permissions['vms:read']) ? 'checked' : ''?>>
-          <span class="occ-perm-label">List & Inspect</span>
-          <span class="occ-perm-desc">List VMs and view details</span>
-        </label>
-        <label class="occ-perm-item">
-          <input type="checkbox" name="vms:update" <?=!empty($permissions['vms:update']) ? 'checked' : ''?>>
-          <span class="occ-perm-label">Control</span>
-          <span class="occ-perm-desc">Start, stop, pause, resume, reboot VMs</span>
-        </label>
-        <label class="occ-perm-item occ-destructive">
-          <input type="checkbox" name="vms:delete" <?=!empty($permissions['vms:delete']) ? 'checked' : ''?>>
-          <span class="occ-perm-label">Remove</span>
-          <span class="occ-perm-desc">Remove VMs (destructive)</span>
-        </label>
+        <label class="occ-perm-item"><input type="checkbox" name="vms:read" data-category="vms" <?=!empty($permissions['vms:read']) ? 'checked' : ''?>><span class="occ-perm-label">List & Inspect</span><span class="occ-perm-desc">List VMs and view details</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="vms:update" data-category="vms" <?=!empty($permissions['vms:update']) ? 'checked' : ''?>><span class="occ-perm-label">Control</span><span class="occ-perm-desc">Start, stop, pause, resume, reboot VMs</span></label>
+        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="vms:delete" data-category="vms" <?=!empty($permissions['vms:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Remove</span><span class="occ-perm-desc">Remove VMs (destructive)</span></label>
       </div>
     </div>
 
@@ -304,10 +280,10 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
         </div>
       </div>
       <div class="occ-perm-body" style="display:none;">
-        <label class="occ-perm-item"><input type="checkbox" name="notification:read" <?=!empty($permissions['notification:read']) ? 'checked' : ''?>><span class="occ-perm-label">View</span><span class="occ-perm-desc">List and read notifications</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="notification:create" <?=!empty($permissions['notification:create']) ? 'checked' : ''?>><span class="occ-perm-label">Create</span><span class="occ-perm-desc">Create new notifications</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="notification:update" <?=!empty($permissions['notification:update']) ? 'checked' : ''?>><span class="occ-perm-label">Archive</span><span class="occ-perm-desc">Archive notifications</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="notification:delete" <?=!empty($permissions['notification:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Delete</span><span class="occ-perm-desc">Delete notifications</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="notification:read" data-category="notification" <?=!empty($permissions['notification:read']) ? 'checked' : ''?>><span class="occ-perm-label">View</span><span class="occ-perm-desc">List and read notifications</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="notification:create" data-category="notification" <?=!empty($permissions['notification:create']) ? 'checked' : ''?>><span class="occ-perm-label">Create</span><span class="occ-perm-desc">Create new notifications</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="notification:update" data-category="notification" <?=!empty($permissions['notification:update']) ? 'checked' : ''?>><span class="occ-perm-label">Archive</span><span class="occ-perm-desc">Archive notifications</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="notification:delete" data-category="notification" <?=!empty($permissions['notification:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Delete</span><span class="occ-perm-desc">Delete notifications</span></label>
       </div>
     </div>
 
@@ -323,7 +299,7 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
         </div>
       </div>
       <div class="occ-perm-body" style="display:none;">
-        <label class="occ-perm-item"><input type="checkbox" name="network:read" <?=!empty($permissions['network:read']) ? 'checked' : ''?>><span class="occ-perm-label">View</span><span class="occ-perm-desc">View network interfaces and configuration</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="network:read" data-category="network" <?=!empty($permissions['network:read']) ? 'checked' : ''?>><span class="occ-perm-label">View</span><span class="occ-perm-desc">View network interfaces and configuration</span></label>
       </div>
     </div>
 

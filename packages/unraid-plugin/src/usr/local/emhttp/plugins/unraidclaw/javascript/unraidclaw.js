@@ -4,15 +4,15 @@
 var OCC_PRESETS = {
   'read-only': [
     'docker:read','vms:read','array:read','disk:read','share:read',
-    'info:read','config:read','services:read','notification:read',
-    'network:read','me:read','api_key:read','logs:read','flash:read','vars:read'
+    'info:read','services:read','notification:read',
+    'network:read','me:read','logs:read'
   ],
   'docker-manager': [
-    'docker:read','docker:create','docker:update','docker:delete',
+    'docker:read','docker:update','docker:delete',
     'info:read','logs:read'
   ],
   'vm-manager': [
-    'vms:read','vms:create','vms:update','vms:delete',
+    'vms:read','vms:update','vms:delete',
     'info:read','logs:read'
   ],
   'full-admin': null, // all checked
@@ -21,14 +21,14 @@ var OCC_PRESETS = {
 
 // ── Category to checkbox name mapping ──
 var OCC_CATEGORIES = {
-  'docker':       ['docker:read','docker:update','docker:create','docker:delete'],
-  'vms':          ['vms:read','vms:update','vms:create','vms:delete'],
-  'storage':      ['array:read','array:update','disk:read','disk:update','share:read','share:create','share:update','share:delete'],
-  'system':       ['info:read','config:read','config:update','os:update','services:read','services:update'],
+  'docker':       ['docker:read','docker:update','docker:delete'],
+  'vms':          ['vms:read','vms:update','vms:delete'],
+  'storage':      ['array:read','array:update','disk:read','share:read'],
+  'system':       ['info:read','os:update','services:read'],
   'notification': ['notification:read','notification:create','notification:update','notification:delete'],
-  'network':      ['network:read','network:update'],
-  'users':        ['me:read','api_key:read','api_key:create','api_key:update','api_key:delete'],
-  'logs':         ['logs:read','flash:read','vars:read']
+  'network':      ['network:read'],
+  'users':        ['me:read'],
+  'logs':         ['logs:read']
 };
 
 // ── CSRF token (set from .page files) ──
