@@ -1,17 +1,35 @@
-Menu="OtherSettings:UnraidClaw"
+Menu="OtherSettings"
 Title="UnraidClaw"
 Icon="unraidclaw.png"
 Tag="plug"
 ---
 <?PHP
 $plugin = "unraidclaw";
-$cfg = parse_ini_file("/boot/config/plugins/{$plugin}/unraidclaw.cfg");
+$cfgFile = "/boot/config/plugins/{$plugin}/unraidclaw.cfg";
+$defaultFile = "/usr/local/emhttp/plugins/{$plugin}/default.cfg";
+$cfg = file_exists($cfgFile)
+  ? parse_ini_file($cfgFile)
+  : (file_exists($defaultFile) ? parse_ini_file($defaultFile) : []);
 $running = trim(exec("/etc/rc.d/rc.{$plugin} status 2>/dev/null"));
 $isRunning = ($running === "running");
+$permFile = "/boot/config/plugins/{$plugin}/permissions.json";
+$permissions = file_exists($permFile) ? json_decode(file_get_contents($permFile), true) : [];
+if (!is_array($permissions)) $permissions = [];
+$logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
 ?>
 
 <link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/unraidclaw.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/unraidclaw.css")?>">
 
+<!-- Tab Navigation -->
+<div class="occ-tabs">
+  <button class="occ-tab active" onclick="occSwitchTab('dashboard', this)">Dashboard</button>
+  <button class="occ-tab" onclick="occSwitchTab('settings', this)">Settings</button>
+  <button class="occ-tab" onclick="occSwitchTab('permissions', this)">Permissions</button>
+  <button class="occ-tab" onclick="occSwitchTab('log', this)">Activity Log</button>
+</div>
+
+<!-- ============ DASHBOARD TAB ============ -->
+<div id="occ-tab-dashboard" class="occ-tab-content" style="display:block;">
 <div class="occ-dashboard">
   <div class="occ-header">
     <h2>UnraidClaw</h2>
@@ -51,11 +69,391 @@ $isRunning = ($running === "running");
     </div>
   </div>
 </div>
+</div>
+
+<!-- ============ SETTINGS TAB ============ -->
+<div id="occ-tab-settings" class="occ-tab-content" style="display:none;">
+<div class="occ-settings">
+  <h2>Settings</h2>
+
+  <form id="occ-settings-form" onsubmit="return occSaveSettings(event);">
+    <input type="hidden" name="csrf_token" value="<?=$_SERVER['HTTP_CSRF_TOKEN'] ?? ''?>">
+
+    <table class="tablesorter shift ups">
+      <thead>
+        <tr><th colspan="2">Service Configuration</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Enable Service:</td>
+          <td>
+            <select name="SERVICE">
+              <option value="enable" <?=($cfg['SERVICE'] ?? '') === 'enable' ? 'selected' : ''?>>Yes</option>
+              <option value="disable" <?=($cfg['SERVICE'] ?? 'disable') === 'disable' ? 'selected' : ''?>>No</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td>Listen Port:</td>
+          <td>
+            <input type="number" name="PORT" value="<?=$cfg['PORT'] ?? '9876'?>" min="1024" max="65535">
+          </td>
+        </tr>
+        <tr>
+          <td>Listen Host:</td>
+          <td>
+            <input type="text" name="HOST" value="<?=$cfg['HOST'] ?? '0.0.0.0'?>">
+          </td>
+        </tr>
+        <tr>
+          <td>GraphQL URL:</td>
+          <td>
+            <input type="text" name="GRAPHQL_URL" value="<?=$cfg['GRAPHQL_URL'] ?? 'http://localhost/graphql'?>" size="50">
+          </td>
+        </tr>
+        <tr>
+          <td>Unraid API Key:</td>
+          <td>
+            <input type="password" name="UNRAID_API_KEY" value="<?=$cfg['UNRAID_API_KEY'] ?? ''?>" size="50" autocomplete="off">
+            <span class="occ-hint">API key for authenticating to Unraid's GraphQL API</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="tablesorter shift ups" style="margin-top: 20px;">
+      <thead>
+        <tr><th colspan="2">API Key Management</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Current API Key:</td>
+          <td>
+            <?php if (empty($cfg['API_KEY_HASH'])): ?>
+              <em>No key configured</em>
+            <?php else: ?>
+              <span class="occ-badge occ-badge-ok">Active</span>
+              <span class="occ-hint">SHA-256: <?=substr($cfg['API_KEY_HASH'], 0, 16)?>...</span>
+            <?php endif; ?>
+          </td>
+        </tr>
+        <tr>
+          <td>Generate New Key:</td>
+          <td>
+            <button type="button" class="occ-btn occ-btn-primary" onclick="occGenerateKey()">Generate API Key</button>
+            <div id="occ-key-display" style="display:none; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+              <div class="occ-alert occ-alert-warning">
+                <strong>Save this key now!</strong> It will not be shown again.
+              </div>
+              <input type="text" id="occ-new-key" readonly style="width: 100%; max-width: 500px; font-family: monospace; font-size: 14px; padding: 8px; background: rgba(0,0,0,0.4); color: #51cf66; border: 1px solid rgba(255,255,255,0.2); border-radius: 3px;">
+              <br><br>
+              <button type="button" class="occ-btn occ-btn-primary" onclick="occCopyKey()">Copy to Clipboard</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="tablesorter shift ups" style="margin-top: 20px;">
+      <thead>
+        <tr><th colspan="2">Logging</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Max Log Size (bytes):</td>
+          <td>
+            <input type="number" name="MAX_LOG_SIZE" value="<?=$cfg['MAX_LOG_SIZE'] ?? '10485760'?>" min="1048576" max="104857600">
+            <span class="occ-hint">Default: 10 MB (10485760)</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 20px;">
+      <button type="submit" id="occ-apply-btn" class="occ-btn occ-btn-primary">Apply</button>
+      <button type="button" class="occ-btn" onclick="occResetDefaults()">Reset to Defaults</button>
+      <span id="occ-settings-status" style="margin-left: 15px; font-weight: bold;"></span>
+    </div>
+  </form>
+</div>
+</div>
+
+<!-- ============ PERMISSIONS TAB ============ -->
+<div id="occ-tab-permissions" class="occ-tab-content" style="display:none;">
+<div class="occ-permissions">
+  <h2>Permission Matrix</h2>
+  <p>Configure which actions the AI agent is allowed to perform.</p>
+
+  <div class="occ-presets">
+    <span class="occ-label">Presets:</span>
+    <button type="button" class="occ-btn occ-btn-sm" onclick="occApplyPreset('read-only')">Read-Only</button>
+    <button type="button" class="occ-btn occ-btn-sm" onclick="occApplyPreset('docker-manager')">Docker Manager</button>
+    <button type="button" class="occ-btn occ-btn-sm" onclick="occApplyPreset('vm-manager')">VM Manager</button>
+    <button type="button" class="occ-btn occ-btn-sm occ-btn-danger" onclick="occApplyPreset('full-admin')">Full Admin</button>
+    <button type="button" class="occ-btn occ-btn-sm" onclick="occApplyPreset('none')">None</button>
+  </div>
+
+  <form id="occ-permissions-form">
+
+    <!-- Docker -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Docker</h3>
+        <span class="occ-perm-summary" data-category="docker"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('docker', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('docker', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item">
+          <input type="checkbox" name="docker:read" <?=!empty($permissions['docker:read']) ? 'checked' : ''?>>
+          <span class="occ-perm-label">List & Inspect</span>
+          <span class="occ-perm-desc">List containers, view details and logs</span>
+        </label>
+        <label class="occ-perm-item">
+          <input type="checkbox" name="docker:update" <?=!empty($permissions['docker:update']) ? 'checked' : ''?>>
+          <span class="occ-perm-label">Control</span>
+          <span class="occ-perm-desc">Start, stop, restart, pause, unpause containers</span>
+        </label>
+        <label class="occ-perm-item">
+          <input type="checkbox" name="docker:create" <?=!empty($permissions['docker:create']) ? 'checked' : ''?>>
+          <span class="occ-perm-label">Create</span>
+          <span class="occ-perm-desc">Create new containers</span>
+        </label>
+        <label class="occ-perm-item occ-destructive">
+          <input type="checkbox" name="docker:delete" <?=!empty($permissions['docker:delete']) ? 'checked' : ''?>>
+          <span class="occ-perm-label">Remove</span>
+          <span class="occ-perm-desc">Remove containers (destructive)</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Virtual Machines -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Virtual Machines</h3>
+        <span class="occ-perm-summary" data-category="vms"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('vms', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('vms', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item">
+          <input type="checkbox" name="vms:read" <?=!empty($permissions['vms:read']) ? 'checked' : ''?>>
+          <span class="occ-perm-label">List & Inspect</span>
+          <span class="occ-perm-desc">List VMs and view details</span>
+        </label>
+        <label class="occ-perm-item">
+          <input type="checkbox" name="vms:update" <?=!empty($permissions['vms:update']) ? 'checked' : ''?>>
+          <span class="occ-perm-label">Control</span>
+          <span class="occ-perm-desc">Start, stop, pause, resume, reboot VMs</span>
+        </label>
+        <label class="occ-perm-item">
+          <input type="checkbox" name="vms:create" <?=!empty($permissions['vms:create']) ? 'checked' : ''?>>
+          <span class="occ-perm-label">Create</span>
+          <span class="occ-perm-desc">Create new VMs</span>
+        </label>
+        <label class="occ-perm-item occ-destructive">
+          <input type="checkbox" name="vms:delete" <?=!empty($permissions['vms:delete']) ? 'checked' : ''?>>
+          <span class="occ-perm-label">Remove</span>
+          <span class="occ-perm-desc">Remove VMs (destructive)</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Array & Storage -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Array & Storage</h3>
+        <span class="occ-perm-summary" data-category="storage"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('storage', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('storage', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item"><input type="checkbox" name="array:read" data-category="storage" <?=!empty($permissions['array:read']) ? 'checked' : ''?>><span class="occ-perm-label">Array Status</span><span class="occ-perm-desc">View array state, capacity, and disk status</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="array:update" data-category="storage" <?=!empty($permissions['array:update']) ? 'checked' : ''?>><span class="occ-perm-label">Array Operations</span><span class="occ-perm-desc">Start/stop parity checks</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="disk:read" data-category="storage" <?=!empty($permissions['disk:read']) ? 'checked' : ''?>><span class="occ-perm-label">Disk Info</span><span class="occ-perm-desc">View individual disk details and SMART data</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="disk:update" data-category="storage" <?=!empty($permissions['disk:update']) ? 'checked' : ''?>><span class="occ-perm-label">Disk Operations</span><span class="occ-perm-desc">Disk management operations</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="share:read" data-category="storage" <?=!empty($permissions['share:read']) ? 'checked' : ''?>><span class="occ-perm-label">List Shares</span><span class="occ-perm-desc">List and view share configurations</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="share:create" data-category="storage" <?=!empty($permissions['share:create']) ? 'checked' : ''?>><span class="occ-perm-label">Create Shares</span><span class="occ-perm-desc">Create new shares</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="share:update" data-category="storage" <?=!empty($permissions['share:update']) ? 'checked' : ''?>><span class="occ-perm-label">Update Shares</span><span class="occ-perm-desc">Modify share settings</span></label>
+        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="share:delete" data-category="storage" <?=!empty($permissions['share:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Delete Shares</span><span class="occ-perm-desc">Delete shares (destructive)</span></label>
+      </div>
+    </div>
+
+    <!-- System -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>System</h3>
+        <span class="occ-perm-summary" data-category="system"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('system', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('system', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item"><input type="checkbox" name="info:read" data-category="system" <?=!empty($permissions['info:read']) ? 'checked' : ''?>><span class="occ-perm-label">System Info</span><span class="occ-perm-desc">View system info, CPU, memory, uptime</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="config:read" data-category="system" <?=!empty($permissions['config:read']) ? 'checked' : ''?>><span class="occ-perm-label">Read Config</span><span class="occ-perm-desc">View system configuration</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="config:update" data-category="system" <?=!empty($permissions['config:update']) ? 'checked' : ''?>><span class="occ-perm-label">Update Config</span><span class="occ-perm-desc">Modify system configuration</span></label>
+        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="os:update" data-category="system" <?=!empty($permissions['os:update']) ? 'checked' : ''?>><span class="occ-perm-label">Power Control</span><span class="occ-perm-desc">Reboot or shutdown the server (destructive)</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="services:read" data-category="system" <?=!empty($permissions['services:read']) ? 'checked' : ''?>><span class="occ-perm-label">List Services</span><span class="occ-perm-desc">View running services</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="services:update" data-category="system" <?=!empty($permissions['services:update']) ? 'checked' : ''?>><span class="occ-perm-label">Control Services</span><span class="occ-perm-desc">Start/stop system services</span></label>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Notifications</h3>
+        <span class="occ-perm-summary" data-category="notification"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('notification', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('notification', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item"><input type="checkbox" name="notification:read" <?=!empty($permissions['notification:read']) ? 'checked' : ''?>><span class="occ-perm-label">View</span><span class="occ-perm-desc">List and read notifications</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="notification:create" <?=!empty($permissions['notification:create']) ? 'checked' : ''?>><span class="occ-perm-label">Create</span><span class="occ-perm-desc">Create new notifications</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="notification:update" <?=!empty($permissions['notification:update']) ? 'checked' : ''?>><span class="occ-perm-label">Archive</span><span class="occ-perm-desc">Archive notifications</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="notification:delete" <?=!empty($permissions['notification:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Delete</span><span class="occ-perm-desc">Delete notifications</span></label>
+      </div>
+    </div>
+
+    <!-- Network -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Network</h3>
+        <span class="occ-perm-summary" data-category="network"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('network', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('network', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item"><input type="checkbox" name="network:read" <?=!empty($permissions['network:read']) ? 'checked' : ''?>><span class="occ-perm-label">View</span><span class="occ-perm-desc">View network interfaces and configuration</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="network:update" <?=!empty($permissions['network:update']) ? 'checked' : ''?>><span class="occ-perm-label">Manage</span><span class="occ-perm-desc">Modify network settings</span></label>
+      </div>
+    </div>
+
+    <!-- Users & Access -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Users & Access</h3>
+        <span class="occ-perm-summary" data-category="users"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('users', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('users', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item"><input type="checkbox" name="me:read" data-category="users" <?=!empty($permissions['me:read']) ? 'checked' : ''?>><span class="occ-perm-label">My Info</span><span class="occ-perm-desc">View current user information</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="api_key:read" data-category="users" <?=!empty($permissions['api_key:read']) ? 'checked' : ''?>><span class="occ-perm-label">List Keys</span><span class="occ-perm-desc">List API keys</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="api_key:create" data-category="users" <?=!empty($permissions['api_key:create']) ? 'checked' : ''?>><span class="occ-perm-label">Create Keys</span><span class="occ-perm-desc">Generate new API keys</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="api_key:update" data-category="users" <?=!empty($permissions['api_key:update']) ? 'checked' : ''?>><span class="occ-perm-label">Update Keys</span><span class="occ-perm-desc">Modify API key settings</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="api_key:delete" data-category="users" <?=!empty($permissions['api_key:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Revoke Keys</span><span class="occ-perm-desc">Revoke API keys</span></label>
+      </div>
+    </div>
+
+    <!-- Logs & Diagnostics -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Logs & Diagnostics</h3>
+        <span class="occ-perm-summary" data-category="logs"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('logs', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('logs', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item"><input type="checkbox" name="logs:read" data-category="logs" <?=!empty($permissions['logs:read']) ? 'checked' : ''?>><span class="occ-perm-label">System Logs</span><span class="occ-perm-desc">View system and application logs</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="flash:read" data-category="logs" <?=!empty($permissions['flash:read']) ? 'checked' : ''?>><span class="occ-perm-label">Flash Info</span><span class="occ-perm-desc">View flash drive information</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="vars:read" data-category="logs" <?=!empty($permissions['vars:read']) ? 'checked' : ''?>><span class="occ-perm-label">System Vars</span><span class="occ-perm-desc">View system variables (emhttp vars)</span></label>
+      </div>
+    </div>
+
+    <div class="occ-perm-actions">
+      <button type="button" class="occ-btn occ-btn-primary" onclick="occSavePermissions()">Save Permissions</button>
+      <span id="occ-perm-status"></span>
+    </div>
+  </form>
+</div>
+</div>
+
+<!-- ============ ACTIVITY LOG TAB ============ -->
+<div id="occ-tab-log" class="occ-tab-content" style="display:none;">
+<div class="occ-log-viewer">
+  <h2>Activity Log</h2>
+
+  <div class="occ-log-controls">
+    <button type="button" class="occ-btn occ-btn-primary" onclick="occRefreshLog()">Refresh</button>
+    <button type="button" class="occ-btn" onclick="occClearLog()">Clear Log</button>
+    <label>
+      Show last:
+      <select id="occ-log-limit" onchange="occRefreshLog()">
+        <option value="50">50 entries</option>
+        <option value="100" selected>100 entries</option>
+        <option value="250">250 entries</option>
+        <option value="500">500 entries</option>
+      </select>
+    </label>
+    <label>
+      Filter:
+      <input type="text" id="occ-log-filter" placeholder="Search..." oninput="occFilterLog()">
+    </label>
+  </div>
+
+  <table class="tablesorter" id="occ-log-table">
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Method</th>
+        <th>Path</th>
+        <th>Resource</th>
+        <th>Status</th>
+        <th>Duration</th>
+        <th>IP</th>
+      </tr>
+    </thead>
+    <tbody id="occ-log-body">
+      <tr><td colspan="7"><em>Loading...</em></td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
 
 <script src="/plugins/<?=$plugin?>/javascript/unraidclaw.js?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/javascript/unraidclaw.js")?>"></script>
 <script>
 OCC_CSRF = '<?=$_SERVER['HTTP_CSRF_TOKEN'] ?? ''?>';
+
+function occSwitchTab(name, btn) {
+  // Hide all tabs
+  var panels = document.querySelectorAll('.occ-tab-content');
+  for (var i = 0; i < panels.length; i++) panels[i].style.display = 'none';
+  // Deactivate all buttons
+  var btns = document.querySelectorAll('.occ-tab');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  // Show selected
+  document.getElementById('occ-tab-' + name).style.display = 'block';
+  btn.classList.add('active');
+  // Init tab content
+  if (name === 'log') occRefreshLog();
+  if (name === 'permissions') occUpdatePermissionSummaries();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   occLoadRecentActivity();
+  occUpdatePermissionSummaries();
 });
 </script>

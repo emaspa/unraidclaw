@@ -1,5 +1,41 @@
-/* OpenClaw Connect - WebGUI Styles
+/* UnraidClaw - WebGUI Styles
    Designed for Unraid's dark theme with light fallback text */
+
+/* Tab navigation */
+.occ-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid rgba(255,255,255,0.15);
+  margin-bottom: 0;
+  padding: 0 16px;
+}
+.occ-tab {
+  padding: 10px 20px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: -2px;
+  transition: background 0.15s, color 0.15s;
+}
+.occ-tab:hover {
+  color: #ddd;
+  background: rgba(255,255,255,0.05);
+}
+.occ-tab.active {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  border-bottom: 2px solid rgba(255,255,255,0.08);
+}
+
+.occ-tab-content {
+  padding: 0;
+}
 
 .occ-dashboard,
 .occ-settings,
@@ -9,17 +45,6 @@
   margin: 0 auto;
   padding: 16px;
 }
-
-/* Back navigation */
-.occ-nav {
-  margin-bottom: 16px;
-}
-.occ-nav a {
-  color: #6cabec;
-  text-decoration: none;
-  font-size: 13px;
-}
-.occ-nav a:hover { text-decoration: underline; }
 
 /* Headings */
 .occ-header h2,
