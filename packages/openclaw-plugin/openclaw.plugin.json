@@ -11,6 +11,11 @@
       "apiKey": {
         "type": "string",
         "description": "API key for authenticating with UnraidClaw"
+      },
+      "tlsSkipVerify": {
+        "type": "boolean",
+        "description": "Skip TLS certificate verification (for self-signed certs)",
+        "default": false
       }
     },
     "required": ["serverUrl", "apiKey"]
@@ -18,11 +23,14 @@
   "uiHints": {
     "serverUrl": {
       "label": "Server URL",
-      "placeholder": "http://192.168.1.100:9876"
+      "placeholder": "https://192.168.1.100:9876"
     },
     "apiKey": {
       "label": "API Key",
       "sensitive": true
+    },
+    "tlsSkipVerify": {
+      "label": "Skip TLS Verification"
     }
   }
 }
