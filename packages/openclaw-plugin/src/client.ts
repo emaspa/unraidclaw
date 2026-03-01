@@ -11,10 +11,17 @@ export class UnraidApiError extends Error {
   }
 }
 
-export class UnraidClient {
-  private configResolver: () => { serverUrl: string; apiKey: string };
+export interface ClientConfig {
+  serverUrl: string;
+  apiKey: string;
+  tlsSkipVerify?: boolean;
+}
 
-  constructor(configResolver: () => { serverUrl: string; apiKey: string }) {
+export class UnraidClient {
+  private configResolver: () => ClientConfig;
+  private tlsConfigured = false;
+
+  constructor(configResolver: () => ClientConfig) {
     this.configResolver = configResolver;
   }
 
@@ -22,6 +29,11 @@ export class UnraidClient {
     const cfg = this.configResolver();
     if (!cfg.serverUrl) {
       throw new UnraidApiError("UnraidClaw serverUrl not configured", 0, "CONFIG_ERROR");
+    }
+    // Disable TLS verification for self-signed certs (once)
+    if (!this.tlsConfigured && cfg.tlsSkipVerify && cfg.serverUrl.startsWith("https")) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+      this.tlsConfigured = true;
     }
     return {
       baseUrl: cfg.serverUrl.replace(/\/+$/, ""),

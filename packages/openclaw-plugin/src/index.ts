@@ -11,7 +11,7 @@ import { registerNetworkTools } from "./tools/network.js";
 import { registerUserTools } from "./tools/users.js";
 import { registerLogTools } from "./tools/logs.js";
 
-function resolveConfig(api: any): { serverUrl: string; apiKey: string } {
+function resolveConfig(api: any): { serverUrl: string; apiKey: string; tlsSkipVerify?: boolean } {
   // Try direct plugin config
   if (api.config?.serverUrl) return api.config;
   // Try pluginConfig

@@ -16,8 +16,8 @@ import { registerNetworkRoutes } from "./routes/network.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { registerLogRoutes } from "./routes/logs.js";
 
-export function createServer(config: ServerConfig) {
-  const app = Fastify({ logger: true });
+export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; key: Buffer }) {
+  const app = Fastify({ logger: true, ...(httpsOpts ? { https: httpsOpts } : {}) });
   const gql = new GraphQLClient(config);
   const activityLogger = new ActivityLogger(config);
 

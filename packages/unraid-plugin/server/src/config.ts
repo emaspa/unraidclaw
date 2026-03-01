@@ -10,6 +10,8 @@ export interface ServerConfig {
   unraidApiKey: string;
   logFile: string;
   maxLogSize: number;
+  tlsCert: string;
+  tlsKey: string;
 }
 
 const FLASH_BASE = process.env.FLASH_BASE ?? "/boot/config/plugins/unraidclaw";
@@ -46,6 +48,7 @@ export function loadConfig(): ServerConfig {
     cfg = parseCfg(readFileSync(CFG_FILE, "utf-8"));
   }
 
+  const tlsDir = join(FLASH_BASE, "tls");
   return {
     port: parseInt(cfg.PORT ?? process.env.OCC_PORT ?? "9876", 10),
     host: cfg.HOST ?? process.env.OCC_HOST ?? "0.0.0.0",
@@ -54,6 +57,8 @@ export function loadConfig(): ServerConfig {
     unraidApiKey: cfg.UNRAID_API_KEY ?? process.env.OCC_UNRAID_API_KEY ?? "",
     logFile: cfg.LOG_FILE ?? process.env.OCC_LOG_FILE ?? join(FLASH_BASE, "activity.jsonl"),
     maxLogSize: parseInt(cfg.MAX_LOG_SIZE ?? process.env.OCC_MAX_LOG_SIZE ?? "10485760", 10),
+    tlsCert: cfg.TLS_CERT ?? process.env.OCC_TLS_CERT ?? join(tlsDir, "cert.pem"),
+    tlsKey: cfg.TLS_KEY ?? process.env.OCC_TLS_KEY ?? join(tlsDir, "key.pem"),
   };
 }
 

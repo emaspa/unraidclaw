@@ -43,7 +43,21 @@ start() {
 
   echo "Starting ${PLUGIN}..."
 
+  # Auto-generate TLS certificate if not present
+  TLS_DIR="/boot/config/plugins/${PLUGIN}/tls"
+  if [ ! -f "$TLS_DIR/cert.pem" ] || [ ! -f "$TLS_DIR/key.pem" ]; then
+    echo "Generating self-signed TLS certificate..."
+    mkdir -p "$TLS_DIR"
+    openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+      -keyout "$TLS_DIR/key.pem" -out "$TLS_DIR/cert.pem" \
+      -days 3650 -nodes -subj "/CN=unraidclaw" 2>/dev/null
+    chmod 600 "$TLS_DIR/key.pem"
+    chmod 644 "$TLS_DIR/cert.pem"
+  fi
+
   # Export config as env vars for the Node.js process
+  export OCC_TLS_CERT="${TLS_CERT:-$TLS_DIR/cert.pem}"
+  export OCC_TLS_KEY="${TLS_KEY:-$TLS_DIR/key.pem}"
   export OCC_PORT="${PORT:-9876}"
   export OCC_HOST="${HOST:-0.0.0.0}"
   export OCC_API_KEY_HASH="${API_KEY_HASH:-}"
