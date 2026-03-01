@@ -5,7 +5,7 @@
 <h1 align="center">UnraidClaw</h1>
 
 <p align="center">
-  AI Agent Gateway for Unraid — permission-enforcing REST API that lets AI agents manage your server.
+  AI Agent Gateway for Unraid. Permission-enforcing REST API that lets AI agents manage your server.
 </p>
 
 <p align="center">
@@ -17,17 +17,17 @@
 
 ---
 
-UnraidClaw sits between AI agents and your Unraid server, providing a unified REST API with fine-grained access control. It combines Unraid's GraphQL API with direct system integration — CLI commands for parity checks, reboot/shutdown, and syslog; filesystem operations for share config editing and notification management; and network introspection via `ip` — to expose capabilities that no single Unraid API covers. Every call is authenticated, authorized against a configurable permission matrix, and logged.
+UnraidClaw sits between AI agents and your Unraid server, providing a unified REST API with fine-grained access control. It combines Unraid's GraphQL API with direct system integration (CLI commands for parity checks, reboot/shutdown, and syslog; filesystem operations for share config editing and notification management; network introspection via `ip`) to expose capabilities that no single Unraid API covers. Every call is authenticated, authorized against a configurable permission matrix, and logged.
 
 ## Features
 
-- **43 tools** across 11 categories — Docker, VMs, Array, Disks, Shares, System, Notifications, Network, Users, Logs
+- **43 tools** across 11 categories: Docker, VMs, Array, Disks, Shares, System, Notifications, Network, Users, Logs
 - **21 permission keys** in a resource:action matrix, configurable from the WebGUI
 - **HTTPS** with auto-generated self-signed TLS certificate
 - **SHA-256 API key** authentication
 - **Activity logging** with JSONL format, filter, and search
 - **OpenClaw plugin** available on npm (`openclaw plugins install unraidclaw`)
-- **Single-file server** — no `node_modules` needed on Unraid
+- **Single-file server**, no `node_modules` needed on Unraid
 
 ## Requirements
 
@@ -49,7 +49,7 @@ plugin install https://raw.githubusercontent.com/emaspa/unraidclaw/main/packages
 ### Setup
 
 1. Go to **Settings > UnraidClaw** in the Unraid WebGUI
-2. Generate an API key (it's hashed with SHA-256 — save it, it won't be shown again)
+2. Generate an API key (it's hashed with SHA-256; save it, it won't be shown again)
 3. Configure permissions on the **Permissions** tab
 4. Set Service to **Enabled** and click Apply
 
@@ -72,7 +72,7 @@ Authentication via `Authorization: Bearer <api-key>` header.
 
 | Category | Method | Endpoint | Permission |
 |----------|--------|----------|------------|
-| **Health** | GET | `/api/health` | — |
+| **Health** | GET | `/api/health` | none |
 | **Docker** | GET | `/api/docker` | `docker:read` |
 | | GET | `/api/docker/:id` | `docker:read` |
 | | GET | `/api/docker/:id/logs` | `docker:read` |
@@ -215,8 +215,8 @@ This is a pnpm monorepo with three packages:
 | Package | Description |
 |---------|-------------|
 | `packages/shared` | Shared TypeScript types, permission definitions, API interfaces |
-| `packages/unraid-plugin/server` | Fastify REST API server — bundles to a single CJS file |
-| `packages/openclaw-plugin` | OpenClaw plugin — bundles to a single ESM file, published to npm as `unraidclaw` |
+| `packages/unraid-plugin/server` | Fastify REST API server, bundles to a single CJS file |
+| `packages/openclaw-plugin` | OpenClaw plugin, bundles to a single ESM file, published to npm as `unraidclaw` |
 
 ## Development
 
@@ -247,12 +247,12 @@ Releases are automated via GitHub Actions:
 
 ## Security
 
-- API keys are hashed with SHA-256 before storage — the plaintext key is never persisted
+- API keys are hashed with SHA-256 before storage; the plaintext key is never persisted
 - All requests require authentication via `Authorization: Bearer` header
 - Every API call is checked against the permission matrix before execution
 - Activity logging records all requests with timestamps, endpoints, and results
-- HTTPS with auto-generated EC (prime256v1) certificates — 10-year validity
-- The server runs locally on your Unraid box — no cloud dependencies
+- HTTPS with auto-generated EC (prime256v1) certificates, 10-year validity
+- The server runs locally on your Unraid box, no cloud dependencies
 
 ## License
 
