@@ -14,16 +14,19 @@
   "openclaw": {
     "extensions": ["./dist/index.js"]
   },
+  "files": [
+    "dist",
+    "openclaw.plugin.json"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
-  "dependencies": {
-    "@unraidclaw/shared": "workspace:*"
-  },
   "devDependencies": {
+    "@unraidclaw/shared": "workspace:*",
     "typescript": "^5.7.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.0"
   }
 }
