@@ -3,6 +3,23 @@ import { Resource, Action } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 
+function humanSize(kilobytes: number): string {
+  if (kilobytes < 1024) return `${kilobytes} KiB`;
+  const mib = kilobytes / 1024;
+  if (mib < 1024) return `${mib.toFixed(1)} MiB`;
+  const gib = mib / 1024;
+  if (gib < 1024) return `${gib.toFixed(1)} GiB`;
+  const tib = gib / 1024;
+  return `${tib.toFixed(2)} TiB`;
+}
+
+function enrichDisk(d: Record<string, unknown>) {
+  return {
+    ...d,
+    ...(typeof d.size === "number" ? { sizeHuman: humanSize(d.size as number) } : {}),
+  };
+}
+
 // Unraid 7: root "disks" query times out. Use array.disks + array.parities instead.
 const LIST_QUERY = `query {
   array {
@@ -31,11 +48,11 @@ export function registerDiskRoutes(app: FastifyInstance, gql: GraphQLClient): vo
     handler: async (_req, reply) => {
       const data = await gql.query<{
         array: {
-          disks: unknown[];
-          parities: unknown[];
+          disks: Array<Record<string, unknown>>;
+          parities: Array<Record<string, unknown>>;
         };
       }>(LIST_QUERY);
-      const allDisks = [...data.array.disks, ...data.array.parities];
+      const allDisks = [...data.array.disks, ...data.array.parities].map(enrichDisk);
       return reply.send({ ok: true, data: allDisks });
     },
   });
@@ -46,8 +63,8 @@ export function registerDiskRoutes(app: FastifyInstance, gql: GraphQLClient): vo
     handler: async (req, reply) => {
       const data = await gql.query<{
         array: {
-          disks: Array<{ name: string }>;
-          parities: Array<{ name: string }>;
+          disks: Array<Record<string, unknown> & { name: string }>;
+          parities: Array<Record<string, unknown> & { name: string }>;
         };
       }>(LIST_QUERY);
       const allDisks = [...data.array.disks, ...data.array.parities];
@@ -60,7 +77,7 @@ export function registerDiskRoutes(app: FastifyInstance, gql: GraphQLClient): vo
           error: { code: "NOT_FOUND", message: `Disk '${req.params.id}' not found` },
         });
       }
-      return reply.send({ ok: true, data: disk });
+      return reply.send({ ok: true, data: enrichDisk(disk) });
     },
   });
 }

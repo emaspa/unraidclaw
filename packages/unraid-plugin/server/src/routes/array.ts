@@ -4,6 +4,16 @@ import { Resource, Action } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 
+function humanSize(kilobytes: number): string {
+  if (kilobytes < 1024) return `${kilobytes} KiB`;
+  const mib = kilobytes / 1024;
+  if (mib < 1024) return `${mib.toFixed(1)} MiB`;
+  const gib = mib / 1024;
+  if (gib < 1024) return `${gib.toFixed(1)} GiB`;
+  const tib = gib / 1024;
+  return `${tib.toFixed(2)} TiB`;
+}
+
 const STATUS_QUERY = `query {
   array {
     state
@@ -53,8 +63,31 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
   app.get("/api/array/status", {
     preHandler: requirePermission(Resource.ARRAY, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ array: unknown }>(STATUS_QUERY);
-      return reply.send({ ok: true, data: data.array });
+      const data = await gql.query<{ array: Record<string, unknown> }>(STATUS_QUERY);
+      const arr = data.array as Record<string, unknown>;
+      // Add human-readable capacity
+      const cap = arr.capacity as Record<string, unknown> | undefined;
+      if (cap) {
+        const kb = cap.kilobytes as Record<string, number> | undefined;
+        if (kb) {
+          (cap as Record<string, unknown>).human = {
+            free: humanSize(kb.free),
+            used: humanSize(kb.used),
+            total: humanSize(kb.total),
+          };
+        }
+      }
+      // Add human-readable disk sizes
+      const enrichDisks = (list: unknown[]) =>
+        list.map((d) => {
+          const disk = d as Record<string, unknown>;
+          return typeof disk.size === "number"
+            ? { ...disk, sizeHuman: humanSize(disk.size as number) }
+            : disk;
+        });
+      if (Array.isArray(arr.disks)) arr.disks = enrichDisks(arr.disks);
+      if (Array.isArray(arr.parities)) arr.parities = enrichDisks(arr.parities);
+      return reply.send({ ok: true, data: arr });
     },
   });
 

@@ -6,6 +6,16 @@ import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 
 const SHARES_DIR = "/boot/config/shares";
+
+function humanSize(kilobytes: number): string {
+  if (kilobytes < 1024) return `${kilobytes} KiB`;
+  const mib = kilobytes / 1024;
+  if (mib < 1024) return `${mib.toFixed(1)} MiB`;
+  const gib = mib / 1024;
+  if (gib < 1024) return `${gib.toFixed(1)} GiB`;
+  const tib = gib / 1024;
+  return `${tib.toFixed(2)} TiB`;
+}
 const VALID_ALLOCATORS = ["highwater", "fill", "most-free"];
 
 const FIELD_MAP: Record<keyof UpdateShareRequest, string> = {
@@ -56,8 +66,13 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
   app.get("/api/shares", {
     preHandler: requirePermission(Resource.SHARE, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ shares: unknown[] }>(LIST_QUERY);
-      return reply.send({ ok: true, data: data.shares });
+      const data = await gql.query<{ shares: Array<Record<string, unknown>> }>(LIST_QUERY);
+      const shares = data.shares.map((s) => ({
+        ...s,
+        ...(typeof s.free === "number" ? { freeHuman: humanSize(s.free as number) } : {}),
+        ...(typeof s.size === "number" ? { sizeHuman: humanSize(s.size as number) } : {}),
+      }));
+      return reply.send({ ok: true, data: shares });
     },
   });
 
@@ -65,7 +80,7 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
   app.get<{ Params: { name: string } }>("/api/shares/:name", {
     preHandler: requirePermission(Resource.SHARE, Action.READ),
     handler: async (req, reply) => {
-      const data = await gql.query<{ shares: Array<{ name: string }> }>(LIST_QUERY);
+      const data = await gql.query<{ shares: Array<Record<string, unknown> & { name: string }> }>(LIST_QUERY);
       const share = data.shares.find(
         (s) => s.name.toLowerCase() === req.params.name.toLowerCase()
       );
@@ -75,7 +90,12 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
           error: { code: "NOT_FOUND", message: `Share '${req.params.name}' not found` },
         });
       }
-      return reply.send({ ok: true, data: share });
+      const enriched = {
+        ...share,
+        ...(typeof share.free === "number" ? { freeHuman: humanSize(share.free as number) } : {}),
+        ...(typeof share.size === "number" ? { sizeHuman: humanSize(share.size as number) } : {}),
+      };
+      return reply.send({ ok: true, data: enriched });
     },
   });
 
