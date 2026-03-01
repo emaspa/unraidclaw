@@ -148,6 +148,7 @@ Edit `~/.openclaw/openclaw.json`:
 ```json
 {
   "plugins": {
+    "allow": ["unraidclaw"],
     "entries": {
       "unraidclaw": {
         "config": {
