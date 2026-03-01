@@ -31,9 +31,20 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
 <!-- ============ DASHBOARD TAB ============ -->
 <div id="occ-tab-dashboard" class="occ-tab-content" style="display:block;">
 <div class="occ-dashboard">
+  <?php
+    $plgFile = "/boot/config/plugins/{$plugin}.plg";
+    $pluginVersion = '';
+    if (file_exists($plgFile)) {
+      preg_match('/ENTITY\s+version\s+"([^"]+)"/', file_get_contents($plgFile), $m);
+      if (!empty($m[1])) $pluginVersion = $m[1];
+    }
+  ?>
   <div class="occ-header">
     <h2>UnraidClaw</h2>
-    <p>AI Agent Gateway for Unraid</p>
+    <p>AI Agent Gateway for Unraid<?=$pluginVersion ? " &middot; v{$pluginVersion}" : ''?> &middot;
+      <a href="https://github.com/emaspa/unraidclaw" target="_blank" style="color:#6cabec;">GitHub</a> &middot;
+      <a href="https://buymeacoffee.com/emaspa" target="_blank" style="color:#6cabec;">Buy me a coffee</a>
+    </p>
   </div>
 
   <div class="occ-status-card">
