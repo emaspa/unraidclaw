@@ -17,7 +17,7 @@
 
 ---
 
-UnraidClaw sits between AI agents and your Unraid server, proxying requests to Unraid's built-in APIs with fine-grained access control. Every API call is authenticated, authorized against a configurable permission matrix, and logged.
+UnraidClaw sits between AI agents and your Unraid server, providing a unified REST API with fine-grained access control. It combines Unraid's GraphQL API with direct system integration — CLI commands for parity checks, reboot/shutdown, and syslog; filesystem operations for share config editing and notification management; and network introspection via `ip` — to expose capabilities that no single Unraid API covers. Every call is authenticated, authorized against a configurable permission matrix, and logged.
 
 ## Features
 
@@ -198,14 +198,16 @@ The WebGUI includes presets: **Read Only**, **Docker Manager**, **VM Manager**, 
 ## Architecture
 
 ```
-┌─────────────┐     HTTPS      ┌──────────────────┐     GraphQL    ┌───────────┐
-│  AI Agent   │ ──────────────> │   UnraidClaw     │ ─────────────> │  Unraid   │
-│  (OpenClaw) │  Bearer token   │   (Fastify)      │   Internal     │  API      │
-└─────────────┘                 │                  │                └───────────┘
-                                │  - Auth           │
-                                │  - Permissions    │
-                                │  - Activity Log   │
-                                └──────────────────┘
+                                                        GraphQL ──> Unraid API
+                                                       /            (Docker, VMs, Disks, ...)
+┌─────────────┐     HTTPS      ┌──────────────────┐──+
+│  AI Agent   │ ──────────────> │   UnraidClaw     │   \
+│  (OpenClaw) │  Bearer token   │   (Fastify)      │    CLI ──────> mdcmd, reboot, ip, ...
+└─────────────┘                 │                  │   /
+                                │  - Auth          │──+
+                                │  - Permissions   │   \
+                                │  - Activity Log  │    Filesystem > share configs, syslog,
+                                └──────────────────┘                 notifications
 ```
 
 This is a pnpm monorepo with three packages:
