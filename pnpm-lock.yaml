@@ -9,14 +9,16 @@ importers:
   .: {}
 
   packages/openclaw-plugin:
-    dependencies:
-      '@unraidclaw/shared':
-        specifier: workspace:*
-        version: link:../shared
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.13
+      '@unraidclaw/shared':
+        specifier: workspace:*
+        version: link:../shared
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(tsx@4.21.0)(typescript@5.9.3)
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
