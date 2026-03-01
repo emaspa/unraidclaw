@@ -218,24 +218,6 @@ This is a pnpm monorepo with three packages:
 | `packages/unraid-plugin/server` | Fastify REST API server, bundles to a single CJS file |
 | `packages/openclaw-plugin` | OpenClaw plugin, bundles to a single ESM file, published to npm as `unraidclaw` |
 
-## Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Build all packages
-pnpm build
-
-# Type check
-pnpm typecheck
-
-# Build individual packages
-pnpm build:shared
-pnpm build:server
-pnpm build:openclaw
-```
-
 ## Security
 
 - API keys are hashed with SHA-256 before storage; the plaintext key is never persisted
