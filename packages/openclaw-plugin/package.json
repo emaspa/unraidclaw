@@ -24,7 +24,6 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@unraidclaw/shared": "workspace:*",
     "typescript": "^5.7.0",
     "@types/node": "^22.0.0",
     "tsup": "^8.5.0"

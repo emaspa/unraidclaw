@@ -3,7 +3,10 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "paths": {
+      "@unraidclaw/shared": ["../shared/src/index.ts"]
+    }
   },
   "include": ["src"]
 }
