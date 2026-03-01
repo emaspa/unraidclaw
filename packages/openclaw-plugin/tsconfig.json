@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "..",
     "noImplicitAny": false,
     "paths": {
       "@unraidclaw/shared": ["../shared/src/index.ts"]
