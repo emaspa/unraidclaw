@@ -150,25 +150,11 @@ export interface Share {
   size: string;
 }
 
-export interface CreateShareRequest {
-  name: string;
-  comment?: string;
-  allocator?: string;
-  floor?: string;
-  splitLevel?: string;
-  include?: string[];
-  exclude?: string[];
-  useCache?: string;
-}
-
 export interface UpdateShareRequest {
   comment?: string;
   allocator?: string;
   floor?: string;
   splitLevel?: string;
-  include?: string[];
-  exclude?: string[];
-  useCache?: string;
 }
 
 // ── System ─────────────────────────────────────────────────────

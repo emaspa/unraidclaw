@@ -247,6 +247,7 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
         <label class="occ-perm-item"><input type="checkbox" name="array:update" data-category="storage" <?=!empty($permissions['array:update']) ? 'checked' : ''?>><span class="occ-perm-label">Array Operations</span><span class="occ-perm-desc">Start/stop array, parity check control</span></label>
         <label class="occ-perm-item"><input type="checkbox" name="disk:read" data-category="storage" <?=!empty($permissions['disk:read']) ? 'checked' : ''?>><span class="occ-perm-label">Disk Info</span><span class="occ-perm-desc">View individual disk details and SMART data</span></label>
         <label class="occ-perm-item"><input type="checkbox" name="share:read" data-category="storage" <?=!empty($permissions['share:read']) ? 'checked' : ''?>><span class="occ-perm-label">List Shares</span><span class="occ-perm-desc">List and view share configurations</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="share:update" data-category="storage" <?=!empty($permissions['share:update']) ? 'checked' : ''?>><span class="occ-perm-label">Edit Share Settings</span><span class="occ-perm-desc">Update share comment, allocator, split level, floor</span></label>
       </div>
     </div>
 

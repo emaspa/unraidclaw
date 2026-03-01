@@ -23,7 +23,7 @@ var OCC_PRESETS = {
 var OCC_CATEGORIES = {
   'docker':       ['docker:read','docker:update','docker:delete'],
   'vms':          ['vms:read','vms:update','vms:delete'],
-  'storage':      ['array:read','array:update','disk:read','share:read'],
+  'storage':      ['array:read','array:update','disk:read','share:read','share:update'],
   'system':       ['info:read','os:update','services:read'],
   'notification': ['notification:read','notification:create','notification:update','notification:delete'],
   'network':      ['network:read'],

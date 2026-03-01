@@ -1,7 +1,42 @@
 import type { FastifyInstance } from "fastify";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { Resource, Action } from "@unraidclaw/shared";
+import type { UpdateShareRequest } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
+
+const SHARES_DIR = "/boot/config/shares";
+const VALID_ALLOCATORS = ["highwater", "fill", "most-free"];
+
+const FIELD_MAP: Record<keyof UpdateShareRequest, string> = {
+  comment: "shareComment",
+  allocator: "shareAllocator",
+  floor: "shareFloor",
+  splitLevel: "shareSplitLevel",
+};
+
+function parseCfgFile(path: string): Record<string, string> {
+  if (!existsSync(path)) return {};
+  const result: Record<string, string> = {};
+  for (const line of readFileSync(path, "utf-8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let val = trimmed.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    result[key] = val;
+  }
+  return result;
+}
+
+function writeCfgFile(path: string, data: Record<string, string>): void {
+  const lines = Object.entries(data).map(([k, v]) => `${k}="${v}"`);
+  writeFileSync(path, lines.join("\n") + "\n", "utf-8");
+}
 
 const LIST_QUERY = `query {
   shares {
@@ -41,6 +76,60 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
         });
       }
       return reply.send({ ok: true, data: share });
+    },
+  });
+
+  // Update share settings (safe fields only)
+  app.patch<{ Params: { name: string }; Body: UpdateShareRequest }>("/api/shares/:name", {
+    preHandler: requirePermission(Resource.SHARE, Action.UPDATE),
+    handler: async (req, reply) => {
+      const { name } = req.params;
+      const body = req.body ?? {};
+
+      // Validate share exists
+      const data = await gql.query<{ shares: Array<{ name: string }> }>(LIST_QUERY);
+      const share = data.shares.find((s) => s.name.toLowerCase() === name.toLowerCase());
+      if (!share) {
+        return reply.code(404).send({
+          ok: false,
+          error: { code: "NOT_FOUND", message: `Share '${name}' not found` },
+        });
+      }
+
+      // Validate allocator value
+      if (body.allocator && !VALID_ALLOCATORS.includes(body.allocator)) {
+        return reply.code(400).send({
+          ok: false,
+          error: {
+            code: "INVALID_VALUE",
+            message: `Invalid allocator '${body.allocator}'. Must be one of: ${VALID_ALLOCATORS.join(", ")}`,
+          },
+        });
+      }
+
+      // Read existing config, apply updates, write back
+      const cfgPath = `${SHARES_DIR}/${share.name}.cfg`;
+      const cfg = parseCfgFile(cfgPath);
+
+      const updated: string[] = [];
+      for (const [field, cfgKey] of Object.entries(FIELD_MAP)) {
+        const value = body[field as keyof UpdateShareRequest];
+        if (value !== undefined) {
+          cfg[cfgKey] = String(value);
+          updated.push(field);
+        }
+      }
+
+      if (updated.length === 0) {
+        return reply.code(400).send({
+          ok: false,
+          error: { code: "NO_CHANGES", message: "No valid fields provided to update" },
+        });
+      }
+
+      writeCfgFile(cfgPath, cfg);
+
+      return reply.send({ ok: true, data: { share: share.name, updated } });
     },
   });
 }
