@@ -48,10 +48,11 @@ plugin install https://raw.githubusercontent.com/emaspa/unraidclaw/main/packages
 
 ### Setup
 
-1. Go to **Settings > UnraidClaw** in the Unraid WebGUI
-2. Generate an API key (it's hashed with SHA-256; save it, it won't be shown again)
-3. Configure permissions on the **Permissions** tab
-4. Set Service to **Enabled** and click Apply
+1. Go to **Settings > Management Access** in the Unraid WebGUI, scroll to the API section, and copy your Unraid API key
+2. Go to **Settings > UnraidClaw**, paste the Unraid API key into the **Unraid API Key** field
+3. Generate an UnraidClaw API key (it's hashed with SHA-256; save it, it won't be shown again)
+4. Configure permissions on the **Permissions** tab
+5. Set Service to **Enabled** and click Apply
 
 The server starts on port `9876` over HTTPS by default. A self-signed TLS certificate is auto-generated on first start.
 
