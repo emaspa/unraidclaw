@@ -8,7 +8,7 @@
 <!ENTITY repo      "emaspa/unraidclaw">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/unraidclaw.plg">
 <!ENTITY pkgURL    "https://github.com/&repo;/releases/download/v&version;/&name;-&version;-x86_64-1.txz">
-<!ENTITY md5       "84a92ac5f570c40b436f74c197e022e6">
+<!ENTITY md5       "7bdb1b31fcbab5d579acc3f11f744dc4">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" max="7.99.99" support="https://github.com/&repo;" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
