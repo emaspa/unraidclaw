@@ -236,15 +236,6 @@ pnpm build:server
 pnpm build:openclaw
 ```
 
-### Release
-
-Releases are automated via GitHub Actions:
-
-1. Bump the version in the `.plg` file
-2. Commit and push to `main`
-3. Create a git tag (`v0.1.x`) and push it
-4. CI builds the `.txz` package, creates a GitHub release, and updates the `.plg` MD5 hash
-
 ## Security
 
 - API keys are hashed with SHA-256 before storage; the plaintext key is never persisted
