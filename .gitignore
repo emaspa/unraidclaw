@@ -3,3 +3,4 @@ dist/
 build/
 *.tsbuildinfo
 .DS_Store
+forum-post.html
