@@ -5,7 +5,7 @@ import { textResult, errorResult } from "./util.js";
 export function registerShareTools(api: any, client: UnraidClient): void {
   api.registerTool({
     name: "unraid_share_list",
-    description: "List all user shares on the Unraid server with their settings and usage.",
+    description: "List all user shares on the Unraid server with their settings and usage. The 'free' and 'size' fields are in kilobytes (KiB).",
     parameters: { type: "object" },
     execute: async () => {
       try {
@@ -18,7 +18,7 @@ export function registerShareTools(api: any, client: UnraidClient): void {
 
   api.registerTool({
     name: "unraid_share_details",
-    description: "Get details for a specific user share by name.",
+    description: "Get details for a specific user share by name. The 'free' and 'size' fields are in kilobytes (KiB).",
     parameters: {
       type: "object",
       properties: {

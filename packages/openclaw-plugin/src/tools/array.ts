@@ -5,7 +5,7 @@ import { textResult, errorResult } from "./util.js";
 export function registerArrayTools(api: any, client: UnraidClient): void {
   api.registerTool({
     name: "unraid_array_status",
-    description: "Get the current status of the Unraid array including state, capacity, disks, and parities.",
+    description: "Get the current status of the Unraid array including state, capacity, disks, and parities. Capacity is in kilobytes (KiB). Disk 'size' fields are in kilobytes (KiB).",
     parameters: { type: "object" },
     execute: async () => {
       try {
