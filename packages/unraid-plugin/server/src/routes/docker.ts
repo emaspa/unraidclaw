@@ -170,7 +170,10 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
       if (icon) allLabels["net.unraid.docker.icon"] = icon;
       if (webui) allLabels["net.unraid.docker.webui"] = webui;
       for (const [k, v] of Object.entries(labels)) allLabels[k] = v;
-
+      console.log("[unraidclaw] allLabels:", JSON.stringify(allLabels));
+      for (const [k, v] of Object.entries(allLabels)) {
+        args.push("--label", `${k}=${v}`);
+      }
       args.push(image);
 
       try {
