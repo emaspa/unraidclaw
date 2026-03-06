@@ -5,6 +5,22 @@ import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { writeFile } from "node:fs/promises";
+
+const execFileAsync = promisify(execFile);
+
+interface DockerCreateBody {
+  image: string;
+  name?: string;
+  ports?: string[];
+  volumes?: string[];
+  env?: string[];
+  restart?: "no" | "always" | "unless-stopped" | "on-failure";
+  network?: string;
+  labels?: Record<string, string>;
+  icon?: string;
+  webui?: string;
+}
 
 const LIST_QUERY = `query {
   docker {
@@ -40,18 +56,6 @@ const LOGS_QUERY = `query ($id: String!, $tail: Int, $since: String) {
     containerLogs(id: $id, tail: $tail, since: $since)
   }
 }`;
-
-const execFileAsync = promisify(execFile);
-
-interface DockerCreateBody {
-  image: string;
-  name?: string;
-  ports?: string[];
-  volumes?: string[];
-  env?: string[];
-  restart?: "no" | "always" | "unless-stopped" | "on-failure";
-  network?: string;
-}
 
 function actionMutation(action: string): string {
   return `mutation ($id: String!) {
@@ -143,7 +147,12 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
         env = [],
         restart = "unless-stopped",
         network = "bridge",
+        labels = {},
+        icon,
+        webui,
       } = req.body;
+
+      const containerName = name ?? image.split("/").pop()?.split(":")[0] ?? "container";
 
       const args = ["run", "-d"];
       if (name) args.push("--name", name);
@@ -152,19 +161,29 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
       for (const p of ports) args.push("-p", p);
       for (const v of volumes) args.push("-v", v);
       for (const e of env) args.push("-e", e);
+
+      // Add Unraid managed labels so container appears as first-class citizen in UI
+      const allLabels: Record<string, string> = {
+        "net.unraid.docker.managed": "dockerman",
+        ...(icon ? { "net.unraid.docker.icon": icon } : {}),
+        ...(webui ? { "net.unraid.docker.webui": webui } : {}),
+        ...labels,
+      };
+      for (const [k, v] of Object.entries(allLabels)) {
+        args.push("--label", `${k}=${v}`);
+      }
+
       args.push(image);
 
       try {
         const { stdout } = await execFileAsync("docker", args);
         const containerId = stdout.trim();
 
-        // Build Unraid XML template so container appears as first-class citizen in UI
-        const containerName = name ?? containerId.substring(0, 12);
+        // Build Unraid XML template
         const [repo] = image.split(":");
         const registry = `https://hub.docker.com/r/${repo}`;
         const dateInstalled = Math.floor(Date.now() / 1000);
 
-        // Port configs
         const portConfigs = ports.map((p) => {
           const [host, container] = p.split(":");
           const proto = container.includes("/udp") ? "udp" : "tcp";
@@ -172,18 +191,18 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
           return `  <Config Name="Port ${containerPort}/${proto}" Target="${containerPort}" Default="${host}" Mode="${proto}" Description="" Type="Port" Display="always" Required="false" Mask="false">${host}</Config>`;
         }).join("\n");
 
-        // Volume configs
         const volumeConfigs = volumes.map((v) => {
           const [host, container] = v.split(":");
           const mode = v.split(":")[2] ?? "rw";
           return `  <Config Name="${container}" Target="${container}" Default="" Mode="${mode}" Description="" Type="Path" Display="always" Required="false" Mask="false">${host}</Config>`;
         }).join("\n");
 
-        // Env var configs
         const envConfigs = env.map((e) => {
           const [key, ...rest] = e.split("=");
           const val = rest.join("=");
-          const masked = key.toLowerCase().includes("secret") || key.toLowerCase().includes("password") || key.toLowerCase().includes("key");
+          const masked = key.toLowerCase().includes("secret") ||
+            key.toLowerCase().includes("password") ||
+            key.toLowerCase().includes("key");
           return `  <Config Name="${key}" Target="${key}" Default="" Mode="" Description="" Type="Variable" Display="always" Required="false" Mask="${masked}">${val}</Config>`;
         }).join("\n");
 
@@ -200,9 +219,9 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
   <Project/>
   <Overview>Deployed by UnraidClaw</Overview>
   <Category/>
-  <WebUI/>
+  <WebUI>${webui ?? ""}</WebUI>
   <TemplateURL/>
-  <Icon/>
+  <Icon>${icon ?? ""}</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
@@ -213,9 +232,8 @@ ${volumeConfigs}
 ${envConfigs}
 </Container>`;
 
-        const templateDir = "/boot/config/plugins/dockerMan/templates-user";
-        const templatePath = `${templateDir}/my-${containerName}.xml`;
-        await import("node:fs/promises").then(fs => fs.writeFile(templatePath, xml, "utf8"));
+        const templatePath = `/boot/config/plugins/dockerMan/templates-user/my-${containerName}.xml`;
+        await writeFile(templatePath, xml, "utf8");
 
         return reply.send({ ok: true, data: { id: containerId, template: templatePath } });
       } catch (err: any) {
