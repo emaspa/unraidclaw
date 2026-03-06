@@ -139,6 +139,7 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
   app.post<{ Body: DockerCreateBody }>("/api/docker/containers", {
     preHandler: requirePermission(Resource.DOCKER, Action.CREATE),
     handler: async (req, reply) => {
+      console.log("[unraidclaw] docker create body:", JSON.stringify(req.body));
       const {
         image,
         name,
