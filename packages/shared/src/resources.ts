@@ -41,6 +41,7 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
     description: "Manage Docker containers",
     permissions: [
       { key: "docker:read", label: "List & Inspect", description: "List containers, view details and logs" },
+      { key: "docker:create", label: "Create", description: "Create and start new containers" },
       { key: "docker:update", label: "Control", description: "Start, stop, restart, pause, unpause containers" },
       { key: "docker:delete", label: "Remove", description: "Remove containers", destructive: true },
     ],

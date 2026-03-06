@@ -219,6 +219,7 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
       </div>
       <div class="occ-perm-body" style="display:none;">
         <label class="occ-perm-item"><input type="checkbox" name="docker:read" data-category="docker" <?=!empty($permissions['docker:read']) ? 'checked' : ''?>><span class="occ-perm-label">List & Inspect</span><span class="occ-perm-desc">List containers, view details and logs</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="docker:create" data-category="docker" <?=!empty($permissions['docker:create']) ? 'checked' : ''?>><span class="occ-perm-label">Create</span><span class="occ-perm-desc">Create and start new containers</span></label>
         <label class="occ-perm-item"><input type="checkbox" name="docker:update" data-category="docker" <?=!empty($permissions['docker:update']) ? 'checked' : ''?>><span class="occ-perm-label">Control</span><span class="occ-perm-desc">Start, stop, restart, pause, unpause containers</span></label>
         <label class="occ-perm-item occ-destructive"><input type="checkbox" name="docker:delete" data-category="docker" <?=!empty($permissions['docker:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Remove</span><span class="occ-perm-desc">Remove containers (destructive)</span></label>
       </div>

@@ -156,17 +156,61 @@ export function registerDockerTools(api: any, client: UnraidClient): void {
 
   api.registerTool({
     name: "unraid_docker_remove",
-    description: "Remove a Docker container. This is a destructive operation that cannot be undone.",
+    description: "Remove a Docker container. Pass force=true to stop and remove in one step. This is a destructive operation that cannot be undone.",
     parameters: {
       type: "object",
       properties: {
         id: { type: "string", description: "Container ID or name" },
+        force: { type: "boolean", description: "Stop the container before removing (default: false)" },
       },
       required: ["id"],
     },
     execute: async (_id, params) => {
       try {
-        return textResult(await client.delete(`/api/docker/containers/${params.id}`));
+        const query = params.force ? "?force=true" : "";
+        return textResult(await client.delete(`/api/docker/containers/${params.id}${query}`));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  });
+
+  api.registerTool({
+    name: "unraid_docker_create",
+    description:
+      "Create and start a new Docker container on the Unraid server. Specify image, optional name, port mappings, volume mounts, environment variables, restart policy, and network.",
+    parameters: {
+      type: "object",
+      properties: {
+        image: { type: "string", description: "Docker image to use (e.g. vikunja/vikunja:latest)" },
+        name: { type: "string", description: "Optional container name" },
+        ports: {
+          type: "array",
+          items: { type: "string" },
+          description: "Port mappings in host:container format (e.g. ['3456:3456'])",
+        },
+        volumes: {
+          type: "array",
+          items: { type: "string" },
+          description: "Volume mounts in host:container format (e.g. ['/mnt/cache/appdata/vikunja:/app/vikunja'])",
+        },
+        env: {
+          type: "array",
+          items: { type: "string" },
+          description: "Environment variables in KEY=VALUE format",
+        },
+        restart: {
+          type: "string",
+          enum: ["no", "always", "unless-stopped", "on-failure"],
+          description: "Restart policy (default: unless-stopped)",
+        },
+        network: { type: "string", description: "Network to attach the container to" },
+      },
+      required: ["image"],
+    },
+    execute: async (_id, params) => {
+      try {
+        return textResult(await client.post("/api/docker/containers", params));
       } catch (err) {
         return errorResult(err);
       }
