@@ -116,12 +116,7 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
             <input type="text" name="HOST" value="<?=$cfg['HOST'] ?? '0.0.0.0'?>">
           </td>
         </tr>
-        <tr>
-          <td>GraphQL URL:</td>
-          <td>
-            <input type="text" name="GRAPHQL_URL" value="<?=$cfg['GRAPHQL_URL'] ?? 'http://localhost/graphql'?>" size="50">
-          </td>
-        </tr>
+        <input type="hidden" name="GRAPHQL_URL" value="http://localhost/graphql">
         <tr>
           <td>Unraid API Key:</td>
           <td>

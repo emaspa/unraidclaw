@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraidclaw">
 <!ENTITY author    "emaspa">
-<!ENTITY version   "0.1.23">
+<!ENTITY version   "0.1.24">
 <!ENTITY launch    "Settings/unraidclaw">
 <!ENTITY repo      "emaspa/unraidclaw">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/unraidclaw.plg">
@@ -14,6 +14,10 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.12.0" max="7.99.99" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
+### 0.1.24
+- Remove GraphQL URL from settings (hardcode to http://localhost/graphql)
+- Prevents misconfiguration that caused 500 errors on all GraphQL-based endpoints
+
 ### 0.1.23
 - Fix /api/health reporting version "0.1.0" instead of actual installed version
 - Version now read from .plg file automatically on each release
