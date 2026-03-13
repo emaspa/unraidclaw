@@ -25,6 +25,8 @@
 - Security: validate share update fields (floor, splitLevel, comment)
 - Security: set restrictive file permissions on config, permissions, and log files
 - Security: enforce strict boolean types in permission saves
+- Security: require WebGUI authentication on activity log PHP endpoints
+- Security: move CSRF token from global JS variable to data attribute
 
 ### 0.1.25
 - Add Unraid WebUI Port setting for non-standard port configurations
