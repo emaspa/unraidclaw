@@ -166,6 +166,8 @@ openclaw plugins install unraidclaw
 
 Edit `~/.openclaw/openclaw.json`:
 
+**Single server:**
+
 ```json
 {
   "plugins": {
@@ -182,6 +184,38 @@ Edit `~/.openclaw/openclaw.json`:
   }
 }
 ```
+
+**Multiple servers:**
+
+```json
+{
+  "plugins": {
+    "allow": ["unraidclaw"],
+    "entries": {
+      "unraidclaw": {
+        "config": {
+          "servers": [
+            {
+              "name": "home",
+              "serverUrl": "https://192.168.1.100:9876",
+              "apiKey": "...",
+              "tlsSkipVerify": true,
+              "default": true
+            },
+            {
+              "name": "work",
+              "serverUrl": "https://10.0.0.50:9876",
+              "apiKey": "..."
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+With multi-server, every tool accepts an optional `server` parameter (e.g. `unraid_docker_list(server: "work")`). If omitted, the default server is used.
 
 Set `tlsSkipVerify: true` when using the auto-generated self-signed certificate.
 
