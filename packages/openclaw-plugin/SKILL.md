@@ -43,7 +43,7 @@ Every tool is gated by a 22-key permission matrix (resource:action) configurable
 UnraidClaw is an OpenClaw **plugin** (not a skill). Install from npm:
 
 ```bash
-openclaw plugins install unraidclaw --registry npm
+npm pack unraidclaw && openclaw plugins install unraidclaw-*.tgz && rm unraidclaw-*.tgz
 ```
 
 Then configure in `~/.openclaw/openclaw.json`:

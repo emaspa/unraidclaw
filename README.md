@@ -159,7 +159,7 @@ The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 43 tools
 ### Install
 
 ```bash
-openclaw plugins install unraidclaw --registry npm
+npm pack unraidclaw && openclaw plugins install unraidclaw-*.tgz && rm unraidclaw-*.tgz
 ```
 
 ### Configure
