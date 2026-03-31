@@ -162,6 +162,12 @@ The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 43 tools
 npm pack unraidclaw && openclaw plugins install unraidclaw-*.tgz && rm unraidclaw-*.tgz
 ```
 
+### Update
+
+```bash
+rm -rf ~/.openclaw/extensions/unraidclaw && npm pack unraidclaw && openclaw plugins install unraidclaw-*.tgz && rm unraidclaw-*.tgz
+```
+
 ### Configure
 
 Edit `~/.openclaw/openclaw.json`:
