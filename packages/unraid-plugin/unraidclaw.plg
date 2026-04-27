@@ -14,6 +14,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
+### 0.1.28
+- Align plugin min Unraid version with documented requirement: min=7.0.0, drop legacy max constraint (#11, thanks @mstrhakr)
+
 ### 0.1.27
 - Add memory stats (total, used, free, percent) to /api/system/info and /api/system/metrics
 - Add CPU load averages (1m, 5m, 15m) to /api/system/info and /api/system/metrics
