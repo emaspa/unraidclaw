@@ -19,7 +19,7 @@ function escapeXml(s: string): string {
 }
 
 // Input validation for docker:create
-const VALID_IMAGE_RE = /^[a-zA-Z0-9][a-zA-Z0-9._\/-]*(:[a-zA-Z0-9._-]+)?$/;
+const VALID_IMAGE_RE = /^[a-zA-Z0-9][a-zA-Z0-9._:/@-]{0,254}$/;
 const VALID_PORT_RE = /^\d{1,5}:\d{1,5}(\/(?:tcp|udp))?$/;
 const VALID_VOLUME_RE = /^\/[^:]+:[^:]+(:(ro|rw))?$/;
 const VALID_ENV_RE = /^[a-zA-Z_][a-zA-Z0-9_]*=.*/;

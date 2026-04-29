@@ -14,6 +14,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
+### 0.1.29
+- Fix POST /api/docker/containers rejecting valid registry-prefixed image references like `host:port/path:tag` and digest refs like `image@sha256:...` (#12)
+
 ### 0.1.28
 - Align plugin min Unraid version with documented requirement: min=7.0.0, drop legacy max constraint (#11, thanks @mstrhakr)
 
