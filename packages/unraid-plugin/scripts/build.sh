@@ -56,7 +56,10 @@ chmod +x "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/event/"* 2>/dev/null || 
 # 4. Create .txz package
 echo "[4/4] Creating .txz package..."
 cd "$STAGE"
-tar cJf "${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz" .
+# --owner/--group/--numeric-owner force root:0 in archive metadata so upgradepkg
+# doesn't chown host paths (/, /usr, /usr/local, ...) to the build runner's UID.
+# See issue #13.
+tar --owner=root --group=root --numeric-owner -cJf "${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz" .
 
 PKG_FILE="${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz"
 

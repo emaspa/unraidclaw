@@ -14,6 +14,11 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
+### 0.1.30
+- Fix .txz package chowning host paths (/, /usr, /usr/local, ...) to UID 1001 on install, breaking sshd StrictModes key auth (#13)
+- Build now uses `tar --owner=root --group=root --numeric-owner` so directory metadata is always root:root
+- Postinstall heals existing systems by chowning the affected host paths back to root:root (no-op on healthy systems)
+
 ### 0.1.29
 - Fix POST /api/docker/containers rejecting valid registry-prefixed image references like `host:port/path:tag` and digest refs like `image@sha256:...` (#12)
 
@@ -160,6 +165,10 @@ echo "Node.js v${NODE_VERSION} detected. OK."
 PLUGIN="&name;"
 CFG_DIR="/boot/config/plugins/${PLUGIN}"
 mkdir -p "$CFG_DIR"
+
+# Heal host paths chowned to UID 1001 by v0.1.27-v0.1.29 (issue #13).
+# These are always root-owned on Unraid; this is a no-op on healthy systems.
+chown root:root / /usr /usr/local /usr/local/emhttp /usr/local/sbin /etc /etc/rc.d 2>/dev/null || true
 
 # Create default config if not present
 if [ ! -f "${CFG_DIR}/unraidclaw.cfg" ]; then
