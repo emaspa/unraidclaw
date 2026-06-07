@@ -4,3 +4,6 @@ build/
 *.tsbuildinfo
 .DS_Store
 forum-post.html
+
+# Graphify knowledge-graph output (generated)
+graphify-out/
