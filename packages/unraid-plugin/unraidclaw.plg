@@ -14,6 +14,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
+### 0.1.31
+- Fix /api/array/parity/status showing no/stale activity: read live state from `mdcmd status` instead of the unreliable GraphQL parityCheckStatus; existing fields (running/progress/speed/errors) now reflect reality, plus new paused/correcting/action/position/size/speedHuman/lastCheck (#14, thanks @rodaballo)
+
 ### 0.1.30
 - Fix .txz package chowning host paths (/, /usr, /usr/local, ...) to UID 1001 on install, breaking sshd StrictModes key auth (#13)
 - Build now uses `tar --owner=root --group=root --numeric-owner` so directory metadata is always root:root

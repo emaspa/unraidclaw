@@ -47,16 +47,25 @@ const SET_STATE_MUTATION = `mutation ($input: ArrayStateInput!) {
   }
 }`;
 
-const PARITY_STATUS_QUERY = `query {
-  array {
-    parityCheckStatus {
-      running
-      progress
-      speed
-      errors
-    }
+// Parity-check status is read from `mdcmd status` (the live md-driver state the
+// webGUI itself uses) rather than the GraphQL `array.parityCheckStatus` field,
+// which does not reflect checks started outside Connect (see issue #14).
+type MdState = Record<string, string>;
+
+function readMdcmdStatus(): MdState {
+  const out = execSync("mdcmd status", { timeout: 10000 }).toString();
+  const state: MdState = {};
+  for (const line of out.split("\n")) {
+    const eq = line.indexOf("=");
+    if (eq !== -1) state[line.slice(0, eq)] = line.slice(eq + 1);
   }
-}`;
+  return state;
+}
+
+function mdNum(v: string | undefined): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
 
 export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): void {
   // Array status
@@ -91,12 +100,55 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
     },
   });
 
-  // Parity status
+  // Parity status (from `mdcmd status` — see note above and issue #14)
   app.get("/api/array/parity/status", {
     preHandler: requirePermission(Resource.ARRAY, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ array: { parityCheckStatus: unknown } }>(PARITY_STATUS_QUERY);
-      return reply.send({ ok: true, data: data.array.parityCheckStatus });
+      try {
+        const s = readMdcmdStatus();
+        const position = mdNum(s.mdResyncPos);
+        const size = mdNum(s.mdResyncSize);
+        const dt = mdNum(s.mdResyncDt);
+        const db = mdNum(s.mdResyncDb);
+        // A check is in progress while the resync position is non-zero
+        // (mdResyncSize/mdResyncAction persist when idle, so they can't gate this).
+        const running = position > 0 || mdNum(s.mdResync) > 0;
+        // KiB/s — mirrors Unraid's mdResyncDb/mdResyncDt (instantaneous; the webGUI
+        // shows an averaged-since-start figure, so the two differ slightly mid-ramp).
+        const speed = dt > 0 ? db / dt : 0;
+        const progress = size > 0 ? Math.min(100, (position / size) * 100) : 0;
+        const errors = mdNum(s.sbSyncErrs);
+        const started = mdNum(s.sbSynced);
+        const finished = mdNum(s.sbSynced2);
+        return reply.send({
+          ok: true,
+          data: {
+            // Backward-compatible shape (previously from GraphQL parityCheckStatus)
+            running,
+            progress: Number(progress.toFixed(2)),
+            speed, // KiB/s
+            errors,
+            // Richer fields available from mdcmd status
+            paused: running && speed === 0, // in progress but not advancing
+            action: s.mdResyncAction || null, // e.g. "check P Q", "recon", "clear"
+            correcting: mdNum(s.mdResyncCorr) === 1,
+            position, // KB completed
+            size, // KB total
+            // MB/s (decimal) to match the Unraid webGUI's parity-speed display
+            speedHuman: speed > 0 ? `${((speed * 1024) / 1e6).toFixed(1)} MB/s` : null,
+            lastCheck: {
+              started: started || null,
+              finished: finished || null,
+              durationSec: started && finished ? finished - started : null,
+              exitStatus: s.sbSyncExit !== undefined ? mdNum(s.sbSyncExit) : null,
+              errors,
+            },
+          },
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return reply.status(500).send({ ok: false, error: { code: "MDCMD_ERROR", message: msg } });
+      }
     },
   });
 
