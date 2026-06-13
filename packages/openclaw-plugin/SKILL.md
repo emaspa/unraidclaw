@@ -1,6 +1,6 @@
 ---
 name: unraidclaw
-description: Manage your Unraid server through AI agents - 43 tools for Docker, VMs, array, shares, system, notifications, and more with permission control.
+description: Manage your Unraid server through AI agents - 44 tools for Docker, VMs, array, shares, system, notifications, and more with permission control.
 ---
 
 # UnraidClaw
@@ -9,7 +9,7 @@ Manage your Unraid server through AI agents with full permission control.
 
 ## What it does
 
-UnraidClaw gives AI agents 43 tools across 11 categories to monitor and manage an Unraid server:
+UnraidClaw gives AI agents 44 tools across 11 categories to monitor and manage an Unraid server:
 
 - **Docker** - List, inspect, start, stop, restart, pause, unpause, remove, and create containers
 - **VMs** - List, inspect, start, stop, force-stop, pause, resume, reboot, reset, and remove virtual machines

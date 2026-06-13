@@ -1,6 +1,6 @@
 {
   "name": "unraidclaw",
-  "version": "0.1.7",
+  "version": "0.1.10",
   "description": "OpenClaw plugin to manage your Unraid server — Docker, VMs, array, shares, system, and more.",
   "type": "module",
   "main": "dist/index.js",
