@@ -1,6 +1,6 @@
 {
   "name": "unraidclaw",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "OpenClaw plugin to manage your Unraid server — Docker, VMs, array, shares, system, and more.",
   "type": "module",
   "main": "dist/index.js",
@@ -23,7 +23,9 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "check-contracts": "node scripts/check-contracts.mjs",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run check-contracts && npm run build"
   },
   "devDependencies": {
     "typescript": "^5.7.0",

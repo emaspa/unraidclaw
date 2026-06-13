@@ -28,3 +28,8 @@ jobs:
       - run: pnpm build
 
       - run: pnpm typecheck
+
+      # Fail if openclaw.plugin.json contracts.tools drifts from the tools
+      # registered in src/ (undeclared tools are silently hidden from the
+      # LLM agent in OpenClaw 2026.6.x — see issue #15).
+      - run: pnpm --filter unraidclaw check-contracts
