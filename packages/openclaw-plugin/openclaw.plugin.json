@@ -1,5 +1,6 @@
 {
   "id": "unraidclaw",
+  "name": "UnraidClaw",
   "contracts": {
     "tools": [
       "unraid_array_start",
