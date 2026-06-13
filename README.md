@@ -21,7 +21,7 @@ UnraidClaw sits between AI agents and your Unraid servers, providing a unified R
 
 ## Features
 
-- **43 tools** across 11 categories: Docker, VMs, Array, Disks, Shares, System, Notifications, Network, Users, Logs
+- **44 tools** across 11 categories: Docker, VMs, Array, Disks, Shares, System, Notifications, Network, Users, Logs
 - **22 permission keys** in a resource:action matrix, configurable from the WebGUI
 - **HTTPS** with auto-generated self-signed TLS certificate
 - **SHA-256 API key** authentication
@@ -154,7 +154,7 @@ Only `image` is required. The container is started immediately and an Unraid doc
 
 ## OpenClaw Plugin
 
-The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 43 tools to any AI agent that supports the OpenClaw protocol.
+The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 44 tools to any AI agent that supports the OpenClaw protocol.
 
 ### Install
 
