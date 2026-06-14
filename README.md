@@ -225,6 +225,14 @@ With multi-server, every tool accepts an optional `server` parameter (e.g. `unra
 
 Set `tlsSkipVerify: true` when using the auto-generated self-signed certificate.
 
+**Keeping the API key out of the config file:** you don't have to hard-code the key in `openclaw.json`. OpenClaw expands `${VAR}` references from the environment at config-load time, so you can point `apiKey` at an environment variable:
+
+```json
+"apiKey": "${UNRAID_API_KEY}"
+```
+
+The secret then lives in your environment (shell, systemd `EnvironmentFile`, or container secret) and never in `openclaw.json`. This works for `servers[].apiKey` in the multi-server form too.
+
 ### Tools
 
 | Category | Tools |
