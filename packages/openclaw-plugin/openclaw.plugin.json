@@ -49,6 +49,14 @@
       "unraid_vm_stop"
     ]
   },
+  "configContracts": {
+    "secretInputs": {
+      "paths": [
+        { "path": "apiKey", "expected": "string" },
+        { "path": "servers.*.apiKey", "expected": "string" }
+      ]
+    }
+  },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
@@ -58,8 +66,20 @@
         "description": "URL of the UnraidClaw server (single-server mode)"
       },
       "apiKey": {
-        "type": "string",
-        "description": "API key for authenticating with UnraidClaw (single-server mode)"
+        "description": "API key for authenticating with UnraidClaw (single-server mode). A plaintext string, or an OpenClaw SecretRef object resolved before the plugin loads.",
+        "anyOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "required": ["source", "provider", "id"],
+            "properties": {
+              "source": { "type": "string", "enum": ["env", "file", "exec"] },
+              "provider": { "type": "string" },
+              "id": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        ]
       },
       "tlsSkipVerify": {
         "type": "boolean",
@@ -81,8 +101,20 @@
               "description": "URL of the UnraidClaw server"
             },
             "apiKey": {
-              "type": "string",
-              "description": "API key for authenticating with this server"
+              "description": "API key for authenticating with this server. A plaintext string, or an OpenClaw SecretRef object resolved before the plugin loads.",
+              "anyOf": [
+                { "type": "string" },
+                {
+                  "type": "object",
+                  "required": ["source", "provider", "id"],
+                  "properties": {
+                    "source": { "type": "string", "enum": ["env", "file", "exec"] },
+                    "provider": { "type": "string" },
+                    "id": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             },
             "tlsSkipVerify": {
               "type": "boolean",

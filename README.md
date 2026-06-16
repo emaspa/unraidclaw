@@ -233,6 +233,14 @@ Set `tlsSkipVerify: true` when using the auto-generated self-signed certificate.
 
 The secret then lives in your environment (shell, systemd `EnvironmentFile`, or container secret) and never in `openclaw.json`. This works for `servers[].apiKey` in the multi-server form too.
 
+**Provider-backed secrets (`SecretRef`):** `apiKey` also accepts an OpenClaw `SecretRef` object, so the key can come from one of your configured secret providers (file, env, exec). OpenClaw resolves it before the plugin loads — the plugin only ever sees the resolved string:
+
+```json
+"apiKey": { "source": "file", "provider": "default", "id": "/unraidclaw_key" }
+```
+
+`source` is one of `file`, `env`, or `exec`; `provider` names a provider from your `secrets.providers` config; `id` is the lookup key. This also works per-server on `servers[].apiKey`.
+
 ### Tools
 
 | Category | Tools |
