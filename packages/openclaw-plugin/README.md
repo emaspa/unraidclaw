@@ -71,6 +71,24 @@ With multi-server config, every tool accepts an optional `server` parameter (e.g
 
 Set `tlsSkipVerify: true` when using UnraidClaw's auto-generated self-signed certificate.
 
+### Keeping the API key out of the config file
+
+You don't have to hard-code the key in `openclaw.json`. Two options:
+
+**Environment variable** — OpenClaw expands `${VAR}` references at config-load time:
+
+```json
+"apiKey": "${UNRAID_API_KEY}"
+```
+
+**Provider-backed secret (`SecretRef`)** — point `apiKey` at one of your configured secret providers; OpenClaw resolves it before the plugin loads, so the plugin only ever sees the resolved string:
+
+```json
+"apiKey": { "source": "file", "provider": "default", "id": "/unraidclaw_key" }
+```
+
+`source` is one of `file`, `env`, or `exec`; `provider` names a provider from your `secrets.providers` config; `id` is the lookup key. Both forms also work per-server on `servers[].apiKey`. (Requires unraidclaw 0.1.12+.)
+
 ## Usage
 
 Once installed and configured, just ask your agent:
