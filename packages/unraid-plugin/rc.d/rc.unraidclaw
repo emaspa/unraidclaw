@@ -66,10 +66,19 @@ start() {
   export FLASH_BASE="/boot/config/plugins/${PLUGIN}"
   export OCC_LOG_FILE="${LOG_FILE:-/boot/config/plugins/${PLUGIN}/activity.jsonl}"
   export OCC_MAX_LOG_SIZE="${MAX_LOG_SIZE:-10485760}"
+  # The package records its own version. During an upgrade the .plg on flash
+  # still names the previous version when this runs, so it is only a fallback
+  # for packages built before VERSION existed.
+  VERSION_FILE="/usr/local/emhttp/plugins/${PLUGIN}/VERSION"
   PLG_FILE="/boot/config/plugins/${PLUGIN}.plg"
-  if [ -f "$PLG_FILE" ]; then
-    export OCC_VERSION=$(grep -oP 'ENTITY\s+version\s+"\K[^"]+' "$PLG_FILE")
+  OCC_VERSION=""
+  if [ -f "$VERSION_FILE" ]; then
+    OCC_VERSION=$(head -n 1 "$VERSION_FILE" | tr -d '[:space:]')
   fi
+  if [ -z "$OCC_VERSION" ] && [ -f "$PLG_FILE" ]; then
+    OCC_VERSION=$(grep -oP 'ENTITY\s+version\s+"\K[^"]+' "$PLG_FILE")
+  fi
+  export OCC_VERSION
 
   nohup "$NODE_BIN" "$SERVER" >> "$LOGFILE" 2>&1 &
   echo $! > "$PIDFILE"

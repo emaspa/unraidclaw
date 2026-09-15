@@ -46,6 +46,11 @@ cp "$BUNDLE_FILE" "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/server/index.cj
 cp -r "$PLUGIN_DIR/src/usr/local/emhttp/plugins/${PKG_NAME}/"* \
   "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/"
 
+# Record the version with the code it describes. The service reads this at
+# start; the .plg on flash is only saved after the install script has already
+# restarted the service, so it still names the previous version then.
+printf '%s\n' "$VERSION" > "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/VERSION"
+
 # Copy rc.d script
 cp "$PLUGIN_DIR/rc.d/rc.${PKG_NAME}" "${STAGE}/etc/rc.d/rc.${PKG_NAME}"
 chmod +x "${STAGE}/etc/rc.d/rc.${PKG_NAME}"

@@ -23,6 +23,7 @@ PACKAGE = Path(sys.argv.pop(1)).resolve()
 MANIFEST = Path(__file__).resolve().parents[1] / "unraidclaw.plg"
 RC = "etc/rc.d/rc.unraidclaw"
 SERVER = "usr/local/emhttp/plugins/unraidclaw/server/index.cjs"
+VERSION_FILE = "usr/local/emhttp/plugins/unraidclaw/VERSION"
 OLD_RC = b"#!/bin/sh\n# previous unraidclaw service\n"
 SYSTEM_RC = b"#!/bin/sh\n# original system shutdown script\n"
 
@@ -148,6 +149,16 @@ class ArchiveSafety(unittest.TestCase):
             self.assertIn(SERVER, by_name)
             self.assertTrue(by_name[RC].mode & 0o111)
             self.assertTrue(all(m.uid == 0 and m.gid == 0 for m in members))
+
+    def test_package_records_its_own_version(self):
+        # The service reports this version. It has to come from the package,
+        # because the .plg on flash is saved only after the service restarted.
+        version = PACKAGE.name.removeprefix("unraidclaw-").removesuffix("-x86_64-1.txz")
+        self.assertNotEqual(version, PACKAGE.name, "package name does not follow the release pattern")
+        with tarfile.open(PACKAGE) as archive:
+            member = next((m for m in archive if m.name.removeprefix("./") == VERSION_FILE), None)
+            self.assertIsNotNone(member, "package has no VERSION file")
+            self.assertEqual(archive.extractfile(member).read(), f"{version}\n".encode())
 
     def test_install(self):
         self.fixture("relative")

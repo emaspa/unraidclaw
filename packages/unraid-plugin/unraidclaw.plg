@@ -14,6 +14,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
+### Unreleased
+- Fix /api/health reporting the previous version after an upgrade until the service restarted again. The package now records its own version instead of the service reading it from the .plg, which Unraid saves only after the install script restarts the service
+
 ### 0.1.32
 - Preserve host directory symlinks and permissions during installation. Packages no longer include directory headers that could replace /etc/rc.d
 - Add Community Applications search, template details and installation with overrides (#17, thanks @bubbadk)
