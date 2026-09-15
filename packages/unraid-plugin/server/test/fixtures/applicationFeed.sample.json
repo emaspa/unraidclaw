@@ -1,0 +1,1315 @@
+{
+ "applist": [
+  {
+   "Name": "Jellyfin",
+   "Repository": "jellyfin/jellyfin:latest",
+   "Registry": "https://registry.hub.docker.com/r/jellyfin/jellyfin",
+   "Repo": "BBergle's Repository",
+   "Overview": "Jellyfin(https://github.com/jellyfin/jellyfin) is a Free Software Media System that puts you in control of managing and streaming your media. It is an alternative to the proprietar",
+   "Icon": "https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/jellyfin-logo.png",
+   "Support": "",
+   "Project": "https://github.com/jellyfin/jellyfin",
+   "WebUI": "http://[IP]:[PORT:8096]",
+   "Network": "host",
+   "Shell": "bash",
+   "Privileged": "false",
+   "TemplateURL": "https://raw.githubusercontent.com/BBergle/unraid-templates/main/jellyfin/jellyfin.xml",
+   "CategoryList": [
+    "Other"
+   ],
+   "Config": [
+    {
+     "@attributes": {
+      "Name": "WebUI",
+      "Target": "8096",
+      "Default": "8096",
+      "Mode": "tcp",
+      "Description": "Http webUI.",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "8096"
+    },
+    {
+     "@attributes": {
+      "Name": "Port: 8920",
+      "Target": "8920",
+      "Default": "8920",
+      "Mode": "tcp",
+      "Description": "Optional - Https webUI (you need to set up your own certificate).",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "8920"
+    },
+    {
+     "@attributes": {
+      "Name": "Port: 7359",
+      "Target": "7359",
+      "Default": "7359",
+      "Mode": "udp",
+      "Description": "Optional - Allows clients to discover Jellyfin on the local network.",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "7359"
+    },
+    {
+     "@attributes": {
+      "Name": "Port: 1900",
+      "Target": "1900",
+      "Default": "1900",
+      "Mode": "udp",
+      "Description": "Optional - Service discovery used by DNLA and clients.",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "1900"
+    },
+    {
+     "@attributes": {
+      "Name": "Path: /data/tvshows",
+      "Target": "/data/tvshows",
+      "Default": "",
+      "Mode": "rw",
+      "Description": "Media goes here. Add as many as needed e.g. `/data/movies`, `/data/tv`, etc.",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "Path: /data/movies",
+      "Target": "/data/movies",
+      "Default": "",
+      "Mode": "rw",
+      "Description": "Media goes here. Add as many as needed e.g. `/data/movies`, `/data/tv`, etc.",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "JELLYFIN_PublishedServerUrl",
+      "Target": "JELLYFIN_PublishedServerUrl",
+      "Default": "192.168.0.5",
+      "Mode": "{3}",
+      "Description": "Set the autodiscovery response domain or IP address.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "xmltv",
+      "Target": "/xmltv",
+      "Default": "",
+      "Mode": "rw",
+      "Description": "",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "Appdata",
+      "Target": "/config",
+      "Default": "/mnt/user/appdata/jellyfin",
+      "Mode": "rw",
+      "Description": "Jellyfin data storage location. *This can grow very large, 50gb+ is likely for a large collection.*",
+      "Type": "Path",
+      "Display": "advanced",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "/mnt/user/appdata/jellyfin"
+    },
+    {
+     "@attributes": {
+      "Name": "PUID",
+      "Target": "PUID",
+      "Default": "99",
+      "Mode": "{3}",
+      "Description": "",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "99"
+    },
+    {
+     "@attributes": {
+      "Name": "PGID",
+      "Target": "PGID",
+      "Default": "100",
+      "Mode": "{3}",
+      "Description": "",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "100"
+    },
+    {
+     "@attributes": {
+      "Name": "UMASK",
+      "Target": "UMASK",
+      "Default": "022",
+      "Mode": "{3}",
+      "Description": "",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "022"
+    }
+   ]
+  },
+  {
+   "Name": "plex",
+   "Repository": "ghcr.io/hotio/plex:latest",
+   "Registry": "https://github.com/hotio/plex/pkgs/container/plex",
+   "Repo": "hotio's Repository",
+   "Overview": "WireGuard VPN, Privoxy and Unbound built-in! It's Plex, do I really need to explain what it is?",
+   "Icon": "https://hotio.dev/webhook-avatars/plex.png",
+   "Support": "https://hotio.dev/discord",
+   "Project": "https://hotio.dev/containers/plex",
+   "WebUI": "http://[IP]:[PORT:32400]/web",
+   "Network": "bridge",
+   "Shell": "bash",
+   "Privileged": "false",
+   "Requires": "Don't forget to click **Show more settings...** for all **Variables**! If you do not use the VPN feature, you can remove all VPN related **Variables** and **Ext",
+   "ExtraParams": "--hostname=plex.internal --cap-add=NET_ADMIN",
+   "ExtraSearchTerms": "wireguard vpn arr privoxy unbound pia proton torguard pullio game",
+   "CategoryList": [
+    "MediaServer-Video",
+    "MediaServer-Music",
+    "MediaServer-Photos"
+   ],
+   "Config": [
+    {
+     "@attributes": {
+      "Name": "Host Port for 32400",
+      "Target": "32400",
+      "Default": "32400",
+      "Mode": "tcp",
+      "Description": "Container Port: 32400",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "Host Path for /config",
+      "Target": "/config",
+      "Default": "",
+      "Mode": "rw",
+      "Description": "Container Path: /config",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "Host Path for /data",
+      "Target": "/data",
+      "Default": "",
+      "Mode": "rw",
+      "Description": "Container Path: /data",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PLEX_CLAIM_TOKEN",
+      "Target": "PLEX_CLAIM_TOKEN",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: PLEX_CLAIM_TOKEN&lt;br&gt;Example: claim-xxxxxxxxxxxxxxxxxxxx&lt;br&gt;Visit plex.tv/claim in your browser to get your claim code.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PLEX_ADVERTISE_URL",
+      "Target": "PLEX_ADVERTISE_URL",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: PLEX_ADVERTISE_URL",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PLEX_NO_AUTH_NETWORKS",
+      "Target": "PLEX_NO_AUTH_NETWORKS",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: PLEX_NO_AUTH_NETWORKS",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PLEX_BETA_INSTALL",
+      "Target": "PLEX_BETA_INSTALL",
+      "Default": "false|true",
+      "Mode": "",
+      "Description": "Container Variable: PLEX_BETA_INSTALL",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PLEX_PURGE_CODECS",
+      "Target": "PLEX_PURGE_CODECS",
+      "Default": "false|true",
+      "Mode": "",
+      "Description": "Container Variable: PLEX_PURGE_CODECS",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PRIVOXY_ENABLED",
+      "Target": "PRIVOXY_ENABLED",
+      "Default": "false|true",
+      "Mode": "",
+      "Description": "Container Variable: PRIVOXY_ENABLED",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "UNBOUND_ENABLED",
+      "Target": "UNBOUND_ENABLED",
+      "Default": "false|true",
+      "Mode": "",
+      "Description": "Container Variable: UNBOUND_ENABLED",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "UNBOUND_NAMESERVERS",
+      "Target": "UNBOUND_NAMESERVERS",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: UNBOUND_NAMESERVERS",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_ENABLED",
+      "Target": "VPN_ENABLED",
+      "Default": "false|true",
+      "Mode": "",
+      "Description": "Container Variable: VPN_ENABLED",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_CONF",
+      "Target": "VPN_CONF",
+      "Default": "wg0",
+      "Mode": "",
+      "Description": "Container Variable: VPN_CONF",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_PROVIDER",
+      "Target": "VPN_PROVIDER",
+      "Default": "generic|proton|pia",
+      "Mode": "",
+      "Description": "Container Variable: VPN_PROVIDER",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_LAN_NETWORK",
+      "Target": "VPN_LAN_NETWORK",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: VPN_LAN_NETWORK",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_LAN_LEAK_ENABLED",
+      "Target": "VPN_LAN_LEAK_ENABLED",
+      "Default": "false|true",
+      "Mode": "",
+      "Description": "Container Variable: VPN_LAN_LEAK_ENABLED",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_EXPOSE_PORTS_ON_LAN",
+      "Target": "VPN_EXPOSE_PORTS_ON_LAN",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: VPN_EXPOSE_PORTS_ON_LAN",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_AUTO_PORT_FORWARD",
+      "Target": "VPN_AUTO_PORT_FORWARD",
+      "Default": "false",
+      "Mode": "",
+      "Description": "Container Variable: VPN_AUTO_PORT_FORWARD",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_PORT_REDIRECTS",
+      "Target": "VPN_PORT_REDIRECTS",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: VPN_PORT_REDIRECTS",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_HEALTHCHECK_ENABLED",
+      "Target": "VPN_HEALTHCHECK_ENABLED",
+      "Default": "false|true",
+      "Mode": "",
+      "Description": "Container Variable: VPN_HEALTHCHECK_ENABLED",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_NAMESERVERS",
+      "Target": "VPN_NAMESERVERS",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: VPN_NAMESERVERS",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_PIA_USER",
+      "Target": "VPN_PIA_USER",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: VPN_PIA_USER",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_PIA_PASS",
+      "Target": "VPN_PIA_PASS",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: VPN_PIA_PASS",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_PIA_PREFERRED_REGION",
+      "Target": "VPN_PIA_PREFERRED_REGION",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: VPN_PIA_PREFERRED_REGION",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_PIA_DIP_TOKEN",
+      "Target": "VPN_PIA_DIP_TOKEN",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Variable: VPN_PIA_DIP_TOKEN",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VPN_PIA_PORT_FORWARD_PERSIST",
+      "Target": "VPN_PIA_PORT_FORWARD_PERSIST",
+      "Default": "false|true",
+      "Mode": "",
+      "Description": "Container Variable: VPN_PIA_PORT_FORWARD_PERSIST",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PUID",
+      "Target": "PUID",
+      "Default": "99",
+      "Mode": "",
+      "Description": "Container Variable: PUID",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PGID",
+      "Target": "PGID",
+      "Default": "100",
+      "Mode": "",
+      "Description": "Container Variable: PGID",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "UMASK",
+      "Target": "UMASK",
+      "Default": "002",
+      "Mode": "",
+      "Description": "Container Variable: UMASK",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    }
+   ]
+  },
+  {
+   "Name": "plex",
+   "Repository": "lscr.io/linuxserver/plex",
+   "Registry": "https://github.com/orgs/linuxserver/packages/container/package/plex",
+   "Repo": "linuxserver's Repository",
+   "Overview": "Plex(https://plex.tv) organizes video, music and photos from personal media libraries and streams them to smart TVs, streaming boxes and mobile devices. This container is packaged ",
+   "Icon": "https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/plex-logo.png",
+   "Support": "https://github.com/linuxserver/docker-plex/issues/new/choose",
+   "Project": "https://plex.tv",
+   "WebUI": "http://[IP]:[PORT:32400]/web/index.html",
+   "Network": "host",
+   "Shell": "bash",
+   "Privileged": "false",
+   "TemplateURL": "https://raw.githubusercontent.com/linuxserver/templates/main/unraid/plex.xml",
+   "CategoryList": [
+    "MediaServer-Video",
+    "MediaServer-Music",
+    "MediaServer-Photos"
+   ],
+   "Config": [
+    {
+     "@attributes": {
+      "Name": "Appdata",
+      "Target": "/config",
+      "Default": "",
+      "Mode": "rw",
+      "Description": "Plex library location. *This can grow very large, 50gb+ is likely for a large collection.*",
+      "Type": "Path",
+      "Display": "advanced",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "Path: /tv",
+      "Target": "/tv",
+      "Default": "",
+      "Mode": "rw",
+      "Description": "Media goes here. Add as many as needed e.g. `/movies`, `/tv`, etc.",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "Path: /movies",
+      "Target": "/movies",
+      "Default": "",
+      "Mode": "rw",
+      "Description": "Media goes here. Add as many as needed e.g. `/movies`, `/tv`, etc.",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "VERSION",
+      "Target": "VERSION",
+      "Default": "docker",
+      "Description": "Set whether to update plex or not - see Application Setup section.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PLEX_CLAIM",
+      "Target": "PLEX_CLAIM",
+      "Default": "",
+      "Description": "Optionally you can obtain a claim token from https://plex.tv/claim and input here. Keep in mind that the claim tokens expire within 4 minutes.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PUID",
+      "Target": "PUID",
+      "Default": "99",
+      "Description": "Container Variable: PUID",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PGID",
+      "Target": "PGID",
+      "Default": "100",
+      "Description": "Container Variable: PGID",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "UMASK",
+      "Target": "UMASK",
+      "Default": "022",
+      "Description": "Container Variable: UMASK",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    }
+   ]
+  },
+  {
+   "Name": "MeshVault",
+   "Repository": "ghcr.io/007darkmatter5/meshvault:latest",
+   "Registry": "https://github.com/007darkmatter5/meshvault/pkgs/container/meshvault",
+   "Repo": "Darkmatter5's Repository",
+   "Overview": "A self-hosted catalog for a 3D printing model collection.\n\n    Indexes your model folders in place - files are never moved or renamed unless you\n    allow it - and adds search, tag",
+   "Icon": "https://raw.githubusercontent.com/007darkmatter5/meshvault/main/templates/meshvault.png",
+   "Support": "https://github.com/007darkmatter5/meshvault/issues",
+   "Project": "https://github.com/007darkmatter5/meshvault",
+   "WebUI": "http://[IP]:[PORT:8080]/",
+   "Network": "bridge",
+   "Shell": "bash",
+   "Privileged": "false",
+   "TemplateURL": "https://raw.githubusercontent.com/007darkmatter5/meshvault/main/templates/meshvault.xml",
+   "CategoryList": [
+    "MediaApp-Other",
+    "Productivity"
+   ],
+   "Config": [
+    {
+     "@attributes": {
+      "Name": "WebUI Port",
+      "Target": "8080",
+      "Default": "8080",
+      "Mode": "tcp",
+      "Description": "Port for the MeshVault web interface.",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "8080"
+    },
+    {
+     "@attributes": {
+      "Name": "App Data",
+      "Target": "/data",
+      "Default": "/mnt/user/appdata/meshvault",
+      "Mode": "rw",
+      "Description": "Database, thumbnails, 3D preview cache and sign-in keys. Put this on cache or an SSD - SQLite over a network share is unreliable. Back it up: it holds your tags, collections and notes.",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "/mnt/user/appdata/meshvault"
+    },
+    {
+     "@attributes": {
+      "Name": "Model Library",
+      "Target": "/models",
+      "Default": "/mnt/user/models",
+      "Mode": "ro",
+      "Description": "Your 3D model folder. Mounted read-only by default so MeshVault can never touch your files. Change to rw only if you want it to organise them for you.",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "/mnt/user/models"
+    },
+    {
+     "@attributes": {
+      "Name": "Library Name",
+      "Target": "MeshVault__Libraries__0__Name",
+      "Default": "Models",
+      "Mode": "",
+      "Description": "Name shown for the library above.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "Models"
+    },
+    {
+     "@attributes": {
+      "Name": "Library Path",
+      "Target": "MeshVault__Libraries__0__Path",
+      "Default": "/models",
+      "Mode": "",
+      "Description": "Path inside the container for the library. Leave as /models unless you changed the mount above.",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "/models"
+    },
+    {
+     "@attributes": {
+      "Name": "Allow Organize",
+      "Target": "MeshVault__Libraries__0__AllowOrganize",
+      "Default": "false",
+      "Mode": "",
+      "Description": "Whether MeshVault may move and rename files in the library. Only takes effect on first run, when the library is created; afterwards change it on the Libraries page. The mount above must also be rw.",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "false"
+    },
+    {
+     "@attributes": {
+      "Name": "Rescan Interval (hours)",
+      "Target": "MeshVault__RescanIntervalHours",
+      "Default": "12",
+      "Mode": "",
+      "Description": "Skip the startup scan if the library was scanned this recently. A full walk of a large library takes minutes. Set to 0 to always rescan on start.",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "12"
+    },
+    {
+     "@attributes": {
+      "Name": "Timezone",
+      "Target": "TZ",
+      "Default": "Etc/UTC",
+      "Mode": "",
+      "Description": "Timezone for dates shown in the UI.",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "Etc/UTC"
+    }
+   ]
+  },
+  {
+   "Name": "ReelSentry",
+   "Repository": "https://raw.githubusercontent.com/BGriffin63/ReelSentry/main/reelsentry.plg",
+   "Repo": "BGriffin63's Repository",
+   "Overview": "ReelSentry monitors your Unraid virtual machines and tells you when something changes — a VM starts, stops, shuts down, crashes, pauses, resumes, or reboots. It watches VM lifecycl",
+   "Icon": "https://raw.githubusercontent.com/BGriffin63/ReelSentry/main/assets/reelsentry-128.png",
+   "Support": "https://github.com/BGriffin63/ReelSentry/issues",
+   "Project": "https://github.com/BGriffin63/ReelSentry",
+   "TemplateURL": "https://raw.githubusercontent.com/BGriffin63/ReelSentry/main/reelsentry.xml",
+   "CategoryList": [
+    "Tools-Utilities",
+    "Plugins"
+   ],
+   "Plugin": true,
+   "PluginURL": "https://raw.githubusercontent.com/BGriffin63/ReelSentry/main/reelsentry.plg",
+   "MinVer": "7.2.0"
+  },
+  {
+   "Name": "blueiris",
+   "Repository": "jshridha/blueiris:gpu",
+   "Registry": "https://hub.docker.com/r/jshridha/blueiris/",
+   "Repo": "A75G's Repository",
+   "Overview": "Blue Iris video security software runs on a PC and can provide recording and playback for up to 64 IP network cameras or webcams. Blue Iris is affordable and powerful enough to saf",
+   "Icon": "https://raw.githubusercontent.com/A75G/docker-templates/master/templates/icons/blueiris.png",
+   "Support": "https://forums.unraid.net/topic/100915-support-a75g-blueiris/",
+   "Project": "https://hub.docker.com/r/jshridha/blueiris/",
+   "WebUI": "http://[IP]:[PORT:8080]/",
+   "Network": "bridge",
+   "Shell": "sh",
+   "Privileged": "true",
+   "ExtraParams": "--init --log-opt max-size=5m --log-opt max-file=2",
+   "TemplateURL": "https://raw.githubusercontent.com/A75G/docker-templates/master/templates/deprecated/blueiris.xml",
+   "CategoryList": [
+    "Security"
+   ],
+   "Config": [
+    {
+     "@attributes": {
+      "Name": "VNC Web Server Port",
+      "Target": "8080",
+      "Default": "8080",
+      "Mode": "tcp",
+      "Description": "VNC Web Server Port",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "8080"
+    },
+    {
+     "@attributes": {
+      "Name": "VNC Server Port",
+      "Target": "5900",
+      "Default": "5950",
+      "Mode": "tcp",
+      "Description": "VNC Server Port",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "5950"
+    },
+    {
+     "@attributes": {
+      "Name": "Web Server Port",
+      "Target": "81",
+      "Default": "8181",
+      "Mode": "tcp",
+      "Description": "Web Server Port",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "8181"
+    },
+    {
+     "@attributes": {
+      "Name": "Data Path",
+      "Target": "/home/wineuser/prefix",
+      "Default": "/mnt/user/appdata/blueiris",
+      "Mode": "rw",
+      "Description": "Data Path",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "/mnt/user/appdata/blueiris"
+    }
+   ],
+   "Deprecated": true
+  },
+  {
+   "Name": "cncjs",
+   "Repository": "cncjs/cncjs:latest",
+   "Registry": "https://hub.docker.com/r/cncjs/cncjs/",
+   "Repo": "Alphacosmos' Repository",
+   "Overview": "A full-featured web interface for CNC controllers running Grbl, Marlin, Smoothieware, or TinyG.",
+   "Icon": "https://cnc.js.org/logo.png",
+   "Support": "https://hub.docker.com/r/cncjs/cncjs/",
+   "Project": "https://github.com/cncjs/cncjs",
+   "WebUI": "http://[IP]:[PORT:8000]",
+   "Network": "bridge",
+   "Shell": "sh",
+   "Privileged": "true",
+   "TemplateURL": "https://raw.githubusercontent.com/Aquillacomputingsystem/unraid-templetes/main/CNCJS.xml",
+   "CategoryList": [
+    "Tools-Utilities"
+   ],
+   "Config": [
+    {
+     "@attributes": {
+      "Name": "/config",
+      "Target": "/cncjs/",
+      "Default": "",
+      "Mode": "rw",
+      "Description": "Container Path: /opt/cncjs",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "/mnt/user/appdata/cncjs"
+    },
+    {
+     "@attributes": {
+      "Name": "port",
+      "Target": "8000",
+      "Default": "",
+      "Mode": "tcp",
+      "Description": "Container Port: 8000",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "8000"
+    },
+    {
+     "@attributes": {
+      "Name": "Webcam",
+      "Target": "",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Device:",
+      "Type": "Device",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "/dev/"
+    },
+    {
+     "@attributes": {
+      "Name": "CNC",
+      "Target": "",
+      "Default": "",
+      "Mode": "",
+      "Description": "Container Device:",
+      "Type": "Device",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": "/dev/"
+    }
+   ]
+  },
+  {
+   "errors": [
+    "Expected closing tag 'Description' (opened in line 9, col 3) instead of closing tag 'Containers'."
+   ]
+  },
+  {
+   "Name": "quakejs",
+   "Repository": "treyyoder/quakejs:latest",
+   "Registry": "https://hub.docker.com/r/treyyoder/quakejs/",
+   "Repo": "A75G's Repository",
+   "Overview": "QuakeJS is a port of ioquake3 to JavaScript with the help of Emscripten.[br]IMPORTANT Use Custom:br0 https://youtu.be/2VnQxxn00jU?t=121 put Fixed IP address, then copy the ip and a",
+   "Icon": "https://raw.githubusercontent.com/A75G/docker-templates/master/templates/icons/quakejs.png",
+   "Support": "https://forums.unraid.net/topic/89502-support-a75g-repo/",
+   "Project": "https://github.com/treyyoder/quakejs-docker",
+   "WebUI": "http://[IP]:[PORT:80]/",
+   "Network": "br0",
+   "Shell": "sh",
+   "Privileged": "false",
+   "TemplateURL": "https://raw.githubusercontent.com/A75G/docker-templates/master/templates/quakejs.xml",
+   "CategoryList": [
+    "Other"
+   ],
+   "Config": [
+    {
+     "@attributes": {
+      "Name": "HTTP",
+      "Target": "80",
+      "Default": "80",
+      "Mode": "",
+      "Description": "HTTP",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "80"
+    },
+    {
+     "@attributes": {
+      "Name": "Game Port",
+      "Target": "27960",
+      "Default": "27960",
+      "Mode": "tcp",
+      "Description": "Game Port",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "27960"
+    },
+    {
+     "@attributes": {
+      "Name": "SERVER",
+      "Target": "SERVER",
+      "Default": "192.168.0.266",
+      "Mode": "",
+      "Description": "Put your Fixed IP address Here",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "192.168.0.266"
+    },
+    {
+     "@attributes": {
+      "Name": "HTTP_PORT",
+      "Target": "HTTP_PORT",
+      "Default": "80",
+      "Mode": "",
+      "Description": "HTTP_PORT",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "80"
+    }
+   ]
+  },
+  {
+   "Name": "poptonium",
+   "Repository": "ghcr.io/benjafin/poptonium:latest",
+   "Registry": "https://ghcr.io/benjafin/poptonium",
+   "Repo": "Benjavin's Repository",
+   "Overview": "Companion backend for the Poptonium Plex client. Allows serving custom sections, curations and ratings, integrates with Overseerr and facilitates other extra functionalities on top",
+   "Icon": "https://raw.githubusercontent.com/Benjafin/poptonium-server/main/icon.png",
+   "Support": "https://github.com/Benjafin/poptonium-server/issues",
+   "Project": "https://github.com/Benjafin/poptonium-server",
+   "WebUI": "http://[IP]:[PORT:8085]/admin",
+   "Network": "bridge",
+   "Shell": "sh",
+   "Privileged": "false",
+   "ExtraSearchTerms": "plex ratings mdblist overseerr opensubtitles discover",
+   "TemplateURL": "https://raw.githubusercontent.com/Benjafin/poptonium-server/main/templates/poptonium.xml",
+   "CategoryList": [
+    "MediaApp-Video"
+   ],
+   "Config": [
+    {
+     "@attributes": {
+      "Name": "WebUI / API Port",
+      "Target": "8085",
+      "Default": "8085",
+      "Mode": "tcp",
+      "Description": "Container port for the web admin UI and API. Keep the host port at 8085: the app falls back to the Plex host on a hardcoded 8085 when no reverse proxy is in front of it.",
+      "Type": "Port",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "8085"
+    },
+    {
+     "@attributes": {
+      "Name": "Data",
+      "Target": "/data",
+      "Default": "/mnt/user/appdata/poptonium",
+      "Mode": "rw",
+      "Description": "Persistent data: SQLite cache DB and custom sections.",
+      "Type": "Path",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": "/mnt/user/appdata/poptonium"
+    },
+    {
+     "@attributes": {
+      "Name": "PLEX_URL",
+      "Target": "PLEX_URL",
+      "Default": "",
+      "Mode": "",
+      "Description": "REQUIRED. Internal Plex URL (e.g. http://plex:32400).",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "PLEX_TOKEN",
+      "Target": "PLEX_TOKEN",
+      "Default": "",
+      "Mode": "",
+      "Description": "REQUIRED. Plex server token (X-Plex-Token).",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "true",
+      "Mask": "true"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "MDBLIST_API_KEY",
+      "Target": "MDBLIST_API_KEY",
+      "Default": "",
+      "Mode": "",
+      "Description": "Optional. mdblist.com API key: the source for all ratings (IMDb/RT/TMDB/Metacritic/MDbList) plus the Discover feed. Blank disables ratings and the popular feed; the rest still works.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "true"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "OVERSEERR_URL",
+      "Target": "OVERSEERR_URL",
+      "Default": "",
+      "Mode": "",
+      "Description": "Optional. Overseerr base URL (e.g. http://overseerr:5055) for request/search proxy.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "OVERSEERR_API_KEY",
+      "Target": "OVERSEERR_API_KEY",
+      "Default": "",
+      "Mode": "",
+      "Description": "Optional. Overseerr API key. Blank disables the Overseerr proxy.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "true"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "OPENSUBTITLES_API_KEY",
+      "Target": "OPENSUBTITLES_API_KEY",
+      "Default": "",
+      "Mode": "",
+      "Description": "Optional. OpenSubtitles app API key (opensubtitles.com, Profile, API Consumers). Required for online subtitle search/download.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "true"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "OPENSUBTITLES_USERNAME",
+      "Target": "OPENSUBTITLES_USERNAME",
+      "Default": "",
+      "Mode": "",
+      "Description": "Optional. OpenSubtitles account username; its daily download quota (20/day free) is used for downloads.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "OPENSUBTITLES_PASSWORD",
+      "Target": "OPENSUBTITLES_PASSWORD",
+      "Default": "",
+      "Mode": "",
+      "Description": "Optional. OpenSubtitles account password.",
+      "Type": "Variable",
+      "Display": "always",
+      "Required": "false",
+      "Mask": "true"
+     },
+     "value": ""
+    },
+    {
+     "@attributes": {
+      "Name": "TZ",
+      "Target": "TZ",
+      "Default": "",
+      "Mode": "",
+      "Description": "Optional. Container timezone (e.g. Europe/Berlin). Sets the 'server time' used by the nightly ratings-sync schedule.",
+      "Type": "Variable",
+      "Display": "advanced",
+      "Required": "false",
+      "Mask": "false"
+     },
+     "value": ""
+    }
+   ],
+   "MinVer": "6.1"
+  }
+ ],
+ "apps": 10,
+ "last_updated": "2026-09-13 12:11",
+ "last_updated_timestamp": 1789315913
+}

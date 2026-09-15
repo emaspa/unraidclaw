@@ -14,6 +14,14 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
+### Unreleased
+- Add Community Applications search, template details and installation with overrides (#17, thanks @bubbadk)
+- Add installed-app update and removal. Updates preserve saved configuration and attached volumes; removal keeps appdata, volumes, images and templates
+- Add a separate Plugins category for listing, inspecting, installing, checking, updating and removing Unraid plugins
+- Add ca:read/create/update/delete and plugins:read/create/update/delete permissions. Docker Manager includes CA permissions; Read Only includes plugins:read; plugin write permissions require explicit selection or Full Admin
+- Add dry-run previews and strict input validation to the new operations, with masked settings redacted from app-update previews and errors
+- Refuse unsupported configurations and existing install targets; verify update/removal results and attempt rollback when an app replacement fails
+
 ### 0.1.31
 - Fix /api/array/parity/status showing no/stale activity: read live state from `mdcmd status` instead of the unreliable GraphQL parityCheckStatus; existing fields (running/progress/speed/errors) now reflect reality, plus new paused/correcting/action/position/size/speedHuman/lastCheck (#14, thanks @rodaballo)
 

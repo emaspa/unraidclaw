@@ -29,6 +29,13 @@ jobs:
 
       - run: pnpm typecheck
 
+      # Offline behavioural tests for the API routes. The Community
+      # Applications suite runs against a trimmed catalog fixture, and the
+      # install, update, remove and plugin paths run against injected files and
+      # a recording command runner, so CI never reaches the network and never
+      # runs docker or the plugin manager.
+      - run: pnpm test
+
       # Fail if openclaw.plugin.json contracts.tools drifts from the tools
       # registered in src/ (undeclared tools are silently hidden from the
       # LLM agent in OpenClaw 2026.6.x — see issue #15).

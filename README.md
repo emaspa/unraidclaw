@@ -21,8 +21,8 @@ UnraidClaw sits between AI agents and your Unraid servers, providing a unified R
 
 ## Features
 
-- **44 tools** across 11 categories: Docker, VMs, Array, Disks, Shares, System, Notifications, Network, Users, Logs
-- **22 permission keys** in a resource:action matrix, configurable from the WebGUI
+- **55 tools** across 13 categories: Health, Docker, Community Applications, Plugins, VMs, Array, Disks, Shares, System, Notifications, Network, Users, Logs
+- **30 permission keys** in a resource:action matrix, configurable from the WebGUI
 - **HTTPS** with auto-generated self-signed TLS certificate
 - **SHA-256 API key** authentication
 - **Activity logging** with JSONL format, filter, and search
@@ -80,6 +80,17 @@ Authentication via `x-api-key: <api-key>` header.
 | | POST | `/api/docker/containers` | `docker:create` |
 | | POST | `/api/docker/containers/:id/:action` | `docker:update` |
 | | DELETE | `/api/docker/containers/:id` | `docker:delete` |
+| **Community Apps** | GET | `/api/ca/search?q=` | `ca:read` |
+| | GET | `/api/ca/app/:name` | `ca:read` |
+| | POST | `/api/ca/app/:name/install` | `ca:create` |
+| | POST | `/api/ca/app/:name/update` | `ca:update` |
+| | POST | `/api/ca/app/:name/remove` | `ca:delete` |
+| **Plugins** | GET | `/api/plugins` | `plugins:read` |
+| | GET | `/api/plugins/:file` | `plugins:read` |
+| | POST | `/api/plugins/install` | `plugins:create` |
+| | POST | `/api/plugins/:file/check` | `plugins:update` |
+| | POST | `/api/plugins/:file/update` | `plugins:update` |
+| | POST | `/api/plugins/:file/remove` | `plugins:delete` |
 | **VMs** | GET | `/api/vms` | `vms:read` |
 | | GET | `/api/vms/:id` | `vms:read` |
 | | POST | `/api/vms/:id/:action` | `vms:update` |
@@ -131,6 +142,69 @@ Authentication via `x-api-key: <api-key>` header.
 
 Only `image` is required. The container is started immediately and an Unraid dockerMan XML template is created so it appears in the Docker tab.
 
+### Community Applications
+
+The CA endpoints search the public catalog, inspect templates, and install apps. Update and removal use the installed container's saved template, not current catalog defaults.
+
+`GET /api/ca/search?q=plex` matches every query word against names, images, maintainers and descriptions. Add `includePlugins=true` or `includeDeprecated=true` to include entries hidden by default.
+
+`GET /api/ca/app/:name` returns template details, configurable ports, volumes and environment variables, required fields without defaults, and installation blockers. If several templates share a name, the API returns 409 with the candidates. Use `?repo=linuxserver` to select a repository.
+
+#### Installing an app
+
+`POST /api/ca/app/Jellyfin/install` accepts template overrides and an optional container name:
+
+```json
+{
+  "repo": "linuxserver",
+  "name": "jellyfin",
+  "overrides": {
+    "/config": "/mnt/user/appdata/jellyfin",
+    "/data/tvshows": "/mnt/user/media/tv",
+    "/data/movies": "/mnt/user/media/movies",
+    "PUID": "99"
+  },
+  "dryRun": true
+}
+```
+
+Override keys are the field's display name or container-side target. Unknown keys and missing required values return 400. Review the dry-run template and command preview, then set `dryRun` to `false` to install. The app appears on Unraid's Docker tab with its template, icon and WebUI link. The command preview omits some values Unraid adds, including host settings and template labels.
+
+Installation returns 422 for unsupported templates: Extra Parameters, Post Arguments, privileged mode, device passthrough, custom networks, Tailscale, pinned MAC addresses, legacy configuration, unknown field types, or an incompatible Unraid version. Deprecated, blacklisted and `.plg` entries are also refused. Use the WebGUI for these cases.
+
+Host paths are used as written. Supply overrides if you relocated appdata; UnraidClaw does not apply CA's path-rewriting rules. A missing `/mnt` pool or share root returns 400 rather than creating a directory on Unraid's RAM filesystem.
+
+An existing container or `my-<name>.xml` template returns 409 and is not overwritten. A failed install keeps its template so you can inspect it and finish from the Docker tab.
+
+#### Updating and removing an installed app
+
+These endpoints take the **installed container name** from the Docker tab, which may differ from the catalog name:
+
+- `POST /api/ca/app/:name/update`
+- `POST /api/ca/app/:name/remove`
+
+Both accept `{"dryRun": true}`. A preview reads the installed configuration but does not pull images or change containers. The container must have a matching saved template and Unraid's `net.unraid.docker.managed=dockerman` label. Concurrent actions against the same container return 409.
+
+Update pulls the current image tag and preserves saved ports, paths, variables and network mode, plus the container's restart policy, pids limit and attached Docker volumes. Running apps return to running; stopped apps remain stopped. If the image has not changed, no replacement is created.
+
+The replacement is created before stopping the old container. UnraidClaw swaps their names, starts the replacement when needed, verifies its state, then removes the old container without deleting its image or volumes. A failed replacement triggers a rollback. If rollback fails, the error identifies the original container for recovery. Container rollback cannot reverse changes an updated app makes to its data.
+
+Updates refuse paused or unstable containers and configurations they cannot reproduce, including unsupported template fields, device access, custom runtime settings and resource limits. Update previews and errors redact values marked `Mask="true"` in the saved template.
+
+Remove deletes only the container. Appdata, Docker volumes, the image and the saved template remain. Use **Add Container** on the Docker tab to recreate it from the saved configuration.
+
+### Plugins
+
+The separate Plugins endpoints manage Unraid `.plg` plugins without CA. List and inspect require `plugins:read`; install requires `plugins:create`; check and update require `plugins:update`; removal requires `plugins:delete`. All four permissions default to off.
+
+Install takes an explicit public HTTPS URL ending in `.plg`. Downloads have size and time limits; private addresses, unsafe URLs and redirects to them are refused. The plugin manager runs the downloaded installer as root, so use sources you trust.
+
+Check and update are separate operations. `POST /api/plugins/:file/check` downloads the published definition and stages it in `/tmp/plugins`. `POST /api/plugins/:file/update` applies that staged version. A check changes the staged files even though it does not install anything. Older, mismatched and unregistered one-shot definitions are refused as updates.
+
+`POST /api/plugins/:file/remove` runs the plugin's own uninstall scripts. Those scripts may delete configuration or data; unlike CA container removal, data preservation is not guaranteed.
+
+Every mutating Plugins endpoint accepts `{"dryRun": true}` to return a plan without downloading, writing or executing scripts. Plugin names accept the `.plg` suffix or omit it. OS plugins are protected. UnraidClaw can list, inspect and check itself, but self-install, self-update and self-removal require the WebGUI or CLI because they stop the API server.
+
 ### Docker actions
 
 `POST /api/docker/containers/:id/:action` where action is one of: `start`, `stop`, `restart`, `pause`, `unpause`
@@ -154,7 +228,7 @@ Only `image` is required. The container is started immediately and an Unraid doc
 
 ## OpenClaw Plugin
 
-The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 44 tools to any AI agent that supports the OpenClaw protocol.
+The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 55 tools to any AI agent that supports the OpenClaw protocol.
 
 ### Install
 
@@ -247,6 +321,8 @@ The secret then lives in your environment (shell, systemd `EnvironmentFile`, or 
 |----------|-------|
 | Health | `unraid_health_check` |
 | Docker | `unraid_docker_list`, `unraid_docker_inspect`, `unraid_docker_logs`, `unraid_docker_create`, `unraid_docker_start`, `unraid_docker_stop`, `unraid_docker_restart`, `unraid_docker_pause`, `unraid_docker_unpause`, `unraid_docker_remove` |
+| Community Apps | `unraid_ca_search`, `unraid_ca_app`, `unraid_ca_install`, `unraid_ca_update`, `unraid_ca_remove` |
+| Plugins | `unraid_plugins_list`, `unraid_plugin_info`, `unraid_plugin_install`, `unraid_plugin_check_updates`, `unraid_plugin_update`, `unraid_plugin_remove` |
 | VMs | `unraid_vm_list`, `unraid_vm_inspect`, `unraid_vm_start`, `unraid_vm_stop`, `unraid_vm_pause`, `unraid_vm_resume`, `unraid_vm_force_stop`, `unraid_vm_reboot` |
 | Array | `unraid_array_status`, `unraid_array_start`, `unraid_array_stop`, `unraid_parity_status`, `unraid_parity_start`, `unraid_parity_pause`, `unraid_parity_resume`, `unraid_parity_cancel` |
 | Disks | `unraid_disk_list`, `unraid_disk_details` |
@@ -264,6 +340,8 @@ Permissions use a `resource:action` format. Configure them from the WebGUI Permi
 | Category | Permissions |
 |----------|------------|
 | Docker | `docker:read`, `docker:create`, `docker:update`, `docker:delete` |
+| Community Apps | `ca:read`, `ca:create`, `ca:update`, `ca:delete` |
+| Plugins | `plugins:read`, `plugins:create`, `plugins:update`, `plugins:delete` |
 | VMs | `vms:read`, `vms:update`, `vms:delete` |
 | Array & Storage | `array:read`, `array:update`, `disk:read`, `share:read`, `share:update` |
 | System | `info:read`, `os:update`, `services:read` |
@@ -272,7 +350,7 @@ Permissions use a `resource:action` format. Configure them from the WebGUI Permi
 | Users | `me:read` |
 | Logs | `logs:read` |
 
-The WebGUI includes presets: **Read Only**, **Docker Manager**, **VM Manager**, **Full Admin**, and **None**.
+The WebGUI includes **Read Only**, **Docker Manager**, **VM Manager**, **Full Admin**, and **None** presets. Docker Manager includes all four `ca:` permissions. Read Only includes `plugins:read`. Plugin write permissions must be enabled individually or through Full Admin.
 
 ## Architecture
 

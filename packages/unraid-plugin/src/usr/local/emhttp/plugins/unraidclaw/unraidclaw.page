@@ -230,6 +230,44 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
       </div>
     </div>
 
+    <!-- Community Applications -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Community Applications</h3>
+        <span class="occ-perm-summary" data-category="ca"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('ca', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('ca', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item"><input type="checkbox" name="ca:read" data-category="ca" <?=!empty($permissions['ca:read']) ? 'checked' : ''?>><span class="occ-perm-label">Search &amp; Inspect</span><span class="occ-perm-desc">Search the CA catalog and view app templates</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="ca:create" data-category="ca" <?=!empty($permissions['ca:create']) ? 'checked' : ''?>><span class="occ-perm-label">Install</span><span class="occ-perm-desc">Install a CA app as a new Docker container</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="ca:update" data-category="ca" <?=!empty($permissions['ca:update']) ? 'checked' : ''?>><span class="occ-perm-label">Update</span><span class="occ-perm-desc">Pull a newer image for an installed app and recreate it from its saved template</span></label>
+        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="ca:delete" data-category="ca" <?=!empty($permissions['ca:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Remove</span><span class="occ-perm-desc">Remove an installed app's container, keeping its template, image, volumes and appdata (destructive)</span></label>
+      </div>
+    </div>
+
+    <!-- Plugins -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Plugins</h3>
+        <span class="occ-perm-summary" data-category="plugins"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('plugins', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('plugins', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item"><input type="checkbox" name="plugins:read" data-category="plugins" <?=!empty($permissions['plugins:read']) ? 'checked' : ''?>><span class="occ-perm-label">List &amp; Inspect</span><span class="occ-perm-desc">List installed plugins and read their metadata</span></label>
+        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="plugins:create" data-category="plugins" <?=!empty($permissions['plugins:create']) ? 'checked' : ''?>><span class="occ-perm-label">Install</span><span class="occ-perm-desc">Install a plugin from an explicit .plg URL, which runs the plugin's own scripts as root (destructive)</span></label>
+        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="plugins:update" data-category="plugins" <?=!empty($permissions['plugins:update']) ? 'checked' : ''?>><span class="occ-perm-label">Check &amp; Update</span><span class="occ-perm-desc">Download a plugin file to stage an update, and apply updates by running the plugin's scripts as root (destructive)</span></label>
+        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="plugins:delete" data-category="plugins" <?=!empty($permissions['plugins:delete']) ? 'checked' : ''?>><span class="occ-perm-label">Remove</span><span class="occ-perm-desc">Remove a plugin; its own removal scripts may delete its data (destructive)</span></label>
+      </div>
+    </div>
+
     <!-- Virtual Machines -->
     <div class="occ-perm-category">
       <div class="occ-perm-header" onclick="occToggleCategory(this)">

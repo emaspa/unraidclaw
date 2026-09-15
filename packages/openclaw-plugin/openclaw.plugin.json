@@ -6,6 +6,11 @@
       "unraid_array_start",
       "unraid_array_status",
       "unraid_array_stop",
+      "unraid_ca_app",
+      "unraid_ca_install",
+      "unraid_ca_remove",
+      "unraid_ca_search",
+      "unraid_ca_update",
       "unraid_disk_details",
       "unraid_disk_list",
       "unraid_docker_create",
@@ -29,6 +34,12 @@
       "unraid_parity_resume",
       "unraid_parity_start",
       "unraid_parity_status",
+      "unraid_plugin_check_updates",
+      "unraid_plugin_info",
+      "unraid_plugin_install",
+      "unraid_plugin_remove",
+      "unraid_plugin_update",
+      "unraid_plugins_list",
       "unraid_service_list",
       "unraid_share_details",
       "unraid_share_list",
@@ -52,8 +63,14 @@
   "configContracts": {
     "secretInputs": {
       "paths": [
-        { "path": "apiKey", "expected": "string" },
-        { "path": "servers.*.apiKey", "expected": "string" }
+        {
+          "path": "apiKey",
+          "expected": "string"
+        },
+        {
+          "path": "servers.*.apiKey",
+          "expected": "string"
+        }
       ]
     }
   },
@@ -68,14 +85,31 @@
       "apiKey": {
         "description": "API key for authenticating with UnraidClaw (single-server mode). A plaintext string, or an OpenClaw SecretRef object resolved before the plugin loads.",
         "anyOf": [
-          { "type": "string" },
+          {
+            "type": "string"
+          },
           {
             "type": "object",
-            "required": ["source", "provider", "id"],
+            "required": [
+              "source",
+              "provider",
+              "id"
+            ],
             "properties": {
-              "source": { "type": "string", "enum": ["env", "file", "exec"] },
-              "provider": { "type": "string" },
-              "id": { "type": "string" }
+              "source": {
+                "type": "string",
+                "enum": [
+                  "env",
+                  "file",
+                  "exec"
+                ]
+              },
+              "provider": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
             },
             "additionalProperties": false
           }
@@ -103,14 +137,31 @@
             "apiKey": {
               "description": "API key for authenticating with this server. A plaintext string, or an OpenClaw SecretRef object resolved before the plugin loads.",
               "anyOf": [
-                { "type": "string" },
+                {
+                  "type": "string"
+                },
                 {
                   "type": "object",
-                  "required": ["source", "provider", "id"],
+                  "required": [
+                    "source",
+                    "provider",
+                    "id"
+                  ],
                   "properties": {
-                    "source": { "type": "string", "enum": ["env", "file", "exec"] },
-                    "provider": { "type": "string" },
-                    "id": { "type": "string" }
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "env",
+                        "file",
+                        "exec"
+                      ]
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
                   },
                   "additionalProperties": false
                 }
@@ -126,7 +177,11 @@
               "description": "Use this server when no server name is specified"
             }
           },
-          "required": ["name", "serverUrl", "apiKey"]
+          "required": [
+            "name",
+            "serverUrl",
+            "apiKey"
+          ]
         }
       }
     }

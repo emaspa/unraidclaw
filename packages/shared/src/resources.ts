@@ -1,5 +1,7 @@
 export enum Resource {
   DOCKER = "docker",
+  CA = "ca",
+  PLUGINS = "plugins",
   VMS = "vms",
   ARRAY = "array",
   DISK = "disk",
@@ -44,6 +46,26 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
       { key: "docker:create", label: "Create", description: "Create and start new containers" },
       { key: "docker:update", label: "Control", description: "Start, stop, restart, pause, unpause containers" },
       { key: "docker:delete", label: "Remove", description: "Remove containers", destructive: true },
+    ],
+  },
+  {
+    name: "Community Applications",
+    description: "Search the Community Applications catalog and install apps",
+    permissions: [
+      { key: "ca:read", label: "Search & Inspect", description: "Search the CA catalog and view app templates" },
+      { key: "ca:create", label: "Install", description: "Install a CA app as a new Docker container" },
+      { key: "ca:update", label: "Update", description: "Pull a newer image for an installed app and recreate it from its saved template" },
+      { key: "ca:delete", label: "Remove", description: "Remove an installed app's container, keeping its template, image, volumes and appdata", destructive: true },
+    ],
+  },
+  {
+    name: "Plugins",
+    description: "Manage Unraid .plg plugins through the system plugin manager",
+    permissions: [
+      { key: "plugins:read", label: "List & Inspect", description: "List installed plugins and read their metadata" },
+      { key: "plugins:create", label: "Install", description: "Install a plugin from an explicit .plg URL, which runs the plugin's own scripts as root", destructive: true },
+      { key: "plugins:update", label: "Check & Update", description: "Download a plugin file to stage an update, and apply updates by running the plugin's scripts as root", destructive: true },
+      { key: "plugins:delete", label: "Remove", description: "Remove a plugin; its own removal scripts may delete its data", destructive: true },
     ],
   },
   {

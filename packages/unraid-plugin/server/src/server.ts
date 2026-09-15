@@ -6,6 +6,8 @@ import { ActivityLogger, type ActivityLogEntry } from "./logger.js";
 
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerDockerRoutes } from "./routes/docker.js";
+import { registerCaRoutes } from "./routes/ca.js";
+import { registerPluginRoutes } from "./routes/plugins.js";
 import { registerVMRoutes } from "./routes/vms.js";
 import { registerArrayRoutes } from "./routes/array.js";
 import { registerDiskRoutes } from "./routes/disks.js";
@@ -98,6 +100,8 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
   // Register routes
   registerHealthRoutes(app, gql);
   registerDockerRoutes(app, gql);
+  registerCaRoutes(app);
+  registerPluginRoutes(app);
   registerVMRoutes(app, gql);
   registerArrayRoutes(app, gql);
   registerDiskRoutes(app, gql);

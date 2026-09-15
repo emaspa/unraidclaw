@@ -98,17 +98,23 @@ Once installed and configured, just ask your agent:
 - "What's the array status?"
 - "Show me disk temperatures"
 - "Create a new nginx container with port 8080"
+- "Find me a Community Applications backup tool"
+- "Install Jellyfin from Community Applications, media on /mnt/user/media"
+- "Update the jellyfin container to the latest image"
+- "Which of my Unraid plugins have updates?"
 - "Check parity status"
 - "Reboot the server"
 
 ## Tools
 
-44 tools across 11 categories:
+55 tools across 13 categories:
 
 | Category | Tools |
 |----------|-------|
 | Health | `unraid_health_check` |
 | Docker | `unraid_docker_list`, `unraid_docker_inspect`, `unraid_docker_logs`, `unraid_docker_create`, `unraid_docker_start`, `unraid_docker_stop`, `unraid_docker_restart`, `unraid_docker_pause`, `unraid_docker_unpause`, `unraid_docker_remove` |
+| Community Apps | `unraid_ca_search`, `unraid_ca_app`, `unraid_ca_install`, `unraid_ca_update`, `unraid_ca_remove` |
+| Plugins | `unraid_plugins_list`, `unraid_plugin_info`, `unraid_plugin_install`, `unraid_plugin_check_updates`, `unraid_plugin_update`, `unraid_plugin_remove` |
 | VMs | `unraid_vm_list`, `unraid_vm_inspect`, `unraid_vm_start`, `unraid_vm_stop`, `unraid_vm_pause`, `unraid_vm_resume`, `unraid_vm_force_stop`, `unraid_vm_reboot` |
 | Array | `unraid_array_status`, `unraid_array_start`, `unraid_array_stop`, `unraid_parity_status`, `unraid_parity_start`, `unraid_parity_pause`, `unraid_parity_resume`, `unraid_parity_cancel` |
 | Disks | `unraid_disk_list`, `unraid_disk_details` |
@@ -119,7 +125,11 @@ Once installed and configured, just ask your agent:
 | Users | `unraid_user_me` |
 | Logs | `unraid_syslog` |
 
-Every tool is gated by a 22-key `resource:action` permission matrix configured from the Unraid WebGUI, so you control exactly what agents can do.
+`unraid_ca_update` and `unraid_ca_remove` act on an installed app, so their `name` is the container's name from the Docker tab, not the app's name in the catalog. Update keeps the configuration saved on the server and restores the running or stopped state; remove deletes the container and leaves appdata, volumes, the image and the template alone. Both take `dryRun`.
+
+The six plugin tools manage Unraid `.plg` plugins through Unraid's own plugin manager. Installing one runs vendor code as root, checking for an update downloads a plugin file and stages it, and removing one runs the plugin's removal script, which may take its data with it. All four mutating tools take `dryRun`.
+
+Every tool is gated by a 30-key `resource:action` permission matrix configured from the Unraid WebGUI, so you control exactly what agents can do.
 
 ## Links
 

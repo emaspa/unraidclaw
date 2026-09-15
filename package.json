@@ -10,6 +10,7 @@
     "build:openclaw": "pnpm --filter @openclaw/plugin-unraid build",
     "dev:server": "pnpm --filter @unraidclaw/server dev",
     "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @unraidclaw/server test",
     "clean": "pnpm -r clean"
   },
   "engines": {

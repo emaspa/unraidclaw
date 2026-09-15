@@ -6,30 +6,19 @@ import { requirePermission } from "../permissions.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { writeFile, mkdir } from "node:fs/promises";
+import {
+  escapeXml,
+  sanitizeFilename,
+  VALID_IMAGE_RE,
+  VALID_PORT_RE,
+  VALID_VOLUME_RE,
+  VALID_ENV_RE,
+  VALID_NETWORK_RE,
+  VALID_NAME_RE,
+  VALID_RESTART_VALUES,
+} from "../docker-common.js";
 
 const execFileAsync = promisify(execFile);
-
-function escapeXml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-// Input validation for docker:create
-const VALID_IMAGE_RE = /^[a-zA-Z0-9][a-zA-Z0-9._:/@-]{0,254}$/;
-const VALID_PORT_RE = /^\d{1,5}:\d{1,5}(\/(?:tcp|udp))?$/;
-const VALID_VOLUME_RE = /^\/[^:]+:[^:]+(:(ro|rw))?$/;
-const VALID_ENV_RE = /^[a-zA-Z_][a-zA-Z0-9_]*=.*/;
-const VALID_NETWORK_RE = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
-const VALID_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
-const VALID_RESTART_VALUES = new Set(["no", "always", "unless-stopped", "on-failure"]);
-
-function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-zA-Z0-9_.-]/g, "_");
-}
 
 interface DockerCreateBody {
   image: string;

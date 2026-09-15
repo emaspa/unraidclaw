@@ -37,6 +37,10 @@ const DOCKER_MANAGER_KEYS: PermissionKey[] = [
   "docker:create",
   "docker:update",
   "docker:delete",
+  "ca:read",
+  "ca:create",
+  "ca:update",
+  "ca:delete",
   "info:read",
   "logs:read",
 ];
