@@ -1234,3 +1234,186 @@ test("an ambiguous name is refused before anything is installed", async () => {
   assert.deepEqual(runs, []);
   assert.deepEqual(await readdir(templatesDir), []);
 });
+
+// ── Unraid 7.4 template fields ──────────────────────────────────
+//
+// 7.4 added <Memory> and <ExtraNetworks> to the docker-manager template. Both
+// change how the container runs, and a template that carries either one has to
+// be answered rather than quietly installed without it. The rest of this file
+// runs against 7.0.0, so these tests say which version they are on.
+
+const V74 = { readUnraidVersion: async () => "7.4.0-beta.2" };
+
+/** The fixture's MeshVault entry with extra raw template fields. */
+function feedWithFields(fields: Record<string, string>): string {
+  const feed = JSON.parse(FIXTURE);
+  Object.assign(
+    feed.applist.find((a: { Name?: string }) => a.Name === "MeshVault"),
+    fields
+  );
+  return JSON.stringify(feed);
+}
+
+test("a memory limit survives into the template and the docker preview", async () => {
+  await setPermissions(ALL_CA);
+  const { app } = await harness(V74, feedWithFields({ Memory: "2g" }));
+
+  const detail = await app.inject({ method: "GET", url: "/api/ca/app/MeshVault" });
+  assert.deepEqual(detail.json().data.blockers, [], "a valid limit is not a refusal");
+
+  const res = await app.inject({
+    method: "POST",
+    url: "/api/ca/app/MeshVault/install",
+    payload: { dryRun: true },
+  });
+  assert.equal(res.statusCode, 200);
+  const { plan } = res.json().data;
+  assert.match(plan.templateXml, /<Memory>2g<\/Memory>/, plan.templateXml);
+  assert.ok(
+    plan.dockerCommandPreview.includes("--memory=2g"),
+    JSON.stringify(plan.dockerCommandPreview)
+  );
+  assert.ok(
+    plan.dockerCommandPreview.indexOf("--memory=2g") <
+      plan.dockerCommandPreview.indexOf("--pids-limit"),
+    "the preview places it where Unraid's own command does"
+  );
+});
+
+test("the memory limit a real install writes reads back as the same limit", async () => {
+  await setPermissions(ALL_CA);
+  const { app, templatesDir } = await harness(V74, feedWithFields({ Memory: "1.5GiB" }));
+
+  const res = await app.inject({ method: "POST", url: "/api/ca/app/MeshVault/install", payload: {} });
+  assert.equal(res.statusCode, 200);
+
+  const xml = await readFile(join(templatesDir, "my-MeshVault.xml"), "utf8");
+  const { parseSavedTemplate } = await import("../src/ca-saved-template.js");
+  const saved = parseSavedTemplate(xml, join(templatesDir, "my-MeshVault.xml"));
+  assert.deepEqual(saved.blockers, [], JSON.stringify(saved.blockers));
+  assert.equal(saved.memory, "1.5GiB", "the update path reads back what the install wrote");
+  assert.equal(saved.memoryBytes, Math.floor(1.5 * 1024 ** 3));
+});
+
+test("a memory limit docker would reject is refused before anything runs", async () => {
+  await setPermissions(ALL_CA);
+  for (const [limit, wanted] of [
+    ["lots", "not a size docker accepts"],
+    ["2 apples", "not a size docker accepts"],
+    ["4m", "below docker's 6 MB minimum"],
+    // A digit run that overflows a double, and a byte count past what can be
+    // counted exactly. Neither may be rounded into a limit that looks valid.
+    ["9".repeat(310), "too large for UnraidClaw to represent safely"],
+    ["9223372036854775808", "too large for UnraidClaw to represent safely"],
+    ["8p", "too large for UnraidClaw to represent safely"],
+  ] as const) {
+    const { app, runs, hostDirs, templatesDir } = await harness(V74, feedWithFields({ Memory: limit }));
+
+    const detail = await app.inject({ method: "GET", url: "/api/ca/app/MeshVault" });
+    const blocker = detail.json().data.blockers.find((b: { code: string }) => b.code === "CA_INVALID_MEMORY");
+    assert.ok(blocker, `${limit}: ${JSON.stringify(detail.json().data.blockers)}`);
+    assert.ok(blocker.message.includes(wanted), blocker.message);
+
+    const res = await app.inject({ method: "POST", url: "/api/ca/app/MeshVault/install", payload: {} });
+    assert.equal(res.statusCode, 422, limit);
+    assert.equal(res.json().error.code, "CA_NOT_INSTALLABLE");
+    assert.deepEqual(runs, [], `${limit}: nothing was executed`);
+    assert.deepEqual(hostDirs, [], `${limit}: no host directory was created`);
+    assert.deepEqual(await readdir(templatesDir), [], `${limit}: no template was written`);
+  }
+});
+
+test("docker's own spelling of no limit installs as no limit", async () => {
+  await setPermissions(ALL_CA);
+  const { app } = await harness(V74, feedWithFields({ Memory: "0" }));
+
+  const res = await app.inject({
+    method: "POST",
+    url: "/api/ca/app/MeshVault/install",
+    payload: { dryRun: true },
+  });
+  assert.equal(res.statusCode, 200);
+  const { plan } = res.json().data;
+  assert.match(plan.templateXml, /<Memory><\/Memory>/, plan.templateXml);
+  assert.ok(
+    !plan.dockerCommandPreview.some((a: string) => a.startsWith("--memory")),
+    JSON.stringify(plan.dockerCommandPreview)
+  );
+});
+
+test("a memory limit is refused on the Unraid versions that ignore it", async () => {
+  await setPermissions(ALL_CA);
+  // unraid/webgui branches 7.0 through 7.3 name <Memory> nowhere in the docker
+  // manager, so the container would come up with no limit at all.
+  for (const version of ["7.0.0", "7.3.2", null]) {
+    const { app, runs, templatesDir } = await harness(
+      { readUnraidVersion: async () => version },
+      feedWithFields({ Memory: "2g" })
+    );
+
+    const detail = await app.inject({ method: "GET", url: "/api/ca/app/MeshVault" });
+    assert.ok(
+      detail.json().data.blockers.some((b: { code: string }) => b.code === "CA_MEMORY_UNSUPPORTED"),
+      `${version}: ${JSON.stringify(detail.json().data.blockers)}`
+    );
+
+    const res = await app.inject({ method: "POST", url: "/api/ca/app/MeshVault/install", payload: {} });
+    assert.equal(res.statusCode, 422, String(version));
+    assert.ok(res.json().error.message.includes("7.4"), res.json().error.message);
+    assert.deepEqual(runs, [], String(version));
+    assert.deepEqual(await readdir(templatesDir), [], String(version));
+  }
+
+  // Empty and "0" are unaffected: there is no limit to lose.
+  for (const memory of ["", "0"]) {
+    const { app } = await harness({}, feedWithFields({ Memory: memory }));
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/ca/app/MeshVault/install",
+      payload: { dryRun: true },
+    });
+    assert.equal(res.statusCode, 200, `${memory} on 7.0.0`);
+  }
+});
+
+test("extra networks are refused, not silently dropped", async () => {
+  await setPermissions(ALL_CA);
+  const { app, runs, hostDirs, templatesDir } = await harness(
+    V74,
+    feedWithFields({ ExtraNetworks: "proxy,backend" })
+  );
+
+  const detail = await app.inject({ method: "GET", url: "/api/ca/app/MeshVault" });
+  assert.ok(
+    detail.json().data.blockers.some((b: { code: string }) => b.code === "CA_EXTRA_NETWORKS"),
+    JSON.stringify(detail.json().data.blockers)
+  );
+  assert.equal(detail.json().data.installable, false);
+
+  const res = await app.inject({ method: "POST", url: "/api/ca/app/MeshVault/install", payload: {} });
+  assert.equal(res.statusCode, 422);
+  assert.equal(res.json().error.code, "CA_NOT_INSTALLABLE");
+  assert.ok(res.json().error.message.includes("additional networks"), res.json().error.message);
+  assert.deepEqual(runs, []);
+  assert.deepEqual(hostDirs, []);
+  assert.deepEqual(await readdir(templatesDir), []);
+});
+
+test("empty 7.4 fields install exactly as a 7.3 template does", async () => {
+  await setPermissions(ALL_CA);
+  const { app } = await harness(V74, feedWithFields({ Memory: "", ExtraNetworks: "" }));
+  const plain = await harness();
+
+  for (const h of [app, plain.app]) {
+    const res = await h.inject({
+      method: "POST",
+      url: "/api/ca/app/MeshVault/install",
+      payload: { dryRun: true },
+    });
+    assert.equal(res.statusCode, 200);
+    const { plan } = res.json().data;
+    assert.match(plan.templateXml, /<Memory><\/Memory>/, "the element is written, with no limit");
+    assert.match(plan.templateXml, /<ExtraNetworks\/>/, "and always empty");
+    assert.ok(!plan.dockerCommandPreview.some((a: string) => a.startsWith("--memory")));
+  }
+});

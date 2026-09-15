@@ -1007,6 +1007,36 @@ test("memory sizes are read the way docker reads --memory", () => {
   for (const value of ["-1", "abc", "2x", "g", "", "2 gb extra", "2  g", "8mI", "8000000ib", "8000000i"]) {
     assert.equal(parseMemoryBytes(value), null, value);
   }
+  // A digit run long enough to overflow a double used to come back as
+  // Infinity, and a byte count past 2^53-1 cannot be counted exactly. Neither
+  // is a number to hand on.
+  for (const value of [
+    "9".repeat(310),
+    "9".repeat(310) + "g",
+    "9223372036854775808",
+    "1e400",
+    String(Number.MAX_SAFE_INTEGER + 2),
+    "8p",
+  ]) {
+    assert.equal(parseMemoryBytes(value), null, value);
+  }
+  assert.equal(parseMemoryBytes(String(Number.MAX_SAFE_INTEGER)), Number.MAX_SAFE_INTEGER);
+  assert.equal(parseMemoryBytes("7p"), 7 * 1024 ** 5, "a limit under the ceiling still reads");
+});
+
+test("a saved template's memory limit too large to count is refused", async () => {
+  await setPermissions(ALL_CA);
+  for (const memory of ["9".repeat(310), "9223372036854775808", "8p"]) {
+    const docker = runningJellyfin();
+    const { app } = await harness(docker, { "my-jellyfin.xml": jellyfin74(memory) });
+    const res = await post(app, "/api/ca/app/jellyfin/update");
+    assert.equal(res.statusCode, 422, memory);
+    assert.ok(
+      res.json().error.details.blockers.some((b: { code: string }) => b.code === "CA_INVALID_MEMORY"),
+      memory
+    );
+    assert.deepEqual(docker.mutations(), [], memory);
+  }
 });
 
 test("an Unraid 7.4 template with its new elements left empty updates normally", async () => {

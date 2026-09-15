@@ -15,7 +15,14 @@
 // bounded argv instead and the route verifies the result with docker inspect.
 
 import type { CaBlocker, CaConfigEntry, CaConfigType } from "@unraidclaw/shared";
-import { CA_NAME_RE, CaInstallError, type ResolvedTemplate } from "./ca-template.js";
+import {
+  CA_NAME_RE,
+  CaInstallError,
+  memoryLimitProblem,
+  normalizeMemoryLimit,
+  parseMemoryBytes,
+  type ResolvedTemplate,
+} from "./ca-template.js";
 import { XmlParseError, asArray, attrOf, parseXmlDocument, textOf } from "./xml.js";
 
 /** Networks whose behavior we can reproduce exactly. Matches the install path. */
@@ -112,20 +119,9 @@ export interface SavedTemplate {
   blockers: CaBlocker[];
 }
 
-/** Docker refuses a memory limit below 6 MB. */
-const DOCKER_MIN_MEMORY = 6 * 1024 * 1024;
-
-/**
- * Bytes for a memory size, read the way docker reads `--memory`: a number with
- * an optional binary unit (`512m`, `2g`, `1.5GiB`, `2 g`). Null when docker
- * would reject it.
- */
-export function parseMemoryBytes(value: string): number | null {
-  const m = /^(\d+(?:\.\d*)?) ?(?:([kmgtp])(?:i?b)?|b)?$/i.exec(value);
-  if (!m) return null;
-  const power = m[2] ? "kmgtp".indexOf(m[2].toLowerCase()) + 1 : 0;
-  return Math.floor(Number(m[1]) * 1024 ** power);
-}
+// Memory limits are read the same way on both sides of the feature, so the
+// parser lives with the install path and is re-exported here.
+export { parseMemoryBytes };
 
 function boolText(value: string): boolean {
   return value.trim().toLowerCase() === "true";
@@ -230,18 +226,18 @@ export function parseSavedTemplate(xml: string, path: string): SavedTemplate {
 
   // Unraid 7.4 writes <Memory> into every template and passes it as --memory
   // when it is set. "0" is docker's own spelling of no limit.
-  let memory = meta(root.Memory);
+  const rawMemory = meta(root.Memory);
+  const limit = normalizeMemoryLimit(rawMemory);
+  let memory = "";
   let memoryBytes = 0;
-  if (memory !== "") {
-    const bytes = parseMemoryBytes(memory);
-    if (bytes === null) {
-      add("CA_INVALID_MEMORY", `The saved template's memory limit ${JSON.stringify(memory)} is not a size docker accepts.`);
-    } else if (bytes > 0 && bytes < DOCKER_MIN_MEMORY) {
-      add("CA_INVALID_MEMORY", `The saved template's memory limit ${JSON.stringify(memory)} is below docker's 6 MB minimum.`);
-    } else {
-      memoryBytes = bytes;
-    }
-    if (memoryBytes === 0) memory = "";
+  if (limit.ok) {
+    memory = limit.memory;
+    memoryBytes = limit.bytes;
+  } else {
+    add(
+      "CA_INVALID_MEMORY",
+      `The saved template's memory limit ${JSON.stringify(rawMemory)} ${memoryLimitProblem(limit.reason)}.`
+    );
   }
 
   const ports: string[] = [];
@@ -310,7 +306,7 @@ export function parseSavedTemplate(xml: string, path: string): SavedTemplate {
   return {
     path,
     xml,
-    resolved: { name, image, network, ports, volumes, env, config },
+    resolved: { name, image, network, ports, volumes, env, memory, config },
     labels,
     registry: meta(root.Registry),
     webui: meta(root.WebUI),

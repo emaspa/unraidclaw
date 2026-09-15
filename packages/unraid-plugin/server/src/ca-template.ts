@@ -41,6 +41,85 @@ function hasControlChars(s: string): boolean {
   return false;
 }
 
+/** Docker refuses a memory limit below 6 MB. */
+export const DOCKER_MIN_MEMORY = 6 * 1024 * 1024;
+
+/**
+ * The largest limit this can vouch for.
+ *
+ * Docker holds `--memory` in a signed 64-bit integer, whose maximum is far
+ * beyond what a JavaScript number counts exactly. Rather than report a byte
+ * count that has already been rounded, reject anything over 2^53-1 bytes.
+ */
+const MAX_REPRESENTABLE_MEMORY = Number.MAX_SAFE_INTEGER;
+
+type MemorySize = { bytes: number } | "unreadable" | "out-of-range";
+
+/**
+ * Bytes for a memory size, read the way docker reads `--memory`: a number with
+ * an optional binary unit (`512m`, `2g`, `1.5GiB`, `2 g`).
+ *
+ * The digit run is unbounded, so `Number()` on it can reach Infinity; every
+ * result is therefore checked for being a finite integer in range before it is
+ * handed back as a byte count.
+ */
+function parseMemorySize(value: string): MemorySize {
+  const m = /^(\d+(?:\.\d*)?) ?(?:([kmgtp])(?:i?b)?|b)?$/i.exec(value);
+  if (!m) return "unreadable";
+  const power = m[2] ? "kmgtp".indexOf(m[2].toLowerCase()) + 1 : 0;
+  const bytes = Math.floor(Number(m[1]) * 1024 ** power);
+  if (!Number.isFinite(bytes) || bytes < 0 || bytes > MAX_REPRESENTABLE_MEMORY) {
+    return "out-of-range";
+  }
+  return { bytes };
+}
+
+/**
+ * Bytes for a memory size docker would accept, or null when it would not. A
+ * size too large to count exactly is null as well, never a rounded number.
+ */
+export function parseMemoryBytes(value: string): number | null {
+  const size = parseMemorySize(value);
+  return typeof size === "string" ? null : size.bytes;
+}
+
+export type MemoryLimit =
+  | { ok: true; memory: string; bytes: number }
+  | { ok: false; reason: "unreadable" | "out-of-range" | "below-minimum" };
+
+/**
+ * Read an Unraid 7.4 `<Memory>` value the one way both the install and the
+ * update path agree on.
+ *
+ * Unraid writes this element into every template it saves and passes it
+ * through verbatim as `--memory=`, without checking it first, so a value
+ * docker rejects turns into a container that never gets created. Empty is the
+ * normal case (no limit), and so is docker's own spelling of no limit, "0":
+ * both normalize to an empty limit rather than an error, which is what keeps a
+ * template written here readable by the update path unchanged.
+ */
+export function normalizeMemoryLimit(value: string): MemoryLimit {
+  const memory = value.trim();
+  if (memory === "") return { ok: true, memory: "", bytes: 0 };
+  const size = parseMemorySize(memory);
+  if (typeof size === "string") return { ok: false, reason: size };
+  if (size.bytes === 0) return { ok: true, memory: "", bytes: 0 };
+  if (size.bytes < DOCKER_MIN_MEMORY) return { ok: false, reason: "below-minimum" };
+  return { ok: true, memory, bytes: size.bytes };
+}
+
+/** Why a limit was refused, as the second half of a sentence about it. */
+export function memoryLimitProblem(reason: (MemoryLimit & { ok: false })["reason"]): string {
+  switch (reason) {
+    case "unreadable":
+      return "is not a size docker accepts";
+    case "out-of-range":
+      return "is too large for UnraidClaw to represent safely";
+    case "below-minimum":
+      return "is below docker's 6 MB minimum";
+  }
+}
+
 export class CaInstallError extends Error {
   constructor(
     message: string,
@@ -119,6 +198,48 @@ export function computeBlockers(app: CaApp, env: TemplateEnv): CaBlocker[] {
   }
   if ((raw.MyMAC ?? "").trim() !== "") {
     add("CA_CUSTOM_MAC", "The template pins a MAC address, which only works on macvlan/ipvlan networks.");
+  }
+  // Unraid 7.4 attaches these with `docker network connect` after the
+  // container exists, a second step UnraidClaw does not run. Installing anyway
+  // would produce a container on one network instead of the several the
+  // template asks for. The update path refuses the same element for the same
+  // reason (CA_EXTRA_NETWORKS in ca-saved-template).
+  if (String(raw.ExtraNetworks ?? "").trim() !== "") {
+    add(
+      "CA_EXTRA_NETWORKS",
+      "The template attaches the container to additional networks, which UnraidClaw does not reproduce. Install this app from the Unraid WebGUI instead."
+    );
+  }
+  // Unraid 7.4 hands <Memory> to docker as `--memory=` without checking it, so
+  // a value docker rejects becomes a container that is never created. Refuse
+  // it here instead, while the template is still only a plan.
+  const memory = String(raw.Memory ?? "").trim();
+  if (memory !== "") {
+    const limit = normalizeMemoryLimit(memory);
+    if (!limit.ok) {
+      add(
+        "CA_INVALID_MEMORY",
+        `The template's memory limit ${JSON.stringify(memory)} ${memoryLimitProblem(limit.reason)}.`
+      );
+    } else if (limit.bytes > 0) {
+      // <Memory> reached the docker manager in 7.4. On 7.0 through 7.3 its
+      // Helpers.php names the element nowhere and its command builder has no
+      // --memory at all (unraid/webgui, branches 7.0-7.3 against master), so
+      // installing here would produce a container with no limit while the
+      // template claimed one.
+      const have = env.unraidVersion ? cleanVersion(env.unraidVersion) : "";
+      if (!have) {
+        add(
+          "CA_MEMORY_UNSUPPORTED",
+          "The template sets a memory limit, which only Unraid 7.4 and newer apply, and this server's version could not be read."
+        );
+      } else if (compareVersions(have, "7.4") < 0) {
+        add(
+          "CA_MEMORY_UNSUPPORTED",
+          `The template sets a memory limit, which only Unraid 7.4 and newer apply; this server runs ${have}.`
+        );
+      }
+    }
   }
   if (app.config.some((c) => c.type === "Device")) {
     add("CA_DEVICE_PASSTHROUGH", "The template passes host devices through to the container.");
@@ -240,6 +361,8 @@ export interface ResolvedTemplate {
   ports: string[];
   volumes: string[];
   env: string[];
+  /** The `--memory` value as docker will see it, or "" when there is no limit. */
+  memory: string;
   /** Config entries with the caller's overrides applied. */
   config: Array<CaConfigEntry & { value: string }>;
 }
@@ -262,6 +385,18 @@ export function resolveTemplate(
   const volumes: string[] = [];
   const env: string[] = [];
   const config: Array<CaConfigEntry & { value: string }> = [];
+
+  // Refused here as well as in computeBlockers: nothing may reach the template
+  // on flash, or the docker preview, with a limit docker would not take.
+  const rawMemory = String(app.raw.Memory ?? "").trim();
+  const limit = normalizeMemoryLimit(rawMemory);
+  if (!limit.ok) {
+    throw new CaInstallError(
+      `The template's memory limit ${JSON.stringify(rawMemory)} ${memoryLimitProblem(limit.reason)}.`,
+      "CA_INVALID_MEMORY",
+      422
+    );
+  }
 
   for (const entry of app.config) {
     const value = overrides.get(overrideKey(entry)) ?? entry.default;
@@ -296,7 +431,16 @@ export function resolveTemplate(
     }
   }
 
-  return { name: containerName, image: app.repository, network, ports, volumes, env, config };
+  return {
+    name: containerName,
+    image: app.repository,
+    network,
+    ports,
+    volumes,
+    env,
+    memory: limit.memory,
+    config,
+  };
 }
 
 const ENV_NAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -359,8 +503,11 @@ export function hostPaths(resolved: ResolvedTemplate): string[] {
  * Serialize the Unraid docker-manager template.
  *
  * Every value is entity-encoded exactly once, matching Unraid's xml_encode /
- * xml_decode pair. ExtraParams and PostArgs are always written empty: a
- * template that needs them never reaches this function.
+ * xml_decode pair. ExtraParams, PostArgs and ExtraNetworks are always written
+ * empty: a template that needs any of them never reaches this function.
+ * Memory carries the catalog's limit through, already checked against what
+ * docker accepts, because Unraid 7.4 reads it back on every later rebuild and
+ * dropping it would quietly hand the app the whole machine.
  */
 export function buildTemplateXml(app: CaApp, resolved: ResolvedTemplate, now = Date.now()): string {
   const raw = app.raw;
@@ -396,6 +543,7 @@ export function buildTemplateXml(app: CaApp, resolved: ResolvedTemplate, now = D
   <Repository>${e(resolved.image)}</Repository>
   <Registry>${e(raw.Registry ?? "")}</Registry>
   <Network>${e(resolved.network)}</Network>
+  <ExtraNetworks/>
   <MyIP/>
   <Shell>${e(raw.Shell ?? "sh")}</Shell>
   <Privileged>false</Privileged>
@@ -409,6 +557,7 @@ export function buildTemplateXml(app: CaApp, resolved: ResolvedTemplate, now = D
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
+  <Memory>${e(resolved.memory)}</Memory>
   <DateInstalled>${Math.floor(now / 1000)}</DateInstalled>
   <DonateText/>
   <DonateLink/>
@@ -428,6 +577,9 @@ ${configs}
  */
 export function previewDockerCommand(resolved: ResolvedTemplate, app: CaApp): string[] {
   const argv = ["docker", "run", "-d", `--name=${resolved.name}`, `--net=${resolved.network}`];
+  // Unraid emits `--memory=` immediately before the pids limit, and only when
+  // the template sets one.
+  if (resolved.memory) argv.push(`--memory=${resolved.memory}`);
   argv.push("--pids-limit", "2048");
   for (const v of resolved.env) argv.push("-e", v);
   argv.push("-e", "HOST_OS=Unraid", "-e", `HOST_CONTAINERNAME=${resolved.name}`);
