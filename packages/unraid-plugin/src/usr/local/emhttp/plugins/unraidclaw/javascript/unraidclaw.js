@@ -3,7 +3,7 @@
 // ── Permission presets (mirror of shared/permissions.ts) ──
 var OCC_PRESETS = {
   'read-only': [
-    'docker:read','ca:read','vms:read','array:read','disk:read','share:read',
+    'docker:read','ca:read','plugins:read','vms:read','array:read','disk:read','share:read',
     'info:read','services:read','notification:read',
     'network:read','me:read','logs:read'
   ],
