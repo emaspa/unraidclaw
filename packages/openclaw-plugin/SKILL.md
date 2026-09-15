@@ -64,10 +64,16 @@ OS plugins are protected from mutation. UnraidClaw can list, inspect and check i
 
 ## Install
 
-UnraidClaw is an OpenClaw **plugin** (not a skill). Install from npm:
+UnraidClaw is an OpenClaw **plugin** (not a skill). Install it from ClawHub:
 
 ```bash
-npm pack unraidclaw && openclaw plugins install unraidclaw-*.tgz && rm unraidclaw-*.tgz
+openclaw plugins install clawhub:unraidclaw --accept-capabilities
+```
+
+It is also on npm, which needs `--force` because the source is outside ClawHub:
+
+```bash
+openclaw plugins install unraidclaw --force --accept-capabilities
 ```
 
 Then configure in `~/.openclaw/openclaw.json`:

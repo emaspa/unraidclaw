@@ -15,14 +15,22 @@ This is the [OpenClaw](https://github.com/openclaw/openclaw) plugin for **[Unrai
 ## Install
 
 ```bash
-npm pack unraidclaw && openclaw plugins install unraidclaw-*.tgz && rm unraidclaw-*.tgz
+openclaw plugins install clawhub:unraidclaw --accept-capabilities
+```
+
+The same package is on npm. OpenClaw asks you to confirm installs from outside ClawHub, so installing from npm needs `--force`:
+
+```bash
+openclaw plugins install unraidclaw --force --accept-capabilities
 ```
 
 To update to the latest version:
 
 ```bash
-rm -rf ~/.openclaw/extensions/unraidclaw && npm pack unraidclaw && openclaw plugins install unraidclaw-*.tgz && rm unraidclaw-*.tgz
+openclaw plugins update unraidclaw --accept-capabilities
 ```
+
+Then restart the gateway with `openclaw gateway restart` so it loads the new version.
 
 ## Configure
 

@@ -26,7 +26,7 @@ UnraidClaw sits between AI agents and your Unraid servers, providing a unified R
 - **HTTPS** with auto-generated self-signed TLS certificate
 - **SHA-256 API key** authentication
 - **Activity logging** with JSONL format, filter, and search
-- **OpenClaw plugin** available on npm (`openclaw plugins install unraidclaw`)
+- **OpenClaw plugin** available on ClawHub and npm (`openclaw plugins install clawhub:unraidclaw --accept-capabilities`)
 - **Single-file server**, no `node_modules` needed on Unraid
 
 ## Requirements
@@ -235,14 +235,22 @@ The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 55 tools
 ### Install
 
 ```bash
-npm pack unraidclaw && openclaw plugins install unraidclaw-*.tgz && rm unraidclaw-*.tgz
+openclaw plugins install clawhub:unraidclaw --accept-capabilities
+```
+
+The same package is on npm. OpenClaw asks you to confirm installs from outside ClawHub, so installing from npm needs `--force`:
+
+```bash
+openclaw plugins install unraidclaw --force --accept-capabilities
 ```
 
 ### Update
 
 ```bash
-rm -rf ~/.openclaw/extensions/unraidclaw && npm pack unraidclaw && openclaw plugins install unraidclaw-*.tgz && rm unraidclaw-*.tgz
+openclaw plugins update unraidclaw --accept-capabilities
 ```
+
+Then restart the gateway with `openclaw gateway restart` so it loads the new version.
 
 ### Configure
 
