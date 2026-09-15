@@ -3,7 +3,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "unraidclaw">
 <!ENTITY author    "emaspa">
-<!ENTITY version   "0.1.31">
+<!ENTITY version   "0.1.32">
 <!ENTITY launch    "Settings/unraidclaw">
 <!ENTITY repo      "emaspa/unraidclaw">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/&repo;/main/packages/unraid-plugin/unraidclaw.plg">
@@ -14,7 +14,7 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
-### Unreleased
+### 0.1.32
 - Preserve host directory symlinks and permissions during installation. Packages no longer include directory headers that could replace /etc/rc.d
 - Add Community Applications search, template details and installation with overrides (#17, thanks @bubbadk)
 - Add installed-app update and removal. Updates preserve saved configuration and attached volumes; removal keeps appdata, volumes, images and templates
@@ -22,7 +22,8 @@
 - Add ca:read/create/update/delete and plugins:read/create/update/delete permissions. Docker Manager includes CA permissions; Read Only includes plugins:read; plugin write permissions require explicit selection or Full Admin
 - Add dry-run previews and strict input validation to the new operations, with masked settings redacted from app-update previews and errors
 - Refuse unsupported configurations and existing install targets; verify update/removal results and attempt rollback when an app replacement fails
-- Unraid 7.4 support: app updates reproduce the new template memory limit and refuse templates with Additional Networks rather than dropping them
+- Unraid 7.4 support: fresh installs and app updates preserve template memory limits and refuse templates with Additional Networks rather than dropping them
+- Refuse fresh installs with a template memory limit on Unraid versions before 7.4, where the field would be ignored
 - Stop querying the deprecated VM `uuid` GraphQL field; `uuid` is now derived from the VM id
 
 ### 0.1.31
