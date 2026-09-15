@@ -243,7 +243,7 @@ export interface CaRemoveResponse {
   warnings: string[];
 }
 
-// ── Unraid Plugins (.plg) ──────────────────────────────────────
+// ── Plugins (.plg) ──────────────────────────────────────
 
 export interface PluginSummary {
   /** Plugin file basename, e.g. "unassigned.devices.plg". This is the id used everywhere in this API. */

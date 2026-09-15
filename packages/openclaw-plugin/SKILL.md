@@ -14,7 +14,7 @@ UnraidClaw gives AI agents 55 tools across 13 categories to monitor and manage a
 - **Docker** - List, inspect, start, stop, restart, pause, unpause, remove, and create containers
 - **Community Applications** - Search the CA catalog, read an app's template, install an app as a container, update an installed app to a newer image, and remove one
 - **Plugins** - List and inspect installed .plg plugins, install one from a URL, check for updates, update, and remove
-- **VMs** - List, inspect, start, stop, force-stop, pause, resume, reboot, reset, and remove virtual machines
+- **VMs** - List, inspect, start, stop, force-stop, pause, resume, and reboot virtual machines
 - **Array** - View array status, start/stop array, run parity checks
 - **Disks** - List disks, view SMART data and individual disk details
 - **Shares** - List shares, view details, update share settings (allocator, floor, split level, comment)
@@ -51,14 +51,14 @@ OS plugins are protected from mutation. UnraidClaw can list, inspect and check i
 
 ## Requirements
 
-- **Unraid 6.12+** with the [UnraidClaw plugin](https://github.com/emaspa/unraidclaw) installed
+- **Unraid 7.0.0+** with the [UnraidClaw plugin](https://github.com/emaspa/unraidclaw) installed
 - An API key generated from the UnraidClaw settings page
 
 ## Configuration
 
 | Field | Description |
 |-------|-------------|
-| `serverUrl` | URL of your UnraidClaw server (e.g. `http://192.168.1.100:9876`) |
+| `serverUrl` | URL of your UnraidClaw server (e.g. `https://192.168.1.100:9876`) |
 | `apiKey` | API key from the UnraidClaw settings page |
 | `tlsSkipVerify` | Set to `true` for self-signed TLS certificates |
 
@@ -75,9 +75,15 @@ Then configure in `~/.openclaw/openclaw.json`:
 ```json
 {
   "plugins": {
-    "unraidclaw": {
-      "serverUrl": "http://YOUR_UNRAID_IP:9876",
-      "apiKey": "YOUR_API_KEY"
+    "allow": ["unraidclaw"],
+    "entries": {
+      "unraidclaw": {
+        "config": {
+          "serverUrl": "https://YOUR_UNRAID_IP:9876",
+          "apiKey": "YOUR_API_KEY",
+          "tlsSkipVerify": true
+        }
+      }
     }
   }
 }
