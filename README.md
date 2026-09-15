@@ -386,6 +386,10 @@ This is a pnpm monorepo with three packages:
 - HTTPS with auto-generated EC (prime256v1) certificates, 10-year validity
 - The server runs locally on your Unraid box, no cloud dependencies
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the build, test and pull-request workflow. AI agents working on this tree should read [AGENTS.md](AGENTS.md) first.
+
 ## License
 
 MIT
