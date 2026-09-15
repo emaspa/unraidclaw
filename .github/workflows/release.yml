@@ -38,6 +38,10 @@ jobs:
       - name: Build package
         run: bash packages/unraid-plugin/scripts/build.sh "${{ steps.version.outputs.VERSION }}"
 
+      # Exercise the release archive and installer against isolated host layouts.
+      - name: Test archive safety
+        run: python3 packages/unraid-plugin/scripts/test_archive_safety.py "packages/unraid-plugin/build/unraidclaw-${{ steps.version.outputs.VERSION }}-x86_64-1.txz"
+
       # Read MD5 for the .plg update
       - name: Read MD5
         id: md5

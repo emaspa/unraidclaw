@@ -10,7 +10,8 @@
     "build:openclaw": "pnpm --filter @openclaw/plugin-unraid build",
     "dev:server": "pnpm --filter @unraidclaw/server dev",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm --filter @unraidclaw/server test",
+    "test": "pnpm --filter @unraidclaw/server test && pnpm test:archive",
+    "test:archive": "bash packages/unraid-plugin/scripts/build.sh 0.0.0.test && python3 packages/unraid-plugin/scripts/test_archive_safety.py packages/unraid-plugin/build/unraidclaw-0.0.0.test-x86_64-1.txz",
     "clean": "pnpm -r clean"
   },
   "engines": {

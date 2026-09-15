@@ -15,6 +15,7 @@
 
 <CHANGES>
 ### Unreleased
+- Preserve host directory symlinks and permissions during installation. Packages no longer include directory headers that could replace /etc/rc.d
 - Add Community Applications search, template details and installation with overrides (#17, thanks @bubbadk)
 - Add installed-app update and removal. Updates preserve saved configuration and attached volumes; removal keeps appdata, volumes, images and templates
 - Add a separate Plugins category for listing, inspecting, installing, checking, updating and removing Unraid plugins
@@ -165,10 +166,22 @@ echo "Node.js v${NODE_VERSION} detected. OK."
 </INLINE>
 </FILE>
 
-<!-- Download and install the package -->
-<FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz" Run="upgradepkg --install-new">
+<!-- Download and verify the package before installation -->
+<FILE Name="/boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz">
 <URL>&pkgURL;</URL>
 <MD5>&md5;</MD5>
+</FILE>
+
+<!-- Preserve shared directories even when installing an older package -->
+<FILE Run="/bin/bash">
+<INLINE>
+#!/bin/bash
+set -e
+# --no-overwrite-dir alone still replaces directory symlinks such as /etc/rc.d.
+# Apply both options to the tar processes started by upgradepkg/installpkg.
+TAR_OPTIONS="--keep-directory-symlink --no-overwrite-dir" \
+  upgradepkg --install-new /boot/config/plugins/&name;/&name;-&version;-x86_64-1.txz
+</INLINE>
 </FILE>
 
 <!-- Create default config and permissions (only if not present) -->

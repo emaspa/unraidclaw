@@ -56,10 +56,13 @@ chmod +x "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/event/"* 2>/dev/null || 
 # 4. Create .txz package
 echo "[4/4] Creating .txz package..."
 cd "$STAGE"
-# --owner/--group/--numeric-owner force root:0 in archive metadata so upgradepkg
-# doesn't chown host paths (/, /usr, /usr/local, ...) to the build runner's UID.
-# See issue #13.
-tar --owner=root --group=root --numeric-owner -cJf "${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz" .
+# Archive files and symlinks, not directory headers. A header for etc/rc.d
+# can replace Unraid's symlink with a directory; shared parents must not have
+# their permissions/ownership replaced either. Tar creates missing parents.
+# Keep file ownership root:root regardless of the build runner (issue #13).
+find . ! -type d -printf '%P\0' | tar --null --no-recursion \
+  --owner=root --group=root --numeric-owner \
+  -cJf "${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz" -T -
 
 PKG_FILE="${BUILD_DIR}/${PKG_NAME}-${VERSION}-x86_64-1.txz"
 
