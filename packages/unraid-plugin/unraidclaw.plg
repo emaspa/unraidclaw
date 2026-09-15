@@ -21,6 +21,8 @@
 - Add ca:read/create/update/delete and plugins:read/create/update/delete permissions. Docker Manager includes CA permissions; Read Only includes plugins:read; plugin write permissions require explicit selection or Full Admin
 - Add dry-run previews and strict input validation to the new operations, with masked settings redacted from app-update previews and errors
 - Refuse unsupported configurations and existing install targets; verify update/removal results and attempt rollback when an app replacement fails
+- Unraid 7.4 support: app updates reproduce the new template memory limit and refuse templates with Additional Networks rather than dropping them
+- Stop querying the deprecated VM `uuid` GraphQL field; `uuid` is now derived from the VM id
 
 ### 0.1.31
 - Fix /api/array/parity/status showing no/stale activity: read live state from `mdcmd status` instead of the unreliable GraphQL parityCheckStatus; existing fields (running/progress/speed/errors) now reflect reality, plus new paused/correcting/action/position/size/speedHuman/lastCheck (#14, thanks @rodaballo)

@@ -13,6 +13,7 @@ import { mkdtemp, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { CaRuntime } from "../src/routes/ca.js";
+import { parseMemoryBytes } from "../src/ca-saved-template.js";
 
 const flashBase = await mkdtemp(join(tmpdir(), "unraidclaw-lifecycle-"));
 process.env.FLASH_BASE = flashBase;
@@ -253,7 +254,14 @@ class FakeDocker {
       if (this.byRef(name)) throw new Error(`Conflict. The container name "/${name}" is already in use`);
       const labels: Record<string, string> = {};
       const mounts: Array<Record<string, unknown>> = [];
+      const hostConfig: Record<string, unknown> = {};
       for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--memory") {
+          // What docker records for --memory alone: swap is twice the limit.
+          const bytes = parseMemoryBytes(args[i + 1]) ?? 0;
+          hostConfig.Memory = bytes;
+          hostConfig.MemorySwap = bytes * 2;
+        }
         if (args[i] === "-l") {
           const [k, ...rest] = args[i + 1].split("=");
           labels[k] = rest.join("=");
@@ -263,7 +271,7 @@ class FakeDocker {
           mounts.push({ Type: source.startsWith("/") ? "bind" : "volume", Source: source, Name: source, Destination: destination });
         }
       }
-      const created = this.addContainer({ name, image, imageId: img.id, running: false, labels, mounts });
+      const created = this.addContainer({ name, image, imageId: img.id, running: false, labels, mounts, hostConfig });
       return { stdout: `${created.id}\n`, stderr: "" };
     }
 
@@ -341,7 +349,7 @@ ${configs}
 }
 
 /** The app every test starts from: a running Jellyfin with user-chosen values. */
-const JELLYFIN = templateXml({
+const JELLYFIN_SPEC: TemplateSpec = {
   name: "jellyfin",
   image: "jellyfin/jellyfin:latest",
   webui: "http://[IP]:[PORT:8096]/",
@@ -351,7 +359,12 @@ const JELLYFIN = templateXml({
     { label: "Config", target: "/config", type: "Path", mode: "rw", value: "/mnt/user/appdata/jellyfin-custom", fallback: "/mnt/user/appdata/jellyfin" },
     { label: "PUID", target: "PUID", type: "Variable", value: "1000", fallback: "99" },
   ],
-});
+};
+const JELLYFIN = templateXml(JELLYFIN_SPEC);
+
+/** The Jellyfin template as Unraid 7.4 saves it, with its new elements. */
+const jellyfin74 = (memory: string, extraNetworks = "") =>
+  templateXml({ ...JELLYFIN_SPEC, extra: `  <ExtraNetworks>${extraNetworks}</ExtraNetworks>\n  <Memory>${memory}</Memory>` });
 
 interface Harness {
   app: ReturnType<typeof Fastify>;
@@ -973,6 +986,82 @@ test("resource limits and a read-only root are refusals rather than silent losse
     );
     assert.deepEqual(docker.mutations(), [], `${field} should change nothing`);
   }
+});
+
+test("memory sizes are read the way docker reads --memory", () => {
+  for (const [value, bytes] of [
+    ["512m", 536870912],
+    ["2g", 2147483648],
+    ["2G", 2147483648],
+    ["1.5g", 1610612736],
+    ["2gb", 2147483648],
+    ["2GiB", 2147483648],
+    ["2 g", 2147483648],
+    ["7.m", 7340032],
+    ["8000000b", 8000000],
+    ["1073741824", 1073741824],
+    ["0", 0],
+  ] as const) {
+    assert.equal(parseMemoryBytes(value), bytes, value);
+  }
+  for (const value of ["-1", "abc", "2x", "g", "", "2 gb extra", "2  g", "8mI", "8000000ib", "8000000i"]) {
+    assert.equal(parseMemoryBytes(value), null, value);
+  }
+});
+
+test("an Unraid 7.4 template with its new elements left empty updates normally", async () => {
+  await setPermissions(ALL_CA);
+  const docker = runningJellyfin();
+  const { app } = await harness(docker, { "my-jellyfin.xml": jellyfin74("") });
+  assert.equal((await post(app, "/api/ca/app/jellyfin/update")).statusCode, 200);
+  assert.ok(!docker.runs.find((r) => r[1] === "create")!.includes("--memory"));
+});
+
+test("a memory limit the saved template sets is reproduced", async () => {
+  await setPermissions(ALL_CA);
+  const docker = runningJellyfin({ hostConfig: { Memory: 2147483648, MemorySwap: 4294967296 } });
+  const { app } = await harness(docker, { "my-jellyfin.xml": jellyfin74("2g") });
+  assert.equal((await post(app, "/api/ca/app/jellyfin/update")).statusCode, 200);
+  const create = docker.runs.find((r) => r[1] === "create")!;
+  assert.equal(create[create.indexOf("--memory") + 1], "2g");
+});
+
+test("a memory limit that differs from the saved template is refused", async () => {
+  await setPermissions(ALL_CA);
+  for (const hostConfig of [
+    {},
+    { Memory: 1073741824, MemorySwap: 2147483648 },
+    { Memory: 2147483648, MemorySwap: -1 },
+  ]) {
+    const docker = runningJellyfin({ hostConfig });
+    const { app } = await harness(docker, { "my-jellyfin.xml": jellyfin74("2g") });
+    const res = await post(app, "/api/ca/app/jellyfin/update");
+    assert.equal(res.statusCode, 422, JSON.stringify(hostConfig));
+    assert.ok(res.json().error.details.blockers.some((b: { code: string }) => b.code === "CA_LIVE_MEMORY_LIMIT"));
+    assert.deepEqual(docker.mutations(), []);
+  }
+});
+
+test("a memory limit docker would reject is refused", async () => {
+  await setPermissions(ALL_CA);
+  for (const memory of ["lots", "1m"]) {
+    const docker = runningJellyfin();
+    const { app } = await harness(docker, { "my-jellyfin.xml": jellyfin74(memory) });
+    const res = await post(app, "/api/ca/app/jellyfin/update");
+    assert.equal(res.statusCode, 422, memory);
+    assert.ok(res.json().error.details.blockers.some((b: { code: string }) => b.code === "CA_INVALID_MEMORY"));
+    assert.deepEqual(docker.mutations(), []);
+  }
+});
+
+test("a saved template with Additional Networks is refused, not dropped", async () => {
+  await setPermissions(ALL_CA);
+  const docker = runningJellyfin();
+  const { app } = await harness(docker, { "my-jellyfin.xml": jellyfin74("", "proxy") });
+  const res = await post(app, "/api/ca/app/jellyfin/update");
+  assert.equal(res.statusCode, 422);
+  assert.ok(res.json().error.details.blockers.some((b: { code: string }) => b.code === "CA_EXTRA_NETWORKS"));
+  assert.deepEqual(docker.mutations(), []);
 });
 
 test("a paused or restarting app is not updated", async () => {

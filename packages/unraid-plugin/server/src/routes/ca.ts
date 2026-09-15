@@ -851,7 +851,7 @@ export function registerCaRoutes(app: FastifyInstance, runtime: CaRuntime = crea
           mounts = reconcileMounts(tpl, facts.mounts);
           blockers = [
             ...tpl.blockers,
-            ...containerBlockers(rawContainer, rawOldImage, tpl.resolved.network),
+            ...containerBlockers(rawContainer, rawOldImage, tpl.resolved.network, tpl.memoryBytes),
             ...mounts.blockers,
           ];
         } catch (err) {

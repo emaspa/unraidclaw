@@ -36,7 +36,7 @@ const KNOWN_ELEMENTS = new Set([
   "Category", "Changes", "Config", "Contributions", "CPUset", "Data", "Date", "DateInstalled",
   "Description", "DonateLink", "DonateText", "Downloads", "Environment", "ExtraParams",
   "ExtraSearchTerms", "FirstSeen", "GitHub", "Icon", "Language", "LastUpdate", "Licence",
-  "License", "Maintainer", "MaxVer", "MinVer", "ModeratorComment", "MyIP", "Name", "Network",
+  "ExtraNetworks", "License", "Maintainer", "MaxVer", "Memory", "MinVer", "ModeratorComment", "MyIP", "Name", "Network",
   "Networking", "Official", "OriginalOverview", "Overview", "Plugin", "PostArgs", "Privileged",
   "Project", "ReadMe", "Registry", "Repo", "Repository", "Requires", "Screenshot", "Shell",
   "Stars", "Support", "TailscaleEnabled", "TemplatePath", "TemplateURL", "Version", "WebUI",
@@ -71,6 +71,11 @@ const MUST_BE_EMPTY: Array<{ element: string; code: string; message: string }> =
     message: "The saved template assigns the container a fixed IP on a custom network, which UnraidClaw does not reproduce. Use the Docker tab for this app.",
   },
   {
+    element: "ExtraNetworks",
+    code: "CA_EXTRA_NETWORKS",
+    message: "The saved template attaches the container to additional networks, which UnraidClaw does not reproduce. Use the Docker tab for this app.",
+  },
+  {
     element: "Networking",
     code: "CA_LEGACY_TEMPLATE",
     message: "The saved template stores its ports in the old <Networking> format, which UnraidClaw does not read. Use the Docker tab for this app.",
@@ -99,8 +104,27 @@ export interface SavedTemplate {
   registry: string;
   webui: string;
   icon: string;
+  /** The `--memory` value as written (Unraid 7.4+), or "" when there is no limit. */
+  memory: string;
+  /** That limit in bytes, 0 when there is none. */
+  memoryBytes: number;
   /** Everything about this template that stops UnraidClaw from rebuilding it. */
   blockers: CaBlocker[];
+}
+
+/** Docker refuses a memory limit below 6 MB. */
+const DOCKER_MIN_MEMORY = 6 * 1024 * 1024;
+
+/**
+ * Bytes for a memory size, read the way docker reads `--memory`: a number with
+ * an optional binary unit (`512m`, `2g`, `1.5GiB`, `2 g`). Null when docker
+ * would reject it.
+ */
+export function parseMemoryBytes(value: string): number | null {
+  const m = /^(\d+(?:\.\d*)?) ?(?:([kmgtp])(?:i?b)?|b)?$/i.exec(value);
+  if (!m) return null;
+  const power = m[2] ? "kmgtp".indexOf(m[2].toLowerCase()) + 1 : 0;
+  return Math.floor(Number(m[1]) * 1024 ** power);
 }
 
 function boolText(value: string): boolean {
@@ -204,6 +228,22 @@ export function parseSavedTemplate(xml: string, path: string): SavedTemplate {
     );
   }
 
+  // Unraid 7.4 writes <Memory> into every template and passes it as --memory
+  // when it is set. "0" is docker's own spelling of no limit.
+  let memory = meta(root.Memory);
+  let memoryBytes = 0;
+  if (memory !== "") {
+    const bytes = parseMemoryBytes(memory);
+    if (bytes === null) {
+      add("CA_INVALID_MEMORY", `The saved template's memory limit ${JSON.stringify(memory)} is not a size docker accepts.`);
+    } else if (bytes > 0 && bytes < DOCKER_MIN_MEMORY) {
+      add("CA_INVALID_MEMORY", `The saved template's memory limit ${JSON.stringify(memory)} is below docker's 6 MB minimum.`);
+    } else {
+      memoryBytes = bytes;
+    }
+    if (memoryBytes === 0) memory = "";
+  }
+
   const ports: string[] = [];
   const volumes: string[] = [];
   const env: string[] = [];
@@ -275,6 +315,8 @@ export function parseSavedTemplate(xml: string, path: string): SavedTemplate {
     registry: meta(root.Registry),
     webui: meta(root.WebUI),
     icon: meta(root.Icon),
+    memory,
+    memoryBytes,
     blockers,
   };
 }
@@ -467,7 +509,8 @@ function sameList(a: unknown, b: unknown): boolean {
 export function containerBlockers(
   rawContainer: string,
   rawImage: string | null,
-  templateNetwork = ""
+  templateNetwork = "",
+  templateMemory = 0
 ): CaBlocker[] {
   const blockers: CaBlocker[] = [];
   const add = (code: string, message: string) => blockers.push({ code, message });
@@ -503,10 +546,22 @@ export function containerBlockers(
   // when they were never set. A non-default value came from somewhere the
   // template does not describe, and recreating without it would quietly hand
   // the app the whole machine, or a writable root it was denied.
+  // The one exception is a memory limit the template itself sets, which the
+  // rebuild passes back as --memory. Docker then records swap as twice the
+  // limit, so that is the only swap value recreating reproduces.
+  const liveMemory = Number(host.Memory ?? 0);
+  if (liveMemory !== templateMemory) {
+    add(
+      "CA_LIVE_MEMORY_LIMIT",
+      templateMemory === 0
+        ? "The installed container has a memory limit, which the saved template does not describe. UnraidClaw will not recreate it."
+        : "The installed container's memory limit does not match the one its saved template sets. UnraidClaw will not recreate it."
+    );
+  } else if (Number(host.MemorySwap ?? 0) !== liveMemory * 2) {
+    add("CA_LIVE_MEMORY_LIMIT", "The installed container has a swap limit, which the saved template does not describe. UnraidClaw will not recreate it.");
+  }
   for (const [field, code, what] of [
-    ["Memory", "CA_LIVE_MEMORY_LIMIT", "has a memory limit"],
     ["MemoryReservation", "CA_LIVE_MEMORY_LIMIT", "has a memory reservation"],
-    ["MemorySwap", "CA_LIVE_MEMORY_LIMIT", "has a swap limit"],
     ["NanoCpus", "CA_LIVE_CPU_LIMIT", "has a CPU limit"],
     ["CpuQuota", "CA_LIVE_CPU_LIMIT", "has a CPU quota"],
     ["CpuPeriod", "CA_LIVE_CPU_LIMIT", "has a CPU period"],
@@ -663,6 +718,7 @@ export function buildCreateArgs(tpl: SavedTemplate, o: CreateOptions): string[] 
   const argv = ["create", "--name", o.createName, "--net", resolved.network];
   if (o.pidsLimit !== null) argv.push("--pids-limit", String(o.pidsLimit));
   if (o.restart !== null) argv.push("--restart", o.restart);
+  if (tpl.memory) argv.push("--memory", tpl.memory);
 
   const declares = (key: string) => resolved.env.some((e) => e.startsWith(`${key}=`));
   if (o.timeZone && !declares("TZ")) argv.push("-e", `TZ=${o.timeZone}`);

@@ -14,10 +14,17 @@ const LIST_QUERY = `query {
       id
       name
       state
-      uuid
     }
   }
 }`;
+
+/**
+ * The API deprecated `uuid` in favor of `id`, which it returns prefixed with the
+ * server identifier (`<serverId>:<uuid>`). Responses keep their `uuid` field.
+ */
+function withUuid(d: VM): VM {
+  return { ...d, uuid: d.id.slice(d.id.lastIndexOf(":") + 1) };
+}
 
 const VIRSH_ACTION_MAP: Record<string, string> = {
   start: "start",
@@ -35,7 +42,7 @@ export function registerVMRoutes(app: FastifyInstance, gql: GraphQLClient): void
     preHandler: requirePermission(Resource.VMS, Action.READ),
     handler: async (_req, reply) => {
       const data = await gql.query<{ vms: { domains: VM[] } }>(LIST_QUERY);
-      return reply.send({ ok: true, data: data.vms.domains });
+      return reply.send({ ok: true, data: data.vms.domains.map(withUuid) });
     },
   });
 
@@ -45,7 +52,7 @@ export function registerVMRoutes(app: FastifyInstance, gql: GraphQLClient): void
     handler: async (req, reply) => {
       const data = await gql.query<{ vms: { domains: VM[] } }>(LIST_QUERY);
       const search = req.params.id.toLowerCase();
-      const vm = data.vms.domains.find(
+      const vm = data.vms.domains.map(withUuid).find(
         (d) => d.name.toLowerCase() === search || d.uuid === req.params.id || d.id === req.params.id
       );
       if (!vm) {
