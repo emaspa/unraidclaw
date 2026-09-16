@@ -49,7 +49,23 @@ test("complex arrays accept JSON, including nested schema validation", async () 
   const synthetic = { ...command, schema: { ...command.schema, properties: { entries: schema }, required: ["entries"] } };
   synthetic.validate = new Ajv().compile(synthetic.schema);
   assert.deepEqual(await argumentsFor(parse(["ca", "install", "--entries", '[{"size":2}]'], [synthetic])), { entries: [{ size: 2 }] });
-  await assert.rejects(argumentsFor(parse(["ca", "install", "--entries", '[{"size":"bad"}]'], [synthetic])), /Invalid arguments/);
+  await assert.rejects(argumentsFor(parse(["ca", "install", "--entries", '[{"size":"bad"}]'], [synthetic])), /Invalid arguments: --entries has an invalid value inside it/);
+});
+
+test("invalid arguments name the failing flag and rule without echoing values", async () => {
+  const cases: [string[], RegExp][] = [
+    [["docker", "logs", "fixture", "--tail", "0"], /^Invalid arguments: --tail must be at least 1\. Nothing was sent/],
+    [["docker", "logs", "fixture", "--tail", "1.5"], /--tail must be a whole number/],
+    [["docker", "logs", "--tail", "5"], /id is required, as the first argument or --id/],
+    [["notification", "create", "--title", "t", "--subject", "s", "--description", "d", "--importance", "secret-looking"], /--importance must be one of normal, warning, alert/],
+    [["docker", "logs", "fixture", "--args-json", '{"secretField":"secret-value"}'], /unknown field, see --help/],
+  ];
+  for (const [argv, message] of cases) {
+    const error = await args(argv).then(() => undefined, (caught: Error) => caught);
+    assert.ok(error, argv.join(" "));
+    assert.match(error.message, message);
+    assert.doesNotMatch(error.message, /secret|Required fields/);
+  }
 });
 
 test("args-json reads files and named flags override its values", async t => {

@@ -132,6 +132,40 @@ export function parse(argv: string[], catalog: Command[]): Parsed {
   return result;
 }
 
+/**
+ * Names the first schema failure. Supplied values and unknown field names can
+ * contain secrets, so only schema properties and schema-defined limits appear.
+ */
+function describeError(command: Command): string {
+  const error = command.validate.errors?.[0];
+  if (!error) return "check --help";
+  const property = error.instancePath.split("/")[1];
+  const schema = property === undefined ? undefined : command.schema.properties[property];
+  if (error.keyword === "required" && error.instancePath === "") {
+    const missing = String(error.params.missingProperty);
+    if (!Object.hasOwn(command.schema.properties, missing)) return "a required field is missing";
+    return ["id", "name", "plugin"].includes(missing)
+      ? `${missing} is required, as the first argument or --${kebab(missing)}`
+      : `--${kebab(missing)} is required`;
+  }
+  if (error.keyword === "additionalProperties" && error.instancePath === "") return "unknown field, see --help";
+  if (!schema) return "check --help";
+  const flag = `--${kebab(property!)}`;
+  if (error.instancePath !== `/${property}`) return `${flag} has an invalid value inside it`;
+  switch (error.keyword) {
+    case "type": return `${flag} must be ${error.params.type === "integer" ? "a whole number" : `of type ${error.params.type}`}`;
+    case "enum": return `${flag} must be one of ${(schema.enum ?? []).join(", ")}`;
+    case "minimum": return `${flag} must be at least ${error.params.limit}`;
+    case "maximum": return `${flag} must be at most ${error.params.limit}`;
+    case "exclusiveMinimum": return `${flag} must be greater than ${error.params.limit}`;
+    case "exclusiveMaximum": return `${flag} must be less than ${error.params.limit}`;
+    case "minLength": return `${flag} must be at least ${error.params.limit} characters`;
+    case "maxLength": return `${flag} must be at most ${error.params.limit} characters`;
+    case "pattern": return `${flag} has an invalid format`;
+    default: return `${flag} is invalid`;
+  }
+}
+
 function primitiveArray(schema: Schema): boolean {
   return schema.type === "array" && ["string", "number", "integer", "boolean"].includes(schema.items?.type ?? "");
 }
@@ -162,9 +196,7 @@ export async function argumentsFor(parsed: Parsed): Promise<Record<string, unkno
   }
   const values = { ...base as Record<string, unknown>, ...parsed.values };
   if (!parsed.command!.validate(values)) {
-    // Schema paths and values can contain secrets. Report only known properties.
-    const required = parsed.command!.schema.required ?? [];
-    usage(`Invalid arguments. Check types, enums and unknown fields in --help. Required fields: ${required.join(", ") || "none"}. Nothing was sent to the gateway.`);
+    usage(`Invalid arguments: ${describeError(parsed.command!)}. Nothing was sent to the gateway.`);
   }
   return values;
 }
