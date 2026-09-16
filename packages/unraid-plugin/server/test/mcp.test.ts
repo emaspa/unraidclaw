@@ -207,7 +207,51 @@ test("read calls reach real REST routes, preserve data, hot-reload permissions a
   assert(!logs.includes(key));
   const entries = logs.trim().split("\n").map((line) => JSON.parse(line));
   assert(entries.some((entry) => entry.path === "/api/users/me" && entry.ip === "127.0.0.4" && entry.statusCode === 403));
-  assert(entries.some((entry) => entry.path === "/mcp" && entry.ip === "127.0.0.4" && entry.resource === "mcp"));
+  const calls = entries.filter((entry) => entry.path === "/mcp" && entry.ip === "127.0.0.4");
+  assert.deepEqual(calls.map(({ tool, resource, action, statusCode }) => ({ tool, resource, action, statusCode })), [
+    { tool: "unraid_user_me", resource: "users", action: "read", statusCode: 200 },
+    { tool: "unraid_user_me", resource: "users", action: "read", statusCode: 403 },
+  ]);
+});
+
+test("MCP log entries name the method or tool, never client-supplied names", async (t) => {
+  const app = harness(t);
+  const ip = "127.0.0.5";
+  const send = (payload: unknown) => app.inject({ method: "POST", url: "/mcp", headers, payload: payload as object, remoteAddress: ip });
+  await send(rpc("initialize", init));
+  await send(rpc("tools/list"));
+  await send({ jsonrpc: "2.0", method: "notifications/initialized" });
+  await send(rpc("made/up-method-name"));
+  await send(rpc("tools/call", { name: "unraid_made_up_tool" }));
+  await send(rpc("tools/call", { name: "unraid_health_check", arguments: { unexpected: true } }));
+  await app.inject({ method: "POST", url: "/mcp", headers: { ...headers, "content-type": "application/json" }, payload: "{", remoteAddress: ip });
+  const entries = (await readFile(config.logFile, "utf8")).trim().split("\n").map((line) => JSON.parse(line))
+    .filter((entry) => entry.ip === ip);
+  assert.deepEqual(entries.map(({ tool, resource, action, statusCode }) => ({ tool, resource, action, statusCode })), [
+    { tool: undefined, resource: "mcp", action: "initialize", statusCode: 200 },
+    { tool: undefined, resource: "mcp", action: "tools/list", statusCode: 200 },
+    { tool: undefined, resource: "mcp", action: "notification", statusCode: 202 },
+    { tool: undefined, resource: "mcp", action: "invalid", statusCode: 400 },
+    { tool: undefined, resource: "mcp", action: "tools/call", statusCode: 400 },
+    { tool: "unraid_health_check", resource: "mcp", action: "tools/call", statusCode: 200 },
+    { tool: undefined, resource: "mcp", action: "request", statusCode: 400 },
+  ]);
+  assert(!entries.some((entry) => JSON.stringify(entry).includes("made")));
+});
+
+test("unauthenticated requests to unknown paths return 404 and do not use up the login limit", async (t) => {
+  const app = harness(t);
+  const ip = "127.0.0.6";
+  const probes = ["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp",
+    "/.well-known/oauth-authorization-server", "/.well-known/openid-configuration", "/register"];
+  for (let round = 0; round < 4; round++) {
+    for (const url of probes) {
+      assert.equal((await app.inject({ url, remoteAddress: ip })).statusCode, 404);
+    }
+  }
+  const ping = await app.inject({ method: "POST", url: "/mcp", headers, payload: rpc("ping"), remoteAddress: ip });
+  assert.equal(ping.statusCode, 200);
+  assert.equal((await app.inject({ url: "/api/users/me", remoteAddress: ip })).statusCode, 401);
 });
 
 test("invalid tool inputs never inject a REST request or become a mutation", async (t) => {

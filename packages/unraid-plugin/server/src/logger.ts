@@ -10,6 +10,17 @@ export interface ActivityLogEntry {
   statusCode: number;
   durationMs: number;
   ip: string;
+  /** Set on MCP tool calls. */
+  tool?: string;
+}
+
+/** Derives the logged resource and action from an API request. */
+export function routeActivity(method: string, url: string): { resource: string; action: string } {
+  const parts = url.split("?", 1)[0].replace("/api/", "").split("/");
+  return {
+    resource: parts[0] || "unknown",
+    action: method === "GET" ? "read" : method === "DELETE" ? "delete" : "update",
+  };
 }
 
 export class ActivityLogger {

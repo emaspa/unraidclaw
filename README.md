@@ -250,13 +250,35 @@ MCP is off by default. In **Settings > UnraidClaw > Settings**, set **Enable MCP
 
 Authenticate with the UnraidClaw API key using `x-api-key: <key>` or `Authorization: Bearer <key>`; `x-api-key` takes precedence if both are sent. Query parameters cannot supply the key. Failed attempts count toward the same per-IP limit as the REST API.
 
-For [Claude Code](https://code.claude.com/docs/en/mcp):
+### Connecting a client
+
+The certificate is self-signed, so copy it to the machine running the client first. Clients that verify it need a copy that matches the server; see [TLS certificate](#tls-certificate) for when it changes.
 
 ```bash
+scp root@<server>:/boot/config/plugins/unraidclaw/tls/cert.pem ~/.config/unraidclaw/cert.pem
+```
+
+**Claude Code** ([MCP docs](https://code.claude.com/docs/en/mcp)) is a Node application, so `NODE_EXTRA_CA_CERTS` makes it trust the certificate. Set it in the shell that starts `claude`, for example in your shell profile:
+
+```bash
+export NODE_EXTRA_CA_CERTS=~/.config/unraidclaw/cert.pem
 claude mcp add --transport http unraidclaw https://<server>:9876/mcp --header "x-api-key: <key>"
 ```
 
-For clients that accept an HTTP MCP server entry:
+Add `--scope user` to make the server available in every project. Run `/mcp` inside Claude Code to check the connection.
+
+**Codex** can add a Streamable HTTP server with `codex mcp add --url`, but its MCP client cannot be told to trust a self-signed certificate, so that connection fails. Connect through [mcp-remote](https://www.npmjs.com/package/mcp-remote) instead, which runs locally as a stdio server and forwards to the gateway using Node:
+
+```bash
+codex mcp add unraidclaw \
+  --env NODE_EXTRA_CA_CERTS=$HOME/.config/unraidclaw/cert.pem \
+  -- npx -y mcp-remote@latest https://<server>:9876/mcp \
+     --transport http-only --header "x-api-key:<key>"
+```
+
+This writes the key into `~/.codex/config.toml` in plain text. mcp-remote looks for OAuth metadata before connecting; the gateway answers those requests with 404, and it then connects with the key.
+
+**Other clients** that accept an HTTP MCP server entry:
 
 ```json
 {
@@ -272,7 +294,9 @@ For clients that accept an HTTP MCP server entry:
 }
 ```
 
-Replace the placeholders locally. The gateway's certificate is self-signed, so the client must either trust it or skip verification; see [TLS certificate](#tls-certificate).
+A client that cannot trust the certificate can use the same mcp-remote command as its stdio server.
+
+### Protocol
 
 Supported protocol versions are `2025-11-25`, `2025-06-18` and `2025-03-26`. Initialization echoes a supported version or returns the latest for an unknown version. Send `Content-Type: application/json`, `Accept: application/json, text/event-stream` and the negotiated `MCP-Protocol-Version` header. An absent version header defaults to `2025-03-26`; an unsupported value returns HTTP 400 with JSON-RPC error `-32600` listing the supported versions.
 
@@ -285,6 +309,12 @@ The transport uses stateless JSON responses without SSE or sessions. It supports
 | Any | `/mcp` | HTTP 404 when disabled |
 
 The endpoint exposes the same 55 tools as the OpenClaw plugin, without OpenClaw's `server` argument. Read-only tools carry `readOnlyHint`; every other tool carries `destructiveHint`. Each call runs through the gateway's own `/api/` route in process, so the permission matrix, body validation, dry-run rules and blockers apply unchanged. OpenClaw keeps using `/api/*` whether MCP is on or off.
+
+### Activity log
+
+Each MCP request writes one entry for `/mcp`. A tool call writes the tool name in `tool`, and takes `resource`, `action` and `statusCode` from the `/api/` route the tool ran, so a call refused by the permission matrix shows 403 even though the MCP response itself is HTTP 200. The route also gets its own entry, with its full path. Other MCP requests use resource `mcp` and the method as the action, such as `initialize` or `tools/list`. A tool call rejected before it reached a route, for example over invalid arguments, keeps resource `mcp` and action `tools/call`. The Activity Log tab shows the tool name after the path.
+
+### Origin
 
 If present, `Origin` must exactly match the gateway's configured scheme and port with a loopback address, a local interface IP or the explicit **Listen Host**; other origins receive HTTP 403. The allowlist is built at startup without trusting incoming Host or forwarded headers, so a browser frontend or reverse proxy using a different public origin is rejected. Requests without an `Origin` header, which non-browser clients normally send, are accepted.
 
@@ -466,9 +496,9 @@ This is a pnpm monorepo with three packages:
 - API keys are hashed with SHA-256 before storage; the plaintext key is never persisted
 - REST requests require `x-api-key`, except the public `/api/health` probe. MCP requests accept `x-api-key` or `Authorization: Bearer` and always require a key. When MCP is off, `/mcp` does not exist
 - MCP rejects any `Origin` outside an allowlist built at startup from loopback, the local interface addresses and the configured Listen Host, which blocks DNS rebinding from a browser. Requests without an `Origin` header are allowed, so for non-browser clients the API key is the only protection
-- Failed authentication is limited per IP to 10 attempts per minute; REST and MCP share the counter
+- Failed authentication is limited per IP to 10 attempts per minute; REST and MCP share the counter. Requests to paths that do not exist return 404 without checking the key and do not count, so MCP clients probing for OAuth metadata do not lock themselves out
 - Every API call, including an MCP tool call, is checked against the permission matrix before execution
-- Activity logging records all requests with timestamps, endpoints, and results. An MCP tool call is logged as the `/mcp` request plus the `/api/` route it ran in process
+- Activity logging records all requests with timestamps, endpoints, and results. An MCP tool call is logged as the `/mcp` request, with the tool name and the route's outcome, plus the `/api/` route it ran in process
 - HTTPS uses a self-signed EC (prime256v1) certificate valid for ten years, with the server's names and stable addresses in `subjectAltName`. This lets a client that trusts the certificate verify the host name. It does not protect a client that skips verification, and a client that has not trusted it sees a warning or refuses to connect. See [TLS certificate](#tls-certificate)
 - The server runs locally on your Unraid box, no cloud dependencies
 

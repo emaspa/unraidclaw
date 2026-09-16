@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { recordMcpMethod, recordMcpTool } from "../mcp-log.js";
 import { createMcpTools } from "../mcp-tools.js";
 
 export const SUPPORTED_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
@@ -51,6 +52,7 @@ export async function registerMcpRoutes(app: FastifyInstance): Promise<void> {
       || ("id" in message && typeof message.id !== "string" && !(typeof message.id === "number" && Number.isSafeInteger(message.id)))) {
       return reply.code(400).send(error(null, -32600, "Invalid request"));
     }
+    recordMcpMethod(request, message.method);
     const id = (message.id ?? null) as string | number | null;
     const fail = (code: number, text: string) => reply.code(400).send(error(id, code, text));
     if (message.params !== undefined && !object(message.params)) return fail(-32602, "Invalid params");
@@ -87,6 +89,7 @@ export async function registerMcpRoutes(app: FastifyInstance): Promise<void> {
           return fail(-32602, "Invalid tools/call params");
         }
         if (!tools.has(params.name)) return fail(-32602, "Unknown tool");
+        recordMcpTool(request, params.name);
         return result(await tools.call(params.name, (params.arguments ?? {}) as Record<string, unknown>, request));
       default:
         return fail(-32601, "Method not found");

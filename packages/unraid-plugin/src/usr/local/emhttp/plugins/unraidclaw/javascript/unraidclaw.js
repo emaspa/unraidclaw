@@ -265,7 +265,7 @@ function occRefreshLog() {
         html += '<tr class="occ-log-row">' +
           '<td>' + escapeHtml(e.timestamp) + '</td>' +
           '<td>' + escapeHtml(e.method) + '</td>' +
-          '<td>' + escapeHtml(e.path) + '</td>' +
+          '<td>' + escapeHtml(e.path) + (e.tool ? ' ' + escapeHtml(e.tool) : '') + '</td>' +
           '<td>' + escapeHtml(e.resource) + '</td>' +
           '<td class="' + statusClass + '">' + e.statusCode + '</td>' +
           '<td>' + e.durationMs + 'ms</td>' +

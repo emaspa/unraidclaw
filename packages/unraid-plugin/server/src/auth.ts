@@ -50,6 +50,10 @@ export function createAuthHook(config: ServerConfig) {
   return async function authHook(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     // Skip auth for health endpoint
     if (request.url === "/api/health") return;
+    // Unknown paths answer 404 without a key. MCP clients probe OAuth discovery
+    // paths such as /.well-known/oauth-protected-resource before connecting,
+    // and counting those as failed logins locked them out of /mcp.
+    if (request.is404) return;
 
     if (isRateLimited(request.ip)) {
       reply.code(429).send({

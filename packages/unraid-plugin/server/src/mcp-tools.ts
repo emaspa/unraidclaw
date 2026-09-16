@@ -2,6 +2,7 @@ import Ajv from "ajv";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { registerTools, isErrorResult, type ToolClient, type ToolDefinition, type ToolOptions } from "unraidclaw/tools";
 import type { ApiResponse } from "@unraidclaw/shared";
+import { recordMcpApiCall } from "./mcp-log.js";
 import { mcpApiKey } from "./mcp-security.js";
 
 // Older mutating registrations do not all declare optional. Only known reads
@@ -33,6 +34,7 @@ function injectedClient(app: FastifyInstance, request: FastifyRequest): ToolClie
       headers: { "x-api-key": mcpApiKey(request)!, ...(body === undefined ? {} : { "content-type": "application/json" }) },
       ...(body === undefined ? {} : { payload: JSON.stringify(body) }),
     });
+    recordMcpApiCall(request, method, path, response.statusCode);
     const result = response.json<ApiResponse<T>>();
     if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`);
     if (response.statusCode >= 400) throw new Error("Internal API request failed");

@@ -2,7 +2,8 @@ import Fastify from "fastify";
 import type { ServerConfig } from "./config.js";
 import { createAuthHook } from "./auth.js";
 import { GraphQLClient, GraphQLError } from "./graphql-client.js";
-import { ActivityLogger, type ActivityLogEntry } from "./logger.js";
+import { ActivityLogger, routeActivity, type ActivityLogEntry } from "./logger.js";
+import { mcpActivity } from "./mcp-log.js";
 import { isMcpPath, mcpOrigins, validMcpOrigin } from "./mcp-security.js";
 import { registerMcpRoutes } from "./routes/mcp.js";
 
@@ -72,20 +73,20 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
   // Activity logging hook
   app.addHook("onResponse", async (request, reply) => {
     if (request.url === "/api/health") return;
-    // Extract resource:action from route URL
-    const parts = request.url.replace("/api/", "").split("/");
-    const resource = isMcpPath(request.url) ? "mcp" : parts[0] ?? "unknown";
-    const action = request.method === "GET" ? "read" : request.method === "DELETE" ? "delete" : "update";
+    const { tool, ...details } = isMcpPath(request.url)
+      ? mcpActivity(request, reply.statusCode)
+      : { ...routeActivity(request.method, request.url), statusCode: reply.statusCode, tool: undefined };
 
     const entry: ActivityLogEntry = {
       timestamp: new Date().toISOString(),
       method: request.method,
       path: request.url,
-      resource,
-      action,
-      statusCode: reply.statusCode,
+      resource: details.resource,
+      action: details.action,
+      statusCode: details.statusCode,
       durationMs: Math.round(reply.elapsedTime),
       ip: request.ip,
+      ...(tool ? { tool } : {}),
     };
     activityLogger.log(entry);
   });
