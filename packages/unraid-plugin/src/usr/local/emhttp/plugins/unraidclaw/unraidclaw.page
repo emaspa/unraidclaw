@@ -16,6 +16,9 @@ $permFile = "/boot/config/plugins/{$plugin}/permissions.json";
 $permissions = file_exists($permFile) ? json_decode(file_get_contents($permFile), true) : [];
 if (!is_array($permissions)) $permissions = [];
 $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
+require_once "/usr/local/emhttp/plugins/{$plugin}/php/tls-certificate.php";
+$certificate = occReadTlsCertificate('/boot/config/plugins/unraidclaw/tls/cert.pem');
+$certificateReadable = $certificate['present'] && !isset($certificate['error']);
 ?>
 
 <link rel="stylesheet" type="text/css" href="/plugins/<?=$plugin?>/css/unraidclaw.css?v=<?=filemtime("/usr/local/emhttp/plugins/{$plugin}/css/unraidclaw.css")?>">
@@ -175,6 +178,40 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
               <br><br>
               <button type="button" class="occ-btn occ-btn-primary" onclick="occCopyKey()">Copy to Clipboard</button>
             </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="tablesorter shift ups" style="margin-top: 20px;">
+      <thead>
+        <tr><th colspan="2">TLS Certificate</th></tr>
+      </thead>
+      <tbody>
+        <tr id="occ-cert-state-row" style="<?=$certificateReadable ? 'display:none;' : ''?>">
+          <td colspan="2" id="occ-cert-state"><?=htmlspecialchars($certificate['error'] ?? 'No certificate yet', ENT_QUOTES, 'UTF-8')?></td>
+        </tr>
+        <tr id="occ-cert-subject-row" style="<?=$certificateReadable ? '' : 'display:none;'?>">
+          <td>Subject:</td>
+          <td id="occ-cert-subject"><?=htmlspecialchars($certificate['subject'] ?? '', ENT_QUOTES, 'UTF-8')?></td>
+        </tr>
+        <tr id="occ-cert-san-row" style="<?=$certificateReadable ? '' : 'display:none;'?>">
+          <td>Subject alternative names:</td>
+          <td>
+            <span id="occ-cert-san"><?=htmlspecialchars(implode(', ', $certificate['subjectAltName'] ?? []), ENT_QUOTES, 'UTF-8')?></span>
+            <span id="occ-cert-san-warning" class="occ-hint" style="<?=empty($certificate['subjectAltName']) ? '' : 'display:none;'?>">This certificate has no subjectAltName. Strict clients cannot verify it. Regenerating the certificate fixes this.</span>
+          </td>
+        </tr>
+        <tr id="occ-cert-expiry-row" style="<?=$certificateReadable ? '' : 'display:none;'?>">
+          <td>Expiry date:</td>
+          <td id="occ-cert-expiry"><?=htmlspecialchars($certificate['expiry'] ?? '', ENT_QUOTES, 'UTF-8')?></td>
+        </tr>
+        <tr>
+          <td>Regenerate:</td>
+          <td>
+            <button type="button" id="occ-regenerate-cert-btn" class="occ-btn occ-btn-warning" onclick="occRegenerateCertificate()">Regenerate certificate</button>
+            <span class="occ-hint">Regenerate if the server's IP address or host name changed after the certificate was created.</span>
+            <span id="occ-cert-status" role="status" style="font-weight: bold;"></span>
           </td>
         </tr>
       </tbody>

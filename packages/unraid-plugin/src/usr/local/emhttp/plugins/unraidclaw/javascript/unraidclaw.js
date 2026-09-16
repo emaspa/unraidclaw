@@ -110,6 +110,47 @@ function occGenerateKey() {
   xhr.send();
 }
 
+function occRegenerateCertificate() {
+  if (!confirm('Regenerate the TLS certificate? The current certificate and key are kept as cert.pem.bak and key.pem.bak. Older backups are kept with numbered suffixes. The service restarts. Any client that trusted the old certificate must trust the new one.')) return;
+
+  var btn = document.getElementById('occ-regenerate-cert-btn');
+  var status = document.getElementById('occ-cert-status');
+  btn.disabled = true;
+  btn.textContent = 'Regenerating...';
+  status.textContent = '';
+
+  var xhr = new XMLHttpRequest();
+  // emhttp accepts GET XHR without a POST CSRF token.
+  xhr.open('GET', '/plugins/unraidclaw/php/regenerate-cert.php?action=regenerate', true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+    btn.disabled = false;
+    btn.textContent = 'Regenerate certificate';
+    status.style.color = '#ff6b6b';
+    try {
+      var resp = JSON.parse(xhr.responseText);
+      if (xhr.status === 200 && resp.success) {
+        var cert = resp.certificate;
+        document.getElementById('occ-cert-state-row').style.display = 'none';
+        ['subject', 'san', 'expiry'].forEach(function(field) {
+          document.getElementById('occ-cert-' + field + '-row').style.display = '';
+        });
+        document.getElementById('occ-cert-subject').textContent = cert.subject;
+        document.getElementById('occ-cert-san').textContent = cert.subjectAltName.join(', ');
+        document.getElementById('occ-cert-expiry').textContent = cert.expiry;
+        document.getElementById('occ-cert-san-warning').style.display = cert.subjectAltName.length ? 'none' : '';
+        status.textContent = 'Certificate regenerated. Service restarted. Clients must trust the new certificate.';
+        status.style.color = '#51cf66';
+      } else {
+        status.textContent = resp.error || 'Certificate regeneration failed (HTTP ' + xhr.status + ').';
+      }
+    } catch (ex) {
+      status.textContent = 'Could not read the regeneration response (HTTP ' + xhr.status + '). Check the certificate details before retrying.';
+    }
+  };
+  xhr.send();
+}
+
 function occCopyKey() {
   var input = document.getElementById('occ-new-key');
   input.select();
