@@ -67,6 +67,7 @@ Real Unraid is the final test for anything that mutates state. The offline suite
   - A change to MCP behavior or to the TLS certificate goes into the README's MCP or TLS certificate section.
   - A user-facing behavior change gets a line under `### Unreleased` in `packages/unraid-plugin/unraidclaw.plg`.
 - **Do not bump the version anywhere and do not edit the `md5` entity.** Releases rewrite the plugin version and md5 in one commit through the release workflow. A pull request that touches them will be asked to drop that change.
+- **Releases.** The maintainer renames `### Unreleased` to the version, then pushes a `v<version>` tag. The release workflow uses that section as the release notes and stops before building if it is missing. It attaches the plugin package and `unraidclaw-cli-<version>.tar.gz`, built by `packages/cli/scripts/package.sh`, with checksums.
 - **Commit messages describe the work** in plain sentences: what changed and why. No attribution trailers and no references to reviews or tools that helped write it. Match the existing style, which prefixes the area, as in `feat:`, `fix:`, `docs:`, `chore:`.
 - **Allow edits from maintainers** on the pull request, so small fixes land on your branch instead of a review round trip.
 

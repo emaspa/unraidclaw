@@ -34,6 +34,11 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      # Notes come from the version's <CHANGES> section. Checking this first
+      # stops a tag without a changelog before anything is built or pushed.
+      - name: Release notes
+        run: bash packages/unraid-plugin/scripts/release-notes.sh "${{ steps.version.outputs.VERSION }}" > "$RUNNER_TEMP/release-notes.md"
+
       # Build the .txz package
       - name: Build package
         run: bash packages/unraid-plugin/scripts/build.sh "${{ steps.version.outputs.VERSION }}"
@@ -41,6 +46,10 @@ jobs:
       # Exercise the release archive and installer against isolated host layouts.
       - name: Test archive safety
         run: python3 packages/unraid-plugin/scripts/test_archive_safety.py "packages/unraid-plugin/build/unraidclaw-${{ steps.version.outputs.VERSION }}-x86_64-1.txz"
+
+      # Package the standalone CLI; the script smoke-tests the unpacked archive.
+      - name: Package CLI
+        run: bash packages/cli/scripts/package.sh "${{ steps.version.outputs.VERSION }}" packages/cli/build
 
       # Read MD5 for the .plg update
       - name: Read MD5
@@ -71,8 +80,11 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           PKG="packages/unraid-plugin/build/unraidclaw-${VERSION}-x86_64-1.txz"
+          CLI="packages/cli/build/unraidclaw-cli-${VERSION}.tar.gz"
           gh release create "v${VERSION}" \
             --title "v${VERSION}" \
-            --generate-notes \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
             "${PKG}" \
-            "${PKG}.md5"
+            "${PKG}.md5" \
+            "${CLI}" \
+            "${CLI}.sha256"

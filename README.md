@@ -84,7 +84,7 @@ unraidclaw docker list
 unraidclaw array status --output json
 ```
 
-On Unraid, it discovers the local gateway and certificate. On another machine, configure the gateway URL and run `unraidclaw trust`, comparing the fingerprint with the WebGUI before accepting. Mutating commands require confirmation or `--yes`, except supported dry runs with `dryRun` set to true. See the [CLI guide](packages/cli/README.md) for installation from the repository, credentials, certificate trust, all commands and exit codes.
+On Unraid, it discovers the local gateway and certificate. On another machine, configure the gateway URL and run `unraidclaw trust`, comparing the fingerprint with the WebGUI before accepting. Mutating commands require confirmation or `--yes`, except supported dry runs with `dryRun` set to true. For another machine, download `unraidclaw-cli-<version>.tar.gz` from the [latest release](https://github.com/emaspa/unraidclaw/releases/latest). See the [CLI guide](packages/cli/README.md) for installation, credentials, certificate trust, all commands and exit codes.
 
 ## API
 

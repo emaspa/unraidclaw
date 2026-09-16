@@ -35,7 +35,7 @@ fi
 
 # Build the standalone CLI after the shared registry.
 cd "$ROOT_DIR"
-pnpm --filter unraidclaw-cli build
+UNRAIDCLAW_BUILD_VERSION="$VERSION" pnpm --filter unraidclaw-cli build
 
 # 3. Assemble package structure
 echo "[3/4] Assembling package..."

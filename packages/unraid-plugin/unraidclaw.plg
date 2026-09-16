@@ -22,7 +22,7 @@
 - /api/health stays public and unlogged when called with a query string
 - Settings Apply reports when the service did not end up running or stopped, and no longer restarts the service when the settings file could not be written
 - Describe the Disk Info permission without SMART data, which the disk endpoints do not return
-- Include the unraidclaw command-line client at /usr/local/bin/unraidclaw, with the same tools and permissions as OpenClaw and MCP. Remote clients can build the unraidclaw-cli package from the repository; it is not yet published to npm
+- Include the unraidclaw command-line client at /usr/local/bin/unraidclaw, with the same tools and permissions as OpenClaw and MCP. For other machines, download the unraidclaw-cli tar.gz from the GitHub release; it needs Node.js 22 or newer
 - Make CLI connection errors actionable, shorten tables and help, format logs and nested values for reading, show certificate details once when trusting in table mode, and let supported dry runs proceed without confirmation
 - Show the TLS certificate SHA-256 fingerprint in Settings so remote CLI users can verify it before trusting the certificate
 - Add optional MCP support: a Streamable HTTP endpoint at /mcp on the service port, off by default and switched on with Enable MCP in Settings. It exposes the same 55 tools with the same API key, permissions, input validation and activity logging. Log entries for tool calls name the tool and show the outcome of the API route it ran; successful MCP handshakes and GET/DELETE responses with status 405 are omitted from the activity log. Other failed connection requests are logged. REST and the OpenClaw plugin keep working as before

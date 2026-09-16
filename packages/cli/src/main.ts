@@ -32,7 +32,7 @@ export async function run(argv: string[], runtime: Runtime = {}): Promise<number
     if (globals.key !== undefined) err("Warning: --key is visible in the process list. Prefer UNRAIDCLAW_KEY or config set-key.");
     if (globals.version) {
       if (parsed.words.length) usage("--version takes no command.");
-      out(`unraidclaw ${version}`); return 0;
+      out(`unraidclaw ${process.env.UNRAIDCLAW_BUILD_VERSION || version}`); return 0;
     }
     if (globals.help || !parsed.words.length || parsed.words[0] === "help") {
       out(help(catalog, parsed.words[0] === "help" ? parsed.words.slice(1) : parsed.command && parsed.words.length > 1 ? parsed.command.name.split(" ") : parsed.words));

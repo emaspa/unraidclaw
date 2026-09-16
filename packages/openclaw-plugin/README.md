@@ -147,7 +147,7 @@ Tools use the gateway's 30-key `resource:action` permission matrix configured fr
 
 ## Gateway MCP mode
 
-The gateway has an optional MCP endpoint at `/mcp` that serves the same 55 tools to MCP clients. It is off by default and is switched on with **Enable MCP** in the gateway's Settings tab. This plugin does not use it: OpenClaw keeps calling `/api/*` whether MCP is on or off. The tool definitions in this package are shared with the gateway through the `unraidclaw/tools` export, so OpenClaw, MCP and the standalone CLI use the same tools and the `READ_ONLY` set exported by `src/registry.ts`. The CLI is the separate `unraidclaw-cli` package, with command `unraidclaw`; it is not yet published to npm. See the [CLI guide](../cli/README.md). See the [repository README](https://github.com/emaspa/unraidclaw#mcp) for MCP client setup.
+The gateway has an optional MCP endpoint at `/mcp` that serves the same 55 tools to MCP clients. It is off by default and is switched on with **Enable MCP** in the gateway's Settings tab. This plugin does not use it: OpenClaw keeps calling `/api/*` whether MCP is on or off. The tool definitions in this package are shared with the gateway through the `unraidclaw/tools` export, so OpenClaw, MCP and the standalone CLI use the same tools and the `READ_ONLY` set exported by `src/registry.ts`. The CLI, command `unraidclaw`, is attached to each [GitHub release](https://github.com/emaspa/unraidclaw/releases/latest) as `unraidclaw-cli-<version>.tar.gz`; see the [CLI guide](https://github.com/emaspa/unraidclaw/blob/main/packages/cli/README.md). See the [repository README](https://github.com/emaspa/unraidclaw#mcp) for MCP client setup.
 
 ## License
 

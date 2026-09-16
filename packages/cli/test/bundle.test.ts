@@ -11,7 +11,8 @@ test("the CommonJS bundle runs outside the checkout without node_modules", async
   assert.ok((await readFile(path, "utf8")).startsWith("#!/usr/bin/env node\n"));
   const version = await childOutput(dir, process.execPath, [path, "--version"]);
   assert.equal(version.code, 0);
-  assert.equal(version.stdout, "unraidclaw 0.1.0\n");
+  // Release builds stamp their own version into the bundle.
+  assert.match(version.stdout, /^unraidclaw \d+\.\d+\.\d+\S*\n$/);
   const tools = await childOutput(dir, process.execPath, [path, "tools", "--output", "json"]);
   assert.equal(JSON.parse(tools.stdout).length, 55);
   const help = await childOutput(dir, process.execPath, [path, "docker", "--help"]);

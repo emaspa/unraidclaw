@@ -4,7 +4,20 @@
 
 ## Install
 
-The Unraid plugin installs `/usr/local/bin/unraidclaw` automatically. For another machine, run these commands from the repository root to build and install:
+The Unraid plugin installs `/usr/local/bin/unraidclaw` automatically.
+
+For another machine, download `unraidclaw-cli-<version>.tar.gz` and its `.sha256` file from the [latest release](https://github.com/emaspa/unraidclaw/releases/latest). The archive holds the bundle `unraidclaw.cjs`, a `unraidclaw` launcher for Linux and macOS, `unraidclaw.cmd` for Windows, this guide and the license. Node.js 22 or newer must be on `PATH`.
+
+```sh
+sha256sum -c unraidclaw-cli-<version>.tar.gz.sha256   # macOS: shasum -a 256 -c
+tar -xzf unraidclaw-cli-<version>.tar.gz
+sudo ln -s "$PWD/unraidclaw-cli-<version>/unraidclaw" /usr/local/bin/unraidclaw
+unraidclaw --version
+```
+
+On Windows, extract the archive with `tar -xzf` in a terminal and add the extracted folder to `PATH`, or run `unraidclaw.cmd` from it.
+
+To build from source instead, run these commands from the repository root:
 
 ```sh
 corepack enable pnpm
@@ -14,7 +27,7 @@ npm install -g ./packages/cli
 unraidclaw --version
 ```
 
-You can also copy `packages/cli/dist/unraidclaw.cjs` to another machine and run `node unraidclaw.cjs help`. Once the package is published, installation will be `npm install -g unraidclaw-cli`. The package is not yet published to npm. The CLI package is named `unraidclaw-cli`; the OpenClaw plugin is the separate `unraidclaw` npm package.
+You can also copy `packages/cli/dist/unraidclaw.cjs` to another machine and run `node unraidclaw.cjs help`. The package is not published to npm. The CLI package is named `unraidclaw-cli`; the OpenClaw plugin is the separate `unraidclaw` npm package.
 
 ## Configure a remote machine
 

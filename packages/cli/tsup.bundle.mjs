@@ -6,4 +6,6 @@ export default {
   noExternal: [/.*/],
   splitting: false,
   clean: true,
+  // Release builds stamp the release version; other builds keep package.json's.
+  define: { "process.env.UNRAIDCLAW_BUILD_VERSION": JSON.stringify(process.env.UNRAIDCLAW_BUILD_VERSION ?? "") },
 };
