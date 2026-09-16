@@ -28,7 +28,7 @@ UnraidClaw sits between AI agents and your Unraid servers. It provides a REST AP
 - **Activity logging** with JSONL format, filter, and search
 - **OpenClaw plugin** available on ClawHub and npm (`openclaw plugins install clawhub:unraidclaw --accept-capabilities`)
 - **Optional MCP** at `/mcp` for Streamable HTTP clients, off by default, using the same API key and permissions as the REST API
-- **Command-line client** on Unraid and remote Linux, macOS and Windows machines, using the shared tool registry. See [CLI](#cli)
+- **Command-line client** built into the plugin and available for other machines from npm (`npm install -g unraidclaw-cli`) or as a release archive. See [CLI](#cli)
 - **Single-file server**, no `node_modules` needed on Unraid
 
 ## Requirements
@@ -76,7 +76,32 @@ The **API Key Management** section generates the UnraidClaw API key. The **TLS C
 
 ## CLI
 
-The Unraid plugin includes the `unraidclaw` command. It also runs on Linux, macOS and Windows with Node.js 22+, using the same tool definitions and gateway permissions as OpenClaw and MCP.
+`unraidclaw` manages the gateway from a terminal. It uses the same tool definitions and gateway permissions as OpenClaw and MCP, and runs on Unraid and on Linux, macOS and Windows machines with Node.js 22 or newer.
+
+### Install
+
+**On Unraid** there is nothing to install. The plugin puts `unraidclaw` on the `PATH` at `/usr/local/bin/unraidclaw`.
+
+**From npm** on another machine:
+
+```sh
+npm install -g unraidclaw-cli
+unraidclaw --version
+```
+
+Update it with `npm update -g unraidclaw-cli`.
+
+**From the release archive**, for machines without npm: download `unraidclaw-cli-<version>.tar.gz` and its `.sha256` file from the [latest release](https://github.com/emaspa/unraidclaw/releases/latest).
+
+```sh
+sha256sum -c unraidclaw-cli-<version>.tar.gz.sha256   # macOS: shasum -a 256 -c
+tar -xzf unraidclaw-cli-<version>.tar.gz
+sudo ln -s "$PWD/unraidclaw-cli-<version>/unraidclaw" /usr/local/bin/unraidclaw
+```
+
+On Windows, add the extracted folder to `PATH` and run `unraidclaw.cmd`. The [CLI guide](packages/cli/README.md#install) also covers building from source.
+
+### Use
 
 ```sh
 unraidclaw config set-key
@@ -84,7 +109,15 @@ unraidclaw docker list
 unraidclaw array status --output json
 ```
 
-On Unraid, it discovers the local gateway and certificate. On another machine, configure the gateway URL and run `unraidclaw trust`, comparing the fingerprint with the WebGUI before accepting. Mutating commands require confirmation or `--yes`, except supported dry runs with `dryRun` set to true. For another machine, run `npm install -g unraidclaw-cli`, or download `unraidclaw-cli-<version>.tar.gz` from the [latest release](https://github.com/emaspa/unraidclaw/releases/latest). See the [CLI guide](packages/cli/README.md) for installation, credentials, certificate trust, all commands and exit codes.
+On Unraid, it discovers the local gateway and certificate. On another machine, set the gateway URL and trust its certificate first, comparing the fingerprint with the WebGUI before accepting:
+
+```sh
+unraidclaw config set url "https://<server>:9876"
+unraidclaw trust
+unraidclaw config set-key
+```
+
+Mutating commands require confirmation or `--yes`, except supported dry runs with `dryRun` set to true. See the [CLI guide](packages/cli/README.md) for credentials, certificate trust, all commands and exit codes.
 
 ## API
 
