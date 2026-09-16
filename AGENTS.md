@@ -27,15 +27,15 @@ pnpm test
 pnpm --filter unraidclaw check-contracts
 ```
 
-These are the CI checks. `pnpm test` runs the offline server suite (Node's test runner through tsx) and then the archive-safety suite, which builds a throwaway package and extracts it against synthetic host layouts, including one where `/etc/rc.d` is a symlink. All five must be green before you call a change done. Run one server test file during development from the server package with `pnpm --filter @unraidclaw/server exec tsx --test test/<file>.test.ts`.
+These are the CI checks. `pnpm test` runs the offline server suite (Node's test runner through tsx), the archive-safety suite, which builds a throwaway package and extracts it against synthetic host layouts, including one where `/etc/rc.d` is a symlink, and the rc TLS suite. The TLS suite needs `python3`, Bash and OpenSSL and sources the real service functions with temporary flash paths, fixture host addresses and a stubbed process launch to test SANs, migration, backups and failure handling without starting the gateway, accessing `/boot` or using the network. All five must be green before you call a change done. Run one server test file during development from the server package with `pnpm --filter @unraidclaw/server exec tsx --test test/<file>.test.ts`; run the TLS suite with `pnpm test:tls`.
 
 ## Where things are
 
 - `packages/shared`: permission keys, presets, resource categories, and API types. Both other packages import from here.
-- `packages/unraid-plugin/server`: the Fastify gateway. Routes in `src/routes/`, Community Applications feed and template logic in `src/ca-*.ts`, plugin management in `src/plugins.ts`, the bounded XML parser in `src/xml.ts`. Tests in `test/`, fixtures in `test/fixtures/`.
+- `packages/unraid-plugin/server`: the Fastify gateway. Routes in `src/routes/`, Community Applications feed and template logic in `src/ca-*.ts`, plugin management in `src/plugins.ts`, the bounded XML parser in `src/xml.ts`. MCP transport in `src/routes/mcp.ts`, tool adapter in `src/mcp-tools.ts`, Origin and header helpers in `src/mcp-security.ts`. Tests in `test/`, fixtures in `test/fixtures/`.
 - `packages/unraid-plugin/src/usr/local/emhttp/plugins/unraidclaw`: the WebGUI page and its JavaScript.
-- `packages/unraid-plugin/unraidclaw.plg`: the plugin manifest, changelog, and install steps. `scripts/build.sh` builds the `.txz`; `scripts/test_archive_safety.py` regresses install and rollback extraction.
-- `packages/openclaw-plugin`: the OpenClaw tools in `src/tools/`, their registration in `src/index.ts`, and the contract check in `scripts/check-contracts.mjs`.
+- `packages/unraid-plugin/unraidclaw.plg`: the plugin manifest, changelog, and install steps. `scripts/build.sh` builds the `.txz`; `scripts/smoke-mcp.mjs` runs the CJS bundle on loopback with temporary configuration; `scripts/test_archive_safety.py` regresses install and rollback extraction; `scripts/test_rc_tls.py` tests certificate generation and migration from `rc.d/rc.unraidclaw`.
+- `packages/openclaw-plugin`: the OpenClaw tools in `src/tools/`, their transport-neutral registration in `src/registry.ts` and OpenClaw entry in `src/index.ts`, and the contract check in `scripts/check-contracts.mjs`.
 
 ## Rules the code already follows
 

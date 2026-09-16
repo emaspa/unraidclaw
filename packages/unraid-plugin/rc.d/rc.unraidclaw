@@ -4,31 +4,100 @@
 #
 
 PLUGIN="unraidclaw"
-CONFIG="/boot/config/plugins/${PLUGIN}/unraidclaw.cfg"
+FLASH_BASE="/boot/config/plugins/${PLUGIN}"
+CONFIG="$FLASH_BASE/unraidclaw.cfg"
+TLS_DIR="$FLASH_BASE/tls"
 SERVER="/usr/local/emhttp/plugins/${PLUGIN}/server/index.cjs"
 PIDFILE="/var/run/${PLUGIN}.pid"
 LOGFILE="/var/log/${PLUGIN}.log"
+VERSION_FILE="/usr/local/emhttp/plugins/${PLUGIN}/VERSION"
+PLG_FILE="/boot/config/plugins/${PLUGIN}.plg"
 
-# Find Node.js binary
-NODE_BIN=""
-for p in /usr/local/bin/node /usr/bin/node; do
-  if [ -x "$p" ]; then
-    NODE_BIN="$p"
-    break
+# Run in a subshell so cleanup and the private umask cannot affect startup.
+ensure_tls_certificate() (
+  local tls_dir="$1" san host entry staging
+  local had_cert=no had_key=no
+  local -A seen=()
+
+  command -v openssl >/dev/null 2>&1 || return 0
+  # A SAN certificate keeps its fingerprint, even after host addresses change.
+  if [ -f "$tls_dir/cert.pem" ]; then
+    if san=$(openssl x509 -in "$tls_dir/cert.pem" -noout -ext subjectAltName 2>/dev/null) && [ -n "$san" ]; then
+      return 0
+    fi
   fi
-done
-if [ -z "$NODE_BIN" ]; then
-  NODE_BIN=$(which node 2>/dev/null || true)
-fi
-if [ -z "$NODE_BIN" ]; then
-  echo "Error: Node.js not found"
-  exit 1
-fi
 
-# Source config
-if [ -f "$CONFIG" ]; then
-  . "$CONFIG" 2>/dev/null
-fi
+  host=$(hostname 2>/dev/null) || host=unraidclaw
+  host=${host:-unraidclaw}
+  san=""
+  while IFS= read -r entry; do
+    if [ -z "${seen[$entry]:-}" ]; then
+      seen[$entry]=1
+      san="${san:+$san,}$entry"
+    fi
+  done < <(
+    printf '%s\n' "DNS:$host" "DNS:$host.local" DNS:localhost IP:127.0.0.1 IP:::1
+    # Temporary and deprecated IPv6 privacy addresses rotate on their own, so
+    # naming them would fill the certificate with entries that stop existing.
+    ip -o addr show scope global 2>/dev/null |
+      awk '/(^| )(temporary|deprecated)( |$)/ { next }
+           $3 == "inet" || $3 == "inet6" { sub(/\/.*/, "", $4); print "IP:" $4 }' |
+      LC_ALL=C sort -u
+  )
+
+  echo "Generating self-signed TLS certificate..."
+  mkdir -p "$tls_dir" 2>/dev/null || return 0
+  umask 077
+  staging=$(mktemp -d "$tls_dir/.generate.XXXXXX" 2>/dev/null) || return 0
+  trap 'rm -rf -- "$staging" 2>/dev/null' EXIT
+
+  if ! openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+    -keyout "$staging/key.pem" -out "$staging/cert.pem" \
+    -days 3650 -nodes -subj "/CN=$host" -addext "subjectAltName=$san" >/dev/null 2>&1; then
+    # Older OpenSSL can lack -addext. Keep any existing files in that case.
+    if [ -e "$tls_dir/cert.pem" ] || [ -e "$tls_dir/key.pem" ]; then
+      return 0
+    fi
+    openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+      -keyout "$staging/key.pem" -out "$staging/cert.pem" \
+      -days 3650 -nodes -subj "/CN=$host" >/dev/null 2>&1 || return 0
+  fi
+  [ -s "$staging/key.pem" ] && [ -s "$staging/cert.pem" ] || return 0
+  chmod 600 "$staging/key.pem" 2>/dev/null || return 0
+  chmod 644 "$staging/cert.pem" 2>/dev/null || return 0
+
+  # Only move the old pair once a complete replacement is ready.
+  if [ -e "$tls_dir/cert.pem" ]; then
+    mv -fT "$tls_dir/cert.pem" "$tls_dir/cert.pem.bak" 2>/dev/null || return 0
+    had_cert=yes
+  fi
+  if [ -e "$tls_dir/key.pem" ]; then
+    if ! mv -fT "$tls_dir/key.pem" "$tls_dir/key.pem.bak" 2>/dev/null; then
+      [ "$had_cert" = no ] || mv -fT "$tls_dir/cert.pem.bak" "$tls_dir/cert.pem" 2>/dev/null
+      return 0
+    fi
+    had_key=yes
+  fi
+  if ! mv -fT "$staging/key.pem" "$tls_dir/key.pem" 2>/dev/null ||
+     ! mv -fT "$staging/cert.pem" "$tls_dir/cert.pem" 2>/dev/null; then
+    # Restore the old pair if installing either new file fails.
+    if [ "$had_key" = yes ]; then
+      mv -fT "$tls_dir/key.pem.bak" "$tls_dir/key.pem" 2>/dev/null
+    else
+      rm -f "$tls_dir/key.pem" 2>/dev/null
+    fi
+    if [ "$had_cert" = yes ]; then
+      mv -fT "$tls_dir/cert.pem.bak" "$tls_dir/cert.pem" 2>/dev/null
+    else
+      rm -f "$tls_dir/cert.pem" 2>/dev/null
+    fi
+    return 0
+  fi
+  if [ "$had_cert" = yes ]; then
+    echo "Replaced TLS certificate; previous files saved as $tls_dir/cert.pem.bak and $tls_dir/key.pem.bak"
+  fi
+  return 0
+)
 
 start() {
   if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
@@ -43,34 +112,23 @@ start() {
 
   echo "Starting ${PLUGIN}..."
 
-  # Auto-generate TLS certificate if not present
-  TLS_DIR="/boot/config/plugins/${PLUGIN}/tls"
-  if [ ! -f "$TLS_DIR/cert.pem" ] || [ ! -f "$TLS_DIR/key.pem" ]; then
-    echo "Generating self-signed TLS certificate..."
-    mkdir -p "$TLS_DIR"
-    openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
-      -keyout "$TLS_DIR/key.pem" -out "$TLS_DIR/cert.pem" \
-      -days 3650 -nodes -subj "/CN=unraidclaw" 2>/dev/null
-    chmod 600 "$TLS_DIR/key.pem"
-    chmod 644 "$TLS_DIR/cert.pem"
-  fi
+  ensure_tls_certificate "$TLS_DIR"
 
   # Export config as env vars for the Node.js process
   export OCC_TLS_CERT="${TLS_CERT:-$TLS_DIR/cert.pem}"
   export OCC_TLS_KEY="${TLS_KEY:-$TLS_DIR/key.pem}"
+  export OCC_MCP_ENABLED="${MCP_ENABLED:-no}"
   export OCC_PORT="${PORT:-9876}"
   export OCC_HOST="${HOST:-0.0.0.0}"
   export OCC_API_KEY_HASH="${API_KEY_HASH:-}"
   export OCC_GRAPHQL_URL="${GRAPHQL_URL:-http://localhost/graphql}"
   export OCC_UNRAID_API_KEY="${UNRAID_API_KEY:-}"
-  export FLASH_BASE="/boot/config/plugins/${PLUGIN}"
-  export OCC_LOG_FILE="${LOG_FILE:-/boot/config/plugins/${PLUGIN}/activity.jsonl}"
+  export FLASH_BASE
+  export OCC_LOG_FILE="${LOG_FILE:-$FLASH_BASE/activity.jsonl}"
   export OCC_MAX_LOG_SIZE="${MAX_LOG_SIZE:-10485760}"
   # The package records its own version. During an upgrade the .plg on flash
   # still names the previous version when this runs, so it is only a fallback
   # for packages built before VERSION existed.
-  VERSION_FILE="/usr/local/emhttp/plugins/${PLUGIN}/VERSION"
-  PLG_FILE="/boot/config/plugins/${PLUGIN}.plg"
   OCC_VERSION=""
   if [ -f "$VERSION_FILE" ]; then
     OCC_VERSION=$(head -n 1 "$VERSION_FILE" | tr -d '[:space:]')
@@ -126,6 +184,32 @@ status() {
     echo "stopped"
   fi
 }
+
+# Allow offline tests to source the real functions without reading host config.
+if [ "${BASH_SOURCE[0]}" != "$0" ]; then
+  return 0
+fi
+
+# Find Node.js binary
+NODE_BIN=""
+for p in /usr/local/bin/node /usr/bin/node; do
+  if [ -x "$p" ]; then
+    NODE_BIN="$p"
+    break
+  fi
+done
+if [ -z "$NODE_BIN" ]; then
+  NODE_BIN=$(which node 2>/dev/null || true)
+fi
+if [ -z "$NODE_BIN" ]; then
+  echo "Error: Node.js not found"
+  exit 1
+fi
+
+# Source config
+if [ -f "$CONFIG" ]; then
+  . "$CONFIG" 2>/dev/null
+fi
 
 case "$1" in
   start)   start ;;

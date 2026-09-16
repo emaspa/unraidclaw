@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-import type { ClientResolver } from "../index.js";
+import type { ClientResolver } from "../registry.js";
 import { textResult, errorResult, checkParams } from "./util.js";
 
 export function registerCaTools(api: any, getClient: ClientResolver): void {

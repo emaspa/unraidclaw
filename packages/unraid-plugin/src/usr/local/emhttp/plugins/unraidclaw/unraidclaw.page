@@ -105,6 +105,16 @@ $logFile = "/boot/config/plugins/{$plugin}/activity.jsonl";
           </td>
         </tr>
         <tr>
+          <td>Enable MCP:</td>
+          <td>
+            <select name="MCP_ENABLED">
+              <option value="no" <?=($cfg['MCP_ENABLED'] ?? 'no') !== 'yes' ? 'selected' : ''?>>No</option>
+              <option value="yes" <?=($cfg['MCP_ENABLED'] ?? 'no') === 'yes' ? 'selected' : ''?>>Yes</option>
+            </select>
+            <span class="occ-hint">Expose MCP at /mcp on this service's port. Uses the same API key and permissions.</span>
+          </td>
+        </tr>
+        <tr>
           <td>Listen Port:</td>
           <td>
             <input type="number" name="PORT" value="<?=$cfg['PORT'] ?? '9876'?>" min="1024" max="65535">

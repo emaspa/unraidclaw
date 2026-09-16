@@ -3,7 +3,7 @@
 $plugin = 'unraidclaw';
 $cfgFile = "/boot/config/plugins/{$plugin}/unraidclaw.cfg";
 
-$fields = ['SERVICE', 'PORT', 'HOST', 'GRAPHQL_URL', 'UNRAID_API_KEY', 'MAX_LOG_SIZE'];
+$fields = ['SERVICE', 'MCP_ENABLED', 'PORT', 'HOST', 'GRAPHQL_URL', 'UNRAID_API_KEY', 'MAX_LOG_SIZE'];
 
 // Accept from GET query params or POST body
 $input = !empty($_GET) ? $_GET : $_POST;
@@ -13,6 +13,15 @@ $isAjax = isset($input['ajax']);
 
 if ($isAjax) {
     header('Content-Type: application/json');
+}
+
+// Reject malformed values before writing config or managing the service.
+if (array_key_exists('MCP_ENABLED', $input) && !in_array($input['MCP_ENABLED'], ['yes', 'no'], true)) {
+    http_response_code(400);
+    echo $isAjax
+        ? json_encode(['success' => false, 'error' => 'MCP_ENABLED must be yes or no'])
+        : 'MCP_ENABLED must be yes or no';
+    exit;
 }
 
 // Read current config (to preserve API_KEY_HASH and other keys)

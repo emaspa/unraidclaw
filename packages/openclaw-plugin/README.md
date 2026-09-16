@@ -145,6 +145,10 @@ Every tool is gated by a 30-key `resource:action` permission matrix configured f
 - [Issues](https://github.com/emaspa/unraidclaw/issues)
 - [Unraid Community Apps](https://unraid.net/community/apps)
 
+## Gateway MCP mode
+
+Gateway MCP mode is off by default; enable it in the gateway Settings tab. OpenClaw keeps using `/api/*` whether MCP is enabled or disabled. See the [repository README](https://github.com/emaspa/unraidclaw#mcp) for MCP client setup and TLS guidance.
+
 ## License
 
 MIT

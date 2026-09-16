@@ -1,5 +1,5 @@
 export default {
-  entry: ["src/index.ts"],
+  entry: ["src/index.ts", "src/registry.ts"],
   format: "esm",
   target: "node22",
   outDir: "dist",

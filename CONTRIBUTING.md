@@ -2,7 +2,7 @@
 
 Thanks for helping. This page says how the project works so a change lands on the first try. Questions before you start are welcome in a GitHub issue.
 
-UnraidClaw is a permission-enforcing REST gateway that runs on an Unraid server, plus an OpenClaw plugin that turns the gateway into tools for an AI agent. It is a pnpm monorepo with three packages: `packages/shared` (types and the permission matrix), `packages/unraid-plugin/server` (the Fastify gateway, bundled to one CommonJS file), and `packages/openclaw-plugin` (the OpenClaw plugin, bundled to one ESM file and published to npm as `unraidclaw`).
+UnraidClaw is a permission-enforcing REST gateway that runs on an Unraid server, plus an OpenClaw plugin that turns the gateway into tools for an AI agent. It is a pnpm monorepo with three packages: `packages/shared` (types and the permission matrix), `packages/unraid-plugin/server` (the Fastify gateway, bundled to one CommonJS file), and `packages/openclaw-plugin` (the OpenClaw plugin, bundled to an ESM entry plus a transport-neutral tool registry and published to npm as `unraidclaw`).
 
 ## What helps most
 
@@ -19,7 +19,7 @@ You need Node.js 22 or newer and pnpm 9. From the repository root:
 pnpm install --frozen-lockfile   # the committed lockfile must match
 pnpm build                       # shared, then server, then the openclaw plugin
 pnpm typecheck                   # tsc --noEmit across all three packages
-pnpm test                        # server suite, then the archive-safety suite
+pnpm test                        # server, archive-safety and rc TLS suites
 pnpm --filter unraidclaw check-contracts   # openclaw.plugin.json tools match src registrations
 ```
 
@@ -38,6 +38,18 @@ UNRAIDCLAW_LIVE_FEED=1 pnpm --filter @unraidclaw/server test
 ```
 
 The archive-safety suite (`pnpm test:archive`) builds a throwaway `0.0.0.test` package and runs `packages/unraid-plugin/scripts/test_archive_safety.py` against temporary host layouts, including one where `/etc/rc.d` is a symlink. It needs `python3`. It exists because a package that carries directory headers can replace a host symlink such as `/etc/rc.d` with a plain directory on install, which hides `rc.6` and breaks shutdown. Keep the built archive free of directory headers.
+
+The rc TLS suite (`pnpm test:tls`) runs `packages/unraid-plugin/scripts/test_rc_tls.py` with `python3`, Bash and OpenSSL. It sources the real service functions with temporary flash paths, fixture host names and addresses, and a stubbed process launch. It checks certificate SANs, one-time replacement and backups, stable address deduplication, and startup when generation fails or OpenSSL is missing. It never starts the gateway, accesses `/boot` or uses the network. `pnpm test` runs it after the archive-safety suite.
+
+To smoke-test MCP from the bundled server without an Unraid host:
+
+```sh
+pnpm --filter "@unraidclaw/server^..." build
+pnpm --filter @unraidclaw/server bundle
+node packages/unraid-plugin/scripts/smoke-mcp.mjs
+```
+
+This copies the bundle outside the checkout, generates an ephemeral key in memory, starts on `127.0.0.1` with temporary flash configuration, and checks initialization, tool discovery and the read-only health tool. GraphQL points at the closed loopback port 1. The script stops the process and removes its files. It requires permission to bind a loopback socket. The Settings PHP tests use a fake service command and temporary cfg; those behavioral tests are skipped when PHP CLI is unavailable.
 
 Real Unraid is the final test for anything that mutates state. The offline suite proves the gateway's logic; it cannot prove that a container actually came up or a plugin actually installed. Say in the pull request what you ran against a real server, or that you could not. Never test a destructive path against a server you do not own, and prefer `dryRun: true` first.
 

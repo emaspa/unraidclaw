@@ -4,9 +4,18 @@ export function textResult(data: unknown): ToolResult {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
 }
 
+// Track failures without changing the result object OpenClaw receives.
+const failures = new WeakSet<ToolResult>();
+
+export function isErrorResult(result: ToolResult): boolean {
+  return failures.has(result);
+}
+
 export function errorResult(err: unknown): ToolResult {
   const message = err instanceof Error ? err.message : String(err);
-  return { content: [{ type: "text", text: `Error: ${message}` }] };
+  const result: ToolResult = { content: [{ type: "text", text: `Error: ${message}` }] };
+  failures.add(result);
+  return result;
 }
 
 /**

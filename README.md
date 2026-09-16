@@ -27,6 +27,7 @@ UnraidClaw sits between AI agents and your Unraid servers, providing a unified R
 - **SHA-256 API key** authentication
 - **Activity logging** with JSONL format, filter, and search
 - **OpenClaw plugin** available on ClawHub and npm (`openclaw plugins install clawhub:unraidclaw --accept-capabilities`)
+- **Optional MCP** at `/mcp` for Streamable HTTP clients, off by default and sharing the REST permissions
 - **Single-file server**, no `node_modules` needed on Unraid
 
 ## Requirements
@@ -228,6 +229,52 @@ Every mutating Plugins endpoint accepts `{"dryRun": true}` to return a plan with
 }
 ```
 
+## MCP
+
+MCP is off by default. In **Settings > UnraidClaw > Settings**, set **Enable MCP** to **Yes** and click **Apply**. The endpoint is `https://<server>:9876/mcp`.
+
+Authenticate with the UnraidClaw API key using `x-api-key: <key>` or `Authorization: Bearer <key>`; `x-api-key` takes precedence if both are sent. Query parameters cannot supply the key.
+
+For [Claude Code](https://code.claude.com/docs/en/mcp):
+
+```bash
+claude mcp add --transport http unraidclaw https://<server>:9876/mcp --header "x-api-key: <key>"
+```
+
+For clients that accept an HTTP MCP server entry:
+
+```json
+{
+  "mcpServers": {
+    "unraidclaw": {
+      "type": "http",
+      "url": "https://<server>:9876/mcp",
+      "headers": {
+        "x-api-key": "<key>"
+      }
+    }
+  }
+}
+```
+
+Replace the placeholders locally. The gateway's default certificate is self-signed. Node-based clients such as Claude Code can trust it with [`NODE_EXTRA_CA_CERTS`](https://nodejs.org/api/cli.html#node_extra_ca_certsfile) pointing to a local copy of `/boot/config/plugins/unraidclaw/tls/cert.pem`. New certificates name the server's host name, its `.local` name, `localhost`, the loopback IPs and all global scope IPv4 and IPv6 interface addresses in `subjectAltName`, so clients can verify those names and addresses after trusting the certificate.
+
+A certificate created by an older version without `subjectAltName` is replaced once when the service restarts after the upgrade. The previous pair is kept as `cert.pem.bak` and `key.pem.bak` in the same TLS directory. Clients that trusted the old certificate must refresh their local copy once. Certificates with `subjectAltName` are kept unchanged, including after IP address changes; use a listed host name if an address changes. If SAN generation is unavailable or fails, startup continues with the existing files, or attempts a certificate without SAN on a fresh install.
+
+Supported protocol versions are `2025-11-25`, `2025-06-18` and `2025-03-26`. Initialization echoes a supported version or returns the latest for an unknown version. Send `Content-Type: application/json`, `Accept: application/json, text/event-stream` and the negotiated `MCP-Protocol-Version` header. An absent version header defaults to `2025-03-26`; an unsupported value returns HTTP 400 with JSON-RPC error `-32600` listing the supported versions.
+
+The transport uses stateless JSON responses without SSE or sessions. It supports `initialize`, `ping`, `tools/list` and `tools/call`; notifications receive HTTP 202 with an empty body. Batches are rejected with `-32600` for every version, including `2025-03-26`.
+
+| Method | Endpoint | Availability and permissions |
+|--------|----------|------------------------------|
+| POST | `/mcp` | Enabled only with MCP; API key required; each tool uses its existing REST permission |
+| GET, DELETE | `/mcp` | HTTP 405 when enabled |
+| Any | `/mcp` | HTTP 404 when disabled |
+
+Each endpoint exposes the 55 tools for one server, without OpenClaw's `server` argument. Existing permissions, body validation, dry-run rules and blockers still apply. OpenClaw continues using `/api/*` whether MCP is enabled or disabled.
+
+If present, `Origin` must exactly match the gateway's configured scheme and port with a loopback address, a local interface IP or the explicit **Listen Host**; other origins receive HTTP 403. The allowlist is built at startup without trusting incoming Host or forwarded headers, so a browser frontend or reverse proxy using a different public origin is rejected.
+
 ## OpenClaw Plugin
 
 The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 55 tools to any AI agent that supports the OpenClaw protocol.
@@ -377,21 +424,24 @@ The WebGUI includes **Read Only**, **Docker Manager**, **VM Manager**, **Full Ad
                                 └──────────────────┘                 notifications
 ```
 
+OpenClaw calls `/api/*` over HTTPS. Optional MCP clients call `/mcp` on the same gateway. The MCP adapter reuses the OpenClaw tool registry and dispatches through the REST routes in process, sharing authentication, permission checks and activity logging. It does not make a second network connection to the gateway.
+
 This is a pnpm monorepo with three packages:
 
 | Package | Description |
 |---------|-------------|
 | `packages/shared` | Shared TypeScript types, permission definitions, API interfaces |
-| `packages/unraid-plugin/server` | Fastify REST API server, bundles to a single CJS file |
-| `packages/openclaw-plugin` | OpenClaw plugin, bundles to a single ESM file, published to npm as `unraidclaw` |
+| `packages/unraid-plugin/server` | Fastify REST API and optional MCP endpoint, bundles to a single CJS file |
+| `packages/openclaw-plugin` | OpenClaw plugin with a single ESM entry and a transport-neutral tool registry export, published to npm as `unraidclaw` |
 
 ## Security
 
 - API keys are hashed with SHA-256 before storage; the plaintext key is never persisted
-- All requests require authentication via `x-api-key` header
+- REST requests require `x-api-key`, except the public `/api/health` probe. MCP also accepts Bearer authentication and requires a key for all protocol requests
+- MCP validates exact browser Origins to prevent DNS rebinding; it shares the REST per-IP authentication failure limit
 - Every API call is checked against the permission matrix before execution
 - Activity logging records all requests with timestamps, endpoints, and results
-- HTTPS with auto-generated EC (prime256v1) certificates, 10-year validity
+- HTTPS with auto-generated EC (prime256v1) certificates, 10-year validity and host names and IP addresses in `subjectAltName`; older certificates without SAN are replaced once with the previous pair kept as `.bak` files
 - The server runs locally on your Unraid box, no cloud dependencies
 
 ## Contributing

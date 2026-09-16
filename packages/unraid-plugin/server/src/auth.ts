@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { FastifyRequest, FastifyReply } from "fastify";
 import type { ServerConfig } from "./config.js";
+import { isMcpPath, mcpApiKey } from "./mcp-security.js";
 
 export function hashApiKey(plainKey: string): string {
   return createHash("sha256").update(plainKey).digest("hex");
@@ -43,7 +44,7 @@ setInterval(() => {
   for (const [ip, entry] of failMap) {
     if (now - entry.firstAttempt > RATE_LIMIT_WINDOW) failMap.delete(ip);
   }
-}, RATE_LIMIT_WINDOW);
+}, RATE_LIMIT_WINDOW).unref();
 
 export function createAuthHook(config: ServerConfig) {
   return async function authHook(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -58,12 +59,13 @@ export function createAuthHook(config: ServerConfig) {
       return;
     }
 
-    const apiKey = request.headers["x-api-key"] as string | undefined;
+    const mcp = config.mcpEnabled && isMcpPath(request.url);
+    const apiKey = mcp ? mcpApiKey(request) : request.headers["x-api-key"] as string | undefined;
     if (!apiKey) {
       recordAuthFailure(request.ip);
       reply.code(401).send({
         ok: false,
-        error: { code: "UNAUTHORIZED", message: "Missing x-api-key header" },
+        error: { code: "UNAUTHORIZED", message: mcp ? "Missing API key" : "Missing x-api-key header" },
       });
       return;
     }

@@ -32,6 +32,7 @@ export interface JsonSchema {
   type: string;
   properties?: Record<string, unknown>;
   required?: string[];
+  additionalProperties?: boolean;
 }
 
 export interface ToolResult {

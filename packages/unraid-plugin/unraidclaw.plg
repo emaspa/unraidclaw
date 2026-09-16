@@ -15,6 +15,8 @@
 
 <CHANGES>
 ### Unreleased
+- Generate TLS certificates with the server's host name and IP addresses for hostname verification. Replace older certificates without SAN once on restart, keeping the old certificate and key as .bak files; clients that trusted the old certificate will see it change once
+- Add optional MCP Streamable HTTP at /mcp, off by default and switchable in Settings. Reuse all existing tools, API key authentication, permissions and activity logging while keeping REST and OpenClaw available
 - Fix /api/health reporting the previous version after an upgrade until the service restarted again. The package now records its own version instead of the service reading it from the .plg, which Unraid saves only after the install script restarts the service
 
 ### 0.1.32

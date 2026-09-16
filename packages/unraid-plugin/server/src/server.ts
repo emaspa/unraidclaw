@@ -3,6 +3,8 @@ import type { ServerConfig } from "./config.js";
 import { createAuthHook } from "./auth.js";
 import { GraphQLClient, GraphQLError } from "./graphql-client.js";
 import { ActivityLogger, type ActivityLogEntry } from "./logger.js";
+import { isMcpPath, mcpOrigins, validMcpOrigin } from "./mcp-security.js";
+import { registerMcpRoutes } from "./routes/mcp.js";
 
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerDockerRoutes } from "./routes/docker.js";
@@ -22,6 +24,15 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
   const app = Fastify({ logger: true, ...(httpsOpts ? { https: httpsOpts } : {}) });
   const gql = new GraphQLClient(config);
   const activityLogger = new ActivityLogger(config);
+  const allowedMcpOrigins = config.mcpEnabled ? mcpOrigins(config, !!httpsOpts) : new Set<string>();
+
+  app.addHook("onRequest", async (request, reply) => {
+    if (!isMcpPath(request.url)) return;
+    if (!config.mcpEnabled) return reply.callNotFound();
+    if (!validMcpOrigin(request.headers.origin, allowedMcpOrigins)) {
+      return reply.code(403).send({ ok: false, error: { code: "FORBIDDEN", message: "Origin not allowed" } });
+    }
+  });
 
   // CORS - only allow same-origin and local requests
   app.addHook("onRequest", async (request, reply) => {
@@ -30,7 +41,7 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
       try {
         const url = new URL(origin);
         const host = url.hostname;
-        if (
+        if (isMcpPath(request.url) ? allowedMcpOrigins.has(origin) : (
           host === "localhost" ||
           host === "127.0.0.1" ||
           host === "::1" ||
@@ -38,7 +49,7 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
           host.startsWith("10.") ||
           host.startsWith("172.") ||
           host.endsWith(".local")
-        ) {
+        )) {
           reply.header("Access-Control-Allow-Origin", origin);
           reply.header("Vary", "Origin");
         }
@@ -47,7 +58,9 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
       }
     }
     reply.header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
-    reply.header("Access-Control-Allow-Headers", "Content-Type, x-api-key");
+    reply.header("Access-Control-Allow-Headers", isMcpPath(request.url)
+      ? "Content-Type, x-api-key, Authorization, MCP-Protocol-Version"
+      : "Content-Type, x-api-key");
     if (request.method === "OPTIONS") {
       return reply.code(204).send();
     }
@@ -61,7 +74,7 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
     if (request.url === "/api/health") return;
     // Extract resource:action from route URL
     const parts = request.url.replace("/api/", "").split("/");
-    const resource = parts[0] ?? "unknown";
+    const resource = isMcpPath(request.url) ? "mcp" : parts[0] ?? "unknown";
     const action = request.method === "GET" ? "read" : request.method === "DELETE" ? "delete" : "update";
 
     const entry: ActivityLogEntry = {
@@ -111,6 +124,7 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
   registerNetworkRoutes(app, gql);
   registerUserRoutes(app, gql);
   registerLogRoutes(app, gql);
+  if (config.mcpEnabled) app.register(registerMcpRoutes);
 
   return app;
 }

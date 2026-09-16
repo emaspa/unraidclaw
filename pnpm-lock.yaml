@@ -31,12 +31,18 @@ importers:
       '@unraidclaw/shared':
         specifier: workspace:*
         version: link:../../shared
+      ajv:
+        specifier: ^8.18.0
+        version: 8.18.0
       fast-xml-parser:
         specifier: ^5.11.1
         version: 5.11.1
       fastify:
         specifier: ^5.2.0
         version: 5.7.4
+      unraidclaw:
+        specifier: workspace:*
+        version: link:../../openclaw-plugin
     devDependencies:
       '@types/node':
         specifier: ^22.0.0

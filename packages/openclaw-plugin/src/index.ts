@@ -1,17 +1,5 @@
 import { UnraidClient, type ClientConfig } from "./client.js";
-import { registerHealthTools } from "./tools/health.js";
-import { registerDockerTools } from "./tools/docker.js";
-import { registerCaTools } from "./tools/ca.js";
-import { registerPluginTools } from "./tools/plugins.js";
-import { registerVMTools } from "./tools/vms.js";
-import { registerArrayTools } from "./tools/array.js";
-import { registerDiskTools } from "./tools/disks.js";
-import { registerShareTools } from "./tools/shares.js";
-import { registerSystemTools } from "./tools/system.js";
-import { registerNotificationTools } from "./tools/notifications.js";
-import { registerNetworkTools } from "./tools/network.js";
-import { registerUserTools } from "./tools/users.js";
-import { registerLogTools } from "./tools/logs.js";
+import { registerTools } from "./registry.js";
 
 interface ServerEntry extends ClientConfig {
   name: string;
@@ -68,19 +56,7 @@ export default function register(api: any): void {
     return client;
   }
 
-  registerHealthTools(api, getClient);
-  registerDockerTools(api, getClient);
-  registerCaTools(api, getClient);
-  registerPluginTools(api, getClient);
-  registerVMTools(api, getClient);
-  registerArrayTools(api, getClient);
-  registerDiskTools(api, getClient);
-  registerShareTools(api, getClient);
-  registerSystemTools(api, getClient);
-  registerNotificationTools(api, getClient);
-  registerNetworkTools(api, getClient);
-  registerUserTools(api, getClient);
-  registerLogTools(api, getClient);
+  registerTools(api, getClient);
 
   const servers = resolveServers(api);
   if (servers.length > 1) {

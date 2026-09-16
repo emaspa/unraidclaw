@@ -17,10 +17,10 @@ echo "=== Building ${PKG_NAME} v${VERSION} ==="
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-# 1. Build the shared package
-echo "[1/4] Building shared package..."
-cd "$ROOT_DIR/packages/shared"
-pnpm build
+# 1. Build the shared types and tool registry
+echo "[1/4] Building server dependencies..."
+cd "$ROOT_DIR"
+pnpm --filter "@unraidclaw/server^..." build
 
 # 2. Bundle the server into a single file
 echo "[2/4] Bundling server..."
