@@ -1,19 +1,29 @@
 # UnraidClaw command-line client
 
-`unraidclaw` manages one UnraidClaw gateway through its REST API. It uses the same 55 tool definitions and read-only classification as OpenClaw and MCP. Node.js 22 or newer is required on Linux, macOS and Windows. The CLI is a single CommonJS bundle with no runtime `node_modules` requirement.
+The `unraidclaw-cli` package provides the `unraidclaw` command, which manages one UnraidClaw gateway through its REST API. It uses the same 55 tool definitions, read-only classification and gateway permissions as OpenClaw and MCP. It runs on Unraid and on Linux, macOS and Windows with Node.js 22 or newer, as a single CommonJS bundle with no runtime `node_modules`.
+
+The OpenClaw plugin is a separate npm package named `unraidclaw`. Install `unraidclaw-cli` for the command-line client.
 
 ## Install
 
-The Unraid plugin installs `/usr/local/bin/unraidclaw` automatically.
+### On Unraid
 
-On another machine with Node.js 22 or newer, install it from npm:
+The UnraidClaw plugin installs `/usr/local/bin/unraidclaw`, so there is nothing else to install. See [Use on the Unraid server](#use-on-the-unraid-server).
+
+### From npm
 
 ```sh
 npm install -g unraidclaw-cli
 unraidclaw --version
 ```
 
-Update it later with `npm update -g unraidclaw-cli`. Without npm, download `unraidclaw-cli-<version>.tar.gz` and its `.sha256` file from the [latest release](https://github.com/emaspa/unraidclaw/releases/latest). The archive holds the bundle `unraidclaw.cjs`, a `unraidclaw` launcher for Linux and macOS, `unraidclaw.cmd` for Windows, this guide and the license. Node.js 22 or newer must be on `PATH`.
+Update it with `npm update -g unraidclaw-cli`.
+
+### From the release archive
+
+For machines without npm, download `unraidclaw-cli-<version>.tar.gz` and its `.sha256` file from the [latest release](https://github.com/emaspa/unraidclaw/releases/latest). The archive holds the bundle `unraidclaw.cjs`, a `unraidclaw` launcher for Linux and macOS, `unraidclaw.cmd` for Windows, this guide and the license. Node.js 22 or newer must be on `PATH`.
+
+Extract it somewhere it can stay, because the link points into that folder:
 
 ```sh
 sha256sum -c unraidclaw-cli-<version>.tar.gz.sha256   # macOS: shasum -a 256 -c
@@ -22,9 +32,11 @@ sudo ln -s "$PWD/unraidclaw-cli-<version>/unraidclaw" /usr/local/bin/unraidclaw
 unraidclaw --version
 ```
 
-On Windows, extract the archive with `tar -xzf` in a terminal and add the extracted folder to `PATH`, or run `unraidclaw.cmd` from it.
+On Windows, extract the archive with `tar -xzf` in a terminal, then add the extracted folder to `PATH` or run `unraidclaw.cmd` from it.
 
-To build from source instead, run these commands from the repository root:
+### From source
+
+From the repository root:
 
 ```sh
 corepack enable pnpm
@@ -34,7 +46,7 @@ npm install -g ./packages/cli
 unraidclaw --version
 ```
 
-You can also copy `packages/cli/dist/unraidclaw.cjs` to another machine and run `node unraidclaw.cjs help`. The CLI package is named `unraidclaw-cli`; the OpenClaw plugin is the separate `unraidclaw` npm package.
+You can also copy `packages/cli/dist/unraidclaw.cjs` to another machine and run `node unraidclaw.cjs help`.
 
 ## Configure a remote machine
 
