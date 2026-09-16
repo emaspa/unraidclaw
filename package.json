@@ -7,7 +7,7 @@
     "build": "pnpm -r build",
     "build:shared": "pnpm --filter @unraidclaw/shared build",
     "build:server": "pnpm --filter @unraidclaw/server build",
-    "build:openclaw": "pnpm --filter @openclaw/plugin-unraid build",
+    "build:openclaw": "pnpm --filter unraidclaw build",
     "dev:server": "pnpm --filter @unraidclaw/server dev",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm --filter @unraidclaw/server test && pnpm --filter unraidclaw-cli test && pnpm test:archive && pnpm test:tls",

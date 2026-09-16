@@ -48,7 +48,7 @@ export function registerDockerTools(api: any, getClient: ClientResolver): void {
       type: "object",
       properties: {
         id: { type: "string", description: "Container ID or name" },
-        tail: { type: "number", description: "Number of lines from the end (default: 100)" },
+        tail: { type: "integer", minimum: 1, maximum: 10000, description: "Number of lines from the end (default: 100)" },
         since: { type: "string", description: "Show logs since timestamp (e.g., 2024-01-01T00:00:00Z)" },
         server: { type: "string", description: "Target server name (optional, uses default server)" },
       },

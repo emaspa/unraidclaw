@@ -63,6 +63,17 @@ for (const enabled of [false, true]) {
   });
 }
 
+test("health stays public and unlogged with a query string, and other routes still need a key", async (t) => {
+  const app = harness(t);
+  for (const url of ["/api/health", "/api/health?probe=1"]) {
+    assert.equal((await app.inject({ url })).statusCode, 200);
+  }
+  assert.equal((await app.inject({ url: "/api/users/me?x=/api/health" })).statusCode, 401);
+  const logs = await readFile(config.logFile, "utf8").catch(() => "");
+  const paths = logs.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line).path);
+  assert(!paths.some((path: string) => path.startsWith("/api/health")));
+});
+
 test("disabled MCP has no route, including unauthenticated requests and preflights", async (t) => {
   const app = harness(t, false);
   for (const method of ["POST", "GET", "DELETE", "OPTIONS"] as const) {

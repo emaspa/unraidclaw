@@ -1,9 +1,12 @@
 import type { FastifyInstance } from "fastify";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync, chmodSync, renameSync, unlinkSync } from "node:fs";
 import { Resource, Action } from "@unraidclaw/shared";
 import type { UpdateShareRequest } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
+
+import { randomUUID } from "node:crypto";
+import { validBody, validInteger } from "../docker-common.js";
 
 const SHARES_DIR = "/boot/config/shares";
 
@@ -45,7 +48,16 @@ function parseCfgFile(path: string): Record<string, string> {
 
 function writeCfgFile(path: string, data: Record<string, string>): void {
   const lines = Object.entries(data).map(([k, v]) => `${k}="${v}"`);
-  writeFileSync(path, lines.join("\n") + "\n", { encoding: "utf-8", mode: 0o600 });
+  const temp = `${path}.${randomUUID()}.tmp`;
+  const mode = existsSync(path) ? statSync(path).mode & 0o7777 : 0o600;
+  try {
+    writeFileSync(temp, lines.join("\n") + "\n", { encoding: "utf-8", mode, flag: "wx" });
+    // /boot is vfat, where the mount options fix file modes and chmod can fail.
+    try { chmodSync(temp, mode); } catch { /* keep the mode the mount gives */ }
+    renameSync(temp, path);
+  } finally {
+    if (existsSync(temp)) unlinkSync(temp);
+  }
 }
 
 const LIST_QUERY = `query {
@@ -61,7 +73,7 @@ const LIST_QUERY = `query {
   }
 }`;
 
-export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): void {
+export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient, sharesDir = SHARES_DIR): void {
   // List shares
   app.get("/api/shares", {
     preHandler: requirePermission(Resource.SHARE, Action.READ),
@@ -104,7 +116,10 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
     preHandler: requirePermission(Resource.SHARE, Action.UPDATE),
     handler: async (req, reply) => {
       const { name } = req.params;
-      const body = req.body ?? {};
+      const body = req.body;
+      if (!validBody(body, Object.keys(FIELD_MAP))) {
+        return reply.code(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid share fields" } });
+      }
 
       // Validate share exists
       const data = await gql.query<{ shares: Array<{ name: string }> }>(LIST_QUERY);
@@ -117,7 +132,7 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
       }
 
       // Validate field values
-      if (body.allocator && !VALID_ALLOCATORS.includes(body.allocator)) {
+      if (body.allocator !== undefined && (typeof body.allocator !== "string" || !VALID_ALLOCATORS.includes(body.allocator))) {
         return reply.code(400).send({
           ok: false,
           error: {
@@ -127,8 +142,7 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
         });
       }
       if (body.floor !== undefined) {
-        const floor = Number(body.floor);
-        if (!Number.isFinite(floor) || floor < 0 || !Number.isInteger(floor)) {
+        if (!validInteger(body.floor)) {
           return reply.code(400).send({
             ok: false,
             error: { code: "INVALID_VALUE", message: "floor must be a non-negative integer (KiB)" },
@@ -136,8 +150,7 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
         }
       }
       if (body.splitLevel !== undefined) {
-        const splitLevel = Number(body.splitLevel);
-        if (!Number.isFinite(splitLevel) || !Number.isInteger(splitLevel) || splitLevel < 0) {
+        if (!validInteger(body.splitLevel)) {
           return reply.code(400).send({
             ok: false,
             error: { code: "INVALID_VALUE", message: "splitLevel must be a non-negative integer" },
@@ -145,7 +158,7 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
         }
       }
       if (body.comment !== undefined) {
-        if (typeof body.comment !== "string" || body.comment.length > 256) {
+        if (typeof body.comment !== "string" || body.comment.length > 256 || /[\x00-\x1f\x7f-\x9f"\\$`]/.test(body.comment)) {
           return reply.code(400).send({
             ok: false,
             error: { code: "INVALID_VALUE", message: "comment must be a string of 256 characters or fewer" },
@@ -154,7 +167,10 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
       }
 
       // Read existing config, apply updates, write back
-      const cfgPath = `${SHARES_DIR}/${share.name}.cfg`;
+      if (!share.name || /[/\\\x00]/.test(share.name) || share.name === "." || share.name === "..") {
+        return reply.code(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid share name" } });
+      }
+      const cfgPath = `${sharesDir}/${share.name}.cfg`;
       const cfg = parseCfgFile(cfgPath);
 
       const updated: string[] = [];
@@ -175,7 +191,11 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
 
       writeCfgFile(cfgPath, cfg);
 
-      return reply.send({ ok: true, data: { share: share.name, updated } });
+      const observed = parseCfgFile(cfgPath);
+      if (updated.some((field) => observed[FIELD_MAP[field as keyof UpdateShareRequest]] !== cfg[FIELD_MAP[field as keyof UpdateShareRequest]])) {
+        return reply.code(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: "Share settings did not persist" } });
+      }
+      return reply.send({ ok: true, data: { share: share.name, updated, verified: true } });
     },
   });
 }

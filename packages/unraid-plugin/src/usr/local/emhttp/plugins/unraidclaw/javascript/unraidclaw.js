@@ -356,14 +356,16 @@ function occSaveSettings(e) {
     if (xhr.readyState === 4) {
       btn.disabled = false;
       btn.textContent = 'Apply';
+      var saved = false;
       if (xhr.status === 200 && xhr.responseText) {
         try {
           var resp = JSON.parse(xhr.responseText);
           if (resp.success) {
+            saved = true;
             status.textContent = 'Settings saved! Service ' + resp.service + '.';
             status.style.color = '#51cf66';
           } else {
-            status.textContent = 'Error saving settings';
+            status.textContent = resp.error || 'Error saving settings';
             status.style.color = '#ff6b6b';
           }
         } catch(ex) {
@@ -374,7 +376,10 @@ function occSaveSettings(e) {
         status.textContent = 'Error (HTTP ' + xhr.status + ')';
         status.style.color = '#ff6b6b';
       }
-      setTimeout(function() { status.textContent = ''; }, 5000);
+      // Leave errors on screen; only a success message clears itself.
+      if (saved) {
+        setTimeout(function() { status.textContent = ''; }, 5000);
+      }
     }
   };
   xhr.send();

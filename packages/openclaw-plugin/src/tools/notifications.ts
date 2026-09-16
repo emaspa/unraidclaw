@@ -30,7 +30,7 @@ export function registerNotificationTools(api: any, getClient: ClientResolver): 
         title: { type: "string", description: "Notification title" },
         subject: { type: "string", description: "Notification subject" },
         description: { type: "string", description: "Notification body text" },
-        importance: { type: "string", description: "Importance level: alert, warning, or normal" },
+        importance: { type: "string", enum: ["normal", "warning", "alert"], description: "Importance level: alert, warning, or normal" },
         server: { type: "string", description: "Target server name (optional, uses default server)" },
       },
       required: ["title", "subject", "description"],

@@ -72,8 +72,8 @@ Real Unraid is the final test for anything that mutates state. The offline suite
 
 ## Code conventions
 
-- The gateway talks to Unraid three ways: its GraphQL API, the `docker` and `plugin` CLIs, and the filesystem. CA and plugin mutating paths run bounded commands with timeouts and verify the result afterward, for example with `docker inspect`, rather than trusting an exit code.
-- Request bodies are validated by hand. The CA and plugin routes reject unknown fields and a non-boolean `dryRun` instead of letting schema coercion drop or reshape them. A new mutating route follows the same rule.
+- The gateway talks to Unraid three ways: its GraphQL API, the `docker` and `plugin` CLIs, and the filesystem. Mutating paths run bounded commands with timeouts and verify the result afterward, for example with `docker inspect` or `virsh domstate`, rather than trusting an exit code.
+- Request bodies are validated by hand. Routes reject unknown fields, wrongly typed values and a non-boolean `dryRun` instead of letting schema coercion drop or reshape them. A new mutating route follows the same rule.
 - Unsupported configurations become blockers with a code and a message, never a silent drop. If the gateway cannot reproduce a template or container setting exactly, it refuses the operation and says why.
 - Secrets are redacted. Values a template marks as masked never appear in a preview, an error, or a log line.
 - XML parsing goes through `packages/unraid-plugin/server/src/xml.ts`, which bounds entities and rejects unsafe constructs. Do not add a second XML parser.

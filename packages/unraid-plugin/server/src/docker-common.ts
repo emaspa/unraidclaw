@@ -1,3 +1,23 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+export type CommandRunner = (file: string, args: string[], options: { timeout: number; maxBuffer?: number }) => Promise<{ stdout: string; stderr: string }>;
+export const runCommand: CommandRunner = promisify(execFile);
+
+export function validId(id: string): boolean {
+  return id.length <= 255 && VALID_NAME_RE.test(id);
+}
+
+export function validBody(body: unknown, fields: string[]): body is Record<string, unknown> {
+  return body !== null && typeof body === "object" && !Array.isArray(body)
+    && Object.keys(body).every((key) => fields.includes(key));
+}
+
+export function validInteger(value: unknown, max = Number.MAX_SAFE_INTEGER): boolean {
+  return (typeof value === "number" || (typeof value === "string" && /^\d+$/.test(value)))
+    && Number.isSafeInteger(Number(value)) && Number(value) >= 0 && Number(value) <= max;
+}
+
 // Shared helpers for building Unraid docker-manager templates and validating
 // container specs. Used by routes/docker.ts (manual container creation) and
 // routes/ca.ts (Community Applications install).

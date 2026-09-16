@@ -48,8 +48,9 @@ setInterval(() => {
 
 export function createAuthHook(config: ServerConfig) {
   return async function authHook(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    // Skip auth for health endpoint
-    if (request.url === "/api/health") return;
+    // Skip auth for health endpoint. Match the route, not the raw URL, so a
+    // query string such as /api/health?x=1 is treated the same way.
+    if (request.routeOptions.url === "/api/health") return;
     // Unknown paths answer 404 without a key. MCP clients probe OAuth discovery
     // paths such as /.well-known/oauth-protected-resource before connecting,
     // and counting those as failed logins locked them out of /mcp.

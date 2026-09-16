@@ -1,12 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { runCommand, validBody, validInteger, type CommandRunner } from "../docker-common.js";
 import { existsSync, unlinkSync, renameSync, mkdirSync } from "fs";
 import { Resource, Action } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 
-const execFileAsync = promisify(execFile);
 
 const VALID_ID_RE = /^[a-zA-Z0-9_.-]+$/;
 
@@ -35,14 +33,19 @@ const OVERVIEW_QUERY = `query {
   }
 }`;
 
-export function registerNotificationRoutes(app: FastifyInstance, gql: GraphQLClient): void {
+export function registerNotificationRoutes(app: FastifyInstance, gql: GraphQLClient, options: { run?: CommandRunner; root?: string } = {}): void {
+  const run = options.run ?? runCommand;
+  const root = options.root ?? "/tmp/notifications";
   // List notifications
   app.get<{ Querystring: { type?: string; limit?: string; offset?: string } }>("/api/notifications", {
     preHandler: requirePermission(Resource.NOTIFICATION, Action.READ),
     handler: async (req, reply) => {
-      const type = (req.query.type || "UNREAD").toUpperCase();
-      const limit = req.query.limit ? parseInt(req.query.limit, 10) : 50;
-      const offset = req.query.offset ? parseInt(req.query.offset, 10) : 0;
+      const type = (req.query.type ?? "UNREAD").toUpperCase();
+      if (!["UNREAD", "ARCHIVE"].includes(type) || !validInteger(req.query.limit ?? "50", 1000) || !validInteger(req.query.offset ?? "0", 1000000)) {
+        return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid notification list filter" } });
+      }
+      const limit = Number(req.query.limit ?? 50);
+      const offset = Number(req.query.offset ?? 0);
       const data = await gql.query<{ notifications: { list: unknown[] } }>(
         LIST_QUERY,
         { type, offset, limit }
@@ -64,13 +67,19 @@ export function registerNotificationRoutes(app: FastifyInstance, gql: GraphQLCli
   app.post<{ Body: { title: string; subject: string; description: string; importance?: string } }>("/api/notifications", {
     preHandler: requirePermission(Resource.NOTIFICATION, Action.CREATE),
     handler: async (req, reply) => {
+      const body = req.body;
+      if (!validBody(body, ["title", "subject", "description", "importance"])
+        || (["title", "subject", "description"] as const).some((key) => typeof body[key] !== "string" || !(body[key] as string).length || (body[key] as string).length > (key === "description" ? 4096 : 256) || (body[key] as string).includes("\0"))
+        || (body.importance !== undefined && !["normal", "warning", "alert"].includes(body.importance as string))) {
+        return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid notification fields" } });
+      }
       const { title, subject, description, importance } = req.body;
       if (!title || !subject || !description) {
         return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "title, subject, and description are required" } });
       }
       const level = importance || "normal";
       try {
-        await execFileAsync(
+        await run(
           "/usr/local/emhttp/webGui/scripts/notify",
           ["-e", title, "-s", subject, "-d", description, "-i", level],
           { timeout: 10000 },
@@ -87,18 +96,19 @@ export function registerNotificationRoutes(app: FastifyInstance, gql: GraphQLCli
     preHandler: requirePermission(Resource.NOTIFICATION, Action.UPDATE),
     handler: async (req, reply) => {
       const { id } = req.params;
-      if (!VALID_ID_RE.test(id)) {
+      if ((!VALID_ID_RE.test(id) || id === "." || id === ".." || id.length > 255)) {
         return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid notification ID" } });
       }
-      const src = `/tmp/notifications/unread/${id}`;
-      const dst = `/tmp/notifications/archive/${id}`;
+      const src = `${root}/unread/${id}`;
+      const dst = `${root}/archive/${id}`;
       if (!existsSync(src)) {
         return reply.status(404).send({ ok: false, error: { code: "NOT_FOUND", message: `Notification ${id} not found in unread` } });
       }
       try {
-        mkdirSync("/tmp/notifications/archive", { recursive: true });
+        mkdirSync(`${root}/archive`, { recursive: true });
         renameSync(src, dst);
-        return reply.send({ ok: true, data: { message: `Notification ${id} archived` } });
+        if (existsSync(src) || !existsSync(dst)) return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: "Notification was not archived" } });
+        return reply.send({ ok: true, data: { verified: true, message: `Notification ${id} archived` } });
       } catch {
         return reply.status(500).send({ ok: false, error: { code: "ARCHIVE_ERROR", message: "Failed to archive notification" } });
       }
@@ -110,18 +120,19 @@ export function registerNotificationRoutes(app: FastifyInstance, gql: GraphQLCli
     preHandler: requirePermission(Resource.NOTIFICATION, Action.DELETE),
     handler: async (req, reply) => {
       const { id } = req.params;
-      if (!VALID_ID_RE.test(id)) {
+      if ((!VALID_ID_RE.test(id) || id === "." || id === ".." || id.length > 255)) {
         return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid notification ID" } });
       }
-      const unread = `/tmp/notifications/unread/${id}`;
-      const archive = `/tmp/notifications/archive/${id}`;
+      const unread = `${root}/unread/${id}`;
+      const archive = `${root}/archive/${id}`;
       const target = existsSync(unread) ? unread : existsSync(archive) ? archive : null;
       if (!target) {
         return reply.status(404).send({ ok: false, error: { code: "NOT_FOUND", message: `Notification ${id} not found` } });
       }
       try {
         unlinkSync(target);
-        return reply.send({ ok: true, data: { message: `Notification ${id} deleted` } });
+        if (existsSync(target)) return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: "Notification was not removed" } });
+        return reply.send({ ok: true, data: { verified: true, message: `Notification ${id} deleted` } });
       } catch {
         return reply.status(500).send({ ok: false, error: { code: "DELETE_ERROR", message: "Failed to delete notification" } });
       }

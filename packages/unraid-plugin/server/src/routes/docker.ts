@@ -3,10 +3,9 @@ import { Resource, Action } from "@unraidclaw/shared";
 import type { DockerContainer, DockerLogsResponse } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { writeFile, mkdir } from "node:fs/promises";
 import {
+  runCommand, validId, validBody, validInteger, type CommandRunner,
   escapeXml,
   sanitizeFilename,
   VALID_IMAGE_RE,
@@ -17,8 +16,6 @@ import {
   VALID_NAME_RE,
   VALID_RESTART_VALUES,
 } from "../docker-common.js";
-
-const execFileAsync = promisify(execFile);
 
 interface DockerCreateBody {
   image: string;
@@ -46,8 +43,8 @@ const LIST_QUERY = `query {
   }
 }`;
 
-async function dockerInspect(id: string) {
-  const { stdout } = await execFileAsync("docker", ["inspect", id]);
+async function dockerInspect(id: string, run: CommandRunner) {
+  const { stdout } = await run("docker", ["inspect", "--", id], { timeout: 15000 });
   const [info] = JSON.parse(stdout);
   return {
     id: info.Id,
@@ -76,7 +73,13 @@ async function dockerInspect(id: string) {
   };
 }
 
-export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): void {
+export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient, options: {
+  run?: CommandRunner;
+  templatesDir?: string;
+  mkdir?: typeof mkdir;
+} = {}): void {
+  const run = options.run ?? runCommand;
+  const makeDirectory = options.mkdir ?? mkdir;
   // List containers
   app.get("/api/docker/containers", {
     preHandler: requirePermission(Resource.DOCKER, Action.READ),
@@ -90,8 +93,11 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
   app.get<{ Params: { id: string } }>("/api/docker/containers/:id", {
     preHandler: requirePermission(Resource.DOCKER, Action.READ),
     handler: async (req, reply) => {
+      if (!validId(req.params.id)) {
+        return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid container ID" } });
+      }
       try {
-        const detail = await dockerInspect(req.params.id);
+        const detail = await dockerInspect(req.params.id, run);
         return reply.send({ ok: true, data: detail });
       } catch (err: any) {
         return reply.status(404).send({
@@ -108,13 +114,20 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
     {
       preHandler: requirePermission(Resource.DOCKER, Action.READ),
       handler: async (req, reply) => {
+        if (!validId(req.params.id)) {
+          return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid container ID" } });
+        }
         const args = ["logs"];
         const tail = req.query.tail ?? "100";
+        if (!(tail === "all" || (validInteger(tail, 10000) && Number(tail) > 0))
+          || (req.query.since !== undefined && (typeof req.query.since !== "string" || !req.query.since.length || req.query.since.length > 128 || /^-|[\x00-\x1f\x7f]/.test(req.query.since)))) {
+          return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid logs tail or since" } });
+        }
         args.push("--tail", tail);
         if (req.query.since) args.push("--since", req.query.since);
-        args.push(req.params.id);
+        args.push("--", req.params.id);
         try {
-          const { stdout, stderr } = await execFileAsync("docker", args);
+          const { stdout, stderr } = await run("docker", args, { timeout: 120000 });
           const response: DockerLogsResponse = { id: req.params.id, logs: stdout + stderr };
           return reply.send({ ok: true, data: response });
         } catch (err: any) {
@@ -132,15 +145,22 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
     app.post<{ Params: { id: string } }>(`/api/docker/containers/:id/${action}`, {
       preHandler: requirePermission(Resource.DOCKER, Action.UPDATE),
       handler: async (req, reply) => {
+        if (!validId(req.params.id)) {
+          return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid container ID" } });
+        }
         try {
-          await execFileAsync("docker", [action, req.params.id]);
-          const { stdout } = await execFileAsync("docker", [
-            "inspect", "--format", '{{.Id}}\t{{.Name}}\t{{.State.Status}}', req.params.id,
-          ]);
+          await run("docker", [action, "--", req.params.id], { timeout: 120000 });
+          const { stdout } = await run("docker", [
+            "inspect", "--format", '{{.Id}}\t{{.Name}}\t{{.State.Status}}', "--", req.params.id,
+          ], { timeout: 15000 });
           const [id, name, state] = stdout.trim().split("\t");
+          const expected = action === "stop" ? "exited" : action === "pause" ? "paused" : "running";
+          if (!id || !name || state !== expected) {
+            return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: `Container did not reach ${expected}` }, data: { state, verified: false } });
+          }
           return reply.send({
             ok: true,
-            data: { id, names: [name.replace(/^\//, "")], state, status: state },
+            data: { id, names: [name.replace(/^\//, "")], state, status: state, verified: true },
           });
         } catch (err: any) {
           return reply.status(400).send({
@@ -156,13 +176,26 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
   app.delete<{ Params: { id: string }; Querystring: { force?: string } }>("/api/docker/containers/:id", {
     preHandler: requirePermission(Resource.DOCKER, Action.DELETE),
     handler: async (req, reply) => {
+      if (!validId(req.params.id)) {
+        return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid container ID" } });
+      }
+      if (req.query.force !== undefined && req.query.force !== "true" && req.query.force !== "false") {
+        return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "force must be true or false" } });
+      }
       try {
         if (req.query.force === "true") {
-          await execFileAsync("docker", ["rm", "-f", req.params.id]);
+          await run("docker", ["rm", "-f", "--", req.params.id], { timeout: 120000 });
         } else {
-          await execFileAsync("docker", ["rm", req.params.id]);
+          await run("docker", ["rm", "--", req.params.id], { timeout: 120000 });
         }
-        return reply.send({ ok: true, data: { id: req.params.id } });
+        const { stdout } = await run("docker", ["ps", "-a", "--no-trunc", "--format", "{{.ID}}\t{{.Names}}"], { timeout: 15000 });
+        if (stdout.trim().split("\n").some((line) => {
+          const [id, name] = line.split("\t");
+          return name === req.params.id || (/^[a-f0-9]{12,64}$/.test(req.params.id) && id.startsWith(req.params.id));
+        })) {
+          return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: "Container still exists" }, data: { verified: false } });
+        }
+        return reply.send({ ok: true, data: { id: req.params.id, verified: true } });
       } catch (err: any) {
         return reply.status(400).send({
           ok: false,
@@ -176,6 +209,14 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
   app.post<{ Body: DockerCreateBody }>("/api/docker/containers", {
     preHandler: requirePermission(Resource.DOCKER, Action.CREATE),
     handler: async (req, reply) => {
+      const body = req.body;
+      if (!validBody(body, ["image", "name", "ports", "volumes", "env", "restart", "network", "labels", "icon", "webui"])
+        || typeof body.image !== "string"
+        || ["name", "restart", "network", "icon", "webui"].some((key) => body[key] !== undefined && typeof body[key] !== "string")
+        || ["ports", "volumes", "env"].some((key) => body[key] !== undefined && (!Array.isArray(body[key]) || !(body[key] as unknown[]).every((v) => typeof v === "string")))
+        || (body.labels !== undefined && (!validBody(body.labels, Object.keys(body.labels ?? {})) || Object.entries(body.labels).some(([key, value]) => !/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,254}$/.test(key) || typeof value !== "string")))) {
+        return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid container fields or types" } });
+      }
       const {
         image,
         name,
@@ -193,13 +234,13 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
       if (!image || !VALID_IMAGE_RE.test(image)) {
         return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid image name" } });
       }
-      if (name && !VALID_NAME_RE.test(name)) {
+      if (name !== undefined && !VALID_NAME_RE.test(name)) {
         return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid container name (alphanumeric, dots, dashes, underscores)" } });
       }
-      if (restart && !VALID_RESTART_VALUES.has(restart)) {
+      if (!VALID_RESTART_VALUES.has(restart)) {
         return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid restart policy" } });
       }
-      if (network && !VALID_NETWORK_RE.test(network)) {
+      if (!VALID_NETWORK_RE.test(network)) {
         return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid network name" } });
       }
       for (const p of ports) {
@@ -208,7 +249,7 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
         }
       }
       for (const v of volumes) {
-        if (!VALID_VOLUME_RE.test(v)) {
+        if (!VALID_VOLUME_RE.test(v) || v.split(":")[0].split("/").includes("..")) {
           return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: `Invalid volume mapping: ${v}` } });
         }
       }
@@ -238,19 +279,20 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient): 
       for (const [k, v] of Object.entries(allLabels)) {
         args.push("--label", `${k}=${v}`);
       }
-      args.push(image);
+      args.push("--", image);
 
       // Pre-create host volume directories (only under /mnt/)
       for (const v of volumes) {
         const hostPath = v.split(":")[0];
         if (hostPath && hostPath.startsWith("/mnt/")) {
-          await mkdir(hostPath, { recursive: true });
+          await makeDirectory(hostPath, { recursive: true });
         }
       }
 
       try {
-        const { stdout } = await execFileAsync("docker", args);
+        const { stdout } = await run("docker", args, { timeout: 120000 });
         const containerId = stdout.trim();
+        if (!validId(containerId)) throw new Error("Invalid created container ID");
 
         // Build Unraid XML template
         const [repo] = image.split(":");
@@ -308,14 +350,24 @@ ${envConfigs}
 </Container>`;
 
         const safeContainerName = sanitizeFilename(containerName);
-        const templatePath = `/boot/config/plugins/dockerMan/templates-user/my-${safeContainerName}.xml`;
+        const templatePath = `${options.templatesDir ?? "/boot/config/plugins/dockerMan/templates-user"}/my-${safeContainerName}.xml`;
         await writeFile(templatePath, xml, { encoding: "utf8", mode: 0o640 });
 
-        return reply.send({ ok: true, data: { id: containerId, template: templatePath } });
+        // The container exists once docker run returns, so its template is saved
+        // before the state check; otherwise a container that exits at once would
+        // be left without one.
+        const detail = await dockerInspect(containerId, run);
+        if (detail.state !== "running") {
+          return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: `Created container is ${detail.state}, not running` }, data: { id: containerId, template: templatePath, state: detail.state, verified: false } });
+        }
+        return reply.send({ ok: true, data: { id: containerId, template: templatePath, verified: true } });
       } catch (err: any) {
+        // The error message repeats the docker run command line, including
+        // environment values, so report only docker's own stderr.
+        const detail = typeof err?.stderr === "string" ? err.stderr.trim().split("\n").slice(-3).join(" ").slice(0, 500) : "";
         return reply.status(500).send({
           ok: false,
-          error: { code: "DOCKER_CREATE_FAILED", message: err.message },
+          error: { code: "DOCKER_CREATE_FAILED", message: detail ? `Failed to create container: ${detail}` : "Failed to create container or save its template" },
         });
       }
     },

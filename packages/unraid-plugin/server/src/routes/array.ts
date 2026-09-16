@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { execSync } from "child_process";
+import { runCommand, validBody, type CommandRunner } from "../docker-common.js";
 import { Resource, Action } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
@@ -52,12 +52,16 @@ const SET_STATE_MUTATION = `mutation ($input: ArrayStateInput!) {
 // which does not reflect checks started outside Connect (see issue #14).
 type MdState = Record<string, string>;
 
-function readMdcmdStatus(): MdState {
-  const out = execSync("mdcmd status", { timeout: 10000 }).toString();
+async function readMdcmdStatus(run: CommandRunner): Promise<MdState> {
+  const { stdout: out } = await run("mdcmd", ["status"], { timeout: 10000 });
   const state: MdState = {};
   for (const line of out.split("\n")) {
     const eq = line.indexOf("=");
     if (eq !== -1) state[line.slice(0, eq)] = line.slice(eq + 1);
+  }
+  if (state.mdResync === undefined || !/^\d+$/.test(state.mdResync)
+    || (state.mdResyncPos !== undefined && !/^\d+$/.test(state.mdResyncPos))) {
+    throw new Error("Invalid mdcmd status: missing or invalid resync state");
   }
   return state;
 }
@@ -67,7 +71,24 @@ function mdNum(v: string | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): void {
+type ParityState = "running" | "paused" | "idle";
+
+function parityState(md: MdState): ParityState {
+  return mdNum(md.mdResync) > 0 ? "running" : mdNum(md.mdResyncPos) > 0 ? "paused" : "idle";
+}
+
+// The md driver applies a check command almost at once, but poll for a few
+// seconds so a slow transition is not reported as a failure.
+async function waitForParity(run: CommandRunner, expected: ParityState, intervalMs: number): Promise<ParityState> {
+  let state = parityState(await readMdcmdStatus(run));
+  for (let attempt = 1; attempt < 10 && state !== expected; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    state = parityState(await readMdcmdStatus(run));
+  }
+  return state;
+}
+
+export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient, run: CommandRunner = runCommand, pollIntervalMs = 500): void {
   // Array status
   app.get("/api/array/status", {
     preHandler: requirePermission(Resource.ARRAY, Action.READ),
@@ -105,7 +126,7 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
     preHandler: requirePermission(Resource.ARRAY, Action.READ),
     handler: async (_req, reply) => {
       try {
-        const s = readMdcmdStatus();
+        const s = await readMdcmdStatus(run);
         const position = mdNum(s.mdResyncPos);
         const size = mdNum(s.mdResyncSize);
         const dt = mdNum(s.mdResyncDt);
@@ -129,7 +150,7 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
             speed, // KiB/s
             errors,
             // Richer fields available from mdcmd status
-            paused: running && speed === 0, // in progress but not advancing
+            paused: running && mdNum(s.mdResync) === 0, // position retained while the driver is paused
             action: s.mdResyncAction || null, // e.g. "check P Q", "recon", "clear"
             correcting: mdNum(s.mdResyncCorr) === 1,
             position, // KB completed
@@ -160,7 +181,9 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
         SET_STATE_MUTATION,
         { input: { desiredState: "START" } },
       );
-      return reply.send({ ok: true, data: data.array.setState });
+      // The mutation can return before emhttp finishes the transition, so a
+      // different state is reported as unverified rather than as a failure.
+      return reply.send({ ok: true, data: { ...data.array.setState, verified: data.array.setState.state === "STARTED" } });
     },
   });
 
@@ -172,7 +195,9 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
         SET_STATE_MUTATION,
         { input: { desiredState: "STOP" } },
       );
-      return reply.send({ ok: true, data: data.array.setState });
+      // The mutation can return before emhttp finishes the transition, so a
+      // different state is reported as unverified rather than as a failure.
+      return reply.send({ ok: true, data: { ...data.array.setState, verified: data.array.setState.state === "STOPPED" } });
     },
   });
 
@@ -180,11 +205,16 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
   app.post<{ Body?: { correct?: boolean } }>("/api/array/parity/start", {
     preHandler: requirePermission(Resource.ARRAY, Action.UPDATE),
     handler: async (req, reply) => {
+      if (!validBody(req.body === undefined ? {} : req.body, ["correct"]) || (req.body?.correct !== undefined && typeof req.body.correct !== "boolean")) {
+        return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Only a boolean correct field is accepted" } });
+      }
       const correct = req.body?.correct ?? false;
       const mode = correct ? "CORRECT" : "NOCORRECT";
       try {
-        execSync(`mdcmd check ${mode}`, { timeout: 10000 });
-        return reply.send({ ok: true, data: { message: `Parity check started (${mode})` } });
+        await run("mdcmd", ["check", mode], { timeout: 10000 });
+        const state = await waitForParity(run, "running", pollIntervalMs);
+        if (state !== "running") return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: "Parity check did not reach running" }, data: { state, verified: false } });
+        return reply.send({ ok: true, data: { verified: true, message: `Parity check started (${mode})` } });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return reply.status(500).send({ ok: false, error: { code: "MDCMD_ERROR", message: msg } });
@@ -197,8 +227,10 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
     preHandler: requirePermission(Resource.ARRAY, Action.UPDATE),
     handler: async (_req, reply) => {
       try {
-        execSync("mdcmd nocheck PAUSE", { timeout: 10000 });
-        return reply.send({ ok: true, data: { message: "Parity check paused" } });
+        await run("mdcmd", ["nocheck", "PAUSE"], { timeout: 10000 });
+        const state = await waitForParity(run, "paused", pollIntervalMs);
+        if (state !== "paused") return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: "Parity check did not reach paused" }, data: { state, verified: false } });
+        return reply.send({ ok: true, data: { verified: true, message: "Parity check paused" } });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return reply.status(500).send({ ok: false, error: { code: "MDCMD_ERROR", message: msg } });
@@ -211,8 +243,10 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
     preHandler: requirePermission(Resource.ARRAY, Action.UPDATE),
     handler: async (_req, reply) => {
       try {
-        execSync("mdcmd check RESUME", { timeout: 10000 });
-        return reply.send({ ok: true, data: { message: "Parity check resumed" } });
+        await run("mdcmd", ["check", "RESUME"], { timeout: 10000 });
+        const state = await waitForParity(run, "running", pollIntervalMs);
+        if (state !== "running") return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: "Parity check did not reach running" }, data: { state, verified: false } });
+        return reply.send({ ok: true, data: { verified: true, message: "Parity check resumed" } });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return reply.status(500).send({ ok: false, error: { code: "MDCMD_ERROR", message: msg } });
@@ -225,8 +259,10 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
     preHandler: requirePermission(Resource.ARRAY, Action.UPDATE),
     handler: async (_req, reply) => {
       try {
-        execSync("mdcmd nocheck CANCEL", { timeout: 10000 });
-        return reply.send({ ok: true, data: { message: "Parity check cancelled" } });
+        await run("mdcmd", ["nocheck", "CANCEL"], { timeout: 10000 });
+        const state = await waitForParity(run, "idle", pollIntervalMs);
+        if (state !== "idle") return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: "Parity check did not reach idle" }, data: { state, verified: false } });
+        return reply.send({ ok: true, data: { verified: true, message: "Parity check cancelled" } });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return reply.status(500).send({ ok: false, error: { code: "MDCMD_ERROR", message: msg } });

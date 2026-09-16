@@ -5,7 +5,7 @@
 <h1 align="center">UnraidClaw</h1>
 
 <p align="center">
-  AI Agent Gateway for Unraid. Permission-enforcing REST API that lets AI agents manage your server.
+  AI Agent Gateway for Unraid. Permission-enforcing REST API and MCP server that lets AI agents manage your server.
 </p>
 
 <p align="center">
@@ -17,7 +17,7 @@
 
 ---
 
-UnraidClaw sits between AI agents and your Unraid servers, providing a unified REST API with fine-grained access control. It combines Unraid's GraphQL API with direct system integration (CLI commands for parity checks, reboot/shutdown, and syslog; filesystem operations for share config editing and notification management; network introspection via `ip`) to expose capabilities that no single Unraid API covers. Protected API calls require authentication and the relevant permission. Activity logging excludes the public health probe and successful MCP handshakes. An optional MCP endpoint, off by default, exposes the same tools to MCP clients under the same permissions.
+UnraidClaw sits between AI agents and your Unraid servers. It provides a REST API, an optional MCP endpoint (off by default) and an `unraidclaw` command-line client, all using the same tools and the same fine-grained permissions. It combines Unraid's GraphQL API with direct system integration (CLI commands for parity checks, reboot/shutdown, and syslog; filesystem operations for share config editing and notification management; network introspection via `ip`) to expose capabilities that no single Unraid API covers. Protected API calls require authentication and the relevant permission. Activity logging excludes the public health probe and successful MCP handshakes.
 
 ## Features
 

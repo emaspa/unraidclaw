@@ -82,25 +82,45 @@ foreach ($cfg as $key => $value) {
 
 $writeResult = @file_put_contents($cfgFile, $content);
 if ($writeResult !== false) @chmod($cfgFile, 0600);
+$enabled = ($cfg['SERVICE'] ?? 'disable') === 'enable';
 
-// Manage service
+// Manage the service only after the config is saved, and check that it really
+// ended up running or stopped instead of trusting the rc script's exit code.
+// The rc script backgrounds node, so a gateway that dies on startup (a port
+// already in use, for example) still returns 0 from restart.
 $serviceOutput = '';
 $serviceCode = 0;
-if (($cfg['SERVICE'] ?? 'disable') === 'enable') {
-    exec("/etc/rc.d/rc.{$plugin} restart 2>&1", $out, $serviceCode);
+$serviceState = '';
+if ($writeResult !== false) {
+    $out = [];
+    exec("/etc/rc.d/rc.{$plugin} " . ($enabled ? 'restart' : 'stop') . " 2>&1", $out, $serviceCode);
     $serviceOutput = implode("\n", $out);
-} else {
-    exec("/etc/rc.d/rc.{$plugin} stop 2>&1", $out, $serviceCode);
-    $serviceOutput = implode("\n", $out);
+    if ($serviceCode === 0) {
+        if ($enabled) usleep(1500000);
+        $status = [];
+        exec("/etc/rc.d/rc.{$plugin} status 2>&1", $status);
+        $serviceState = trim(implode("\n", $status));
+    }
 }
+$serviceOk = $serviceCode === 0 && $serviceState === ($enabled ? 'running' : 'stopped');
 
 if ($isAjax) {
-    echo json_encode([
-        'success' => $writeResult !== false,
-        'service' => ($cfg['SERVICE'] ?? 'disable') === 'enable' ? 'restarted' : 'stopped',
+    $response = [
+        'success' => $writeResult !== false && $serviceOk,
+        'saved' => $writeResult !== false,
+        'service' => $enabled ? 'restarted' : 'stopped',
+        'serviceState' => $serviceState,
         'serviceOutput' => $serviceOutput,
         'serviceCode' => $serviceCode,
-    ]);
+    ];
+    if ($writeResult === false) {
+        $response['error'] = 'Could not write the settings file; the service was not changed';
+    } elseif (!$serviceOk) {
+        $response['error'] = $enabled
+            ? 'Settings saved, but the service is not running. Check /var/log/unraidclaw.log'
+            : 'Settings saved, but the service did not stop';
+    }
+    echo json_encode($response);
 } else {
     header("Location: /Settings/{$plugin}.settings");
 }

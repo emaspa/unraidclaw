@@ -11,10 +11,17 @@
 <!ENTITY md5       "79a05393303fabd9c42f78c4f947b7e7">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API gateway that lets AI agents manage your Unraid server with fine-grained access control.">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API and MCP gateway that lets AI agents manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
 ### Unreleased
+- Fix a parity check started with "correct" sent as the text "false" running as a correcting check. The field must now be true or false
+- Reject share comments containing quotes, backslashes, $, backticks or control characters, which could write extra keys into the share's config file. Share settings are now written atomically and read back
+- Docker, VM, array, parity and notification actions now reject malformed input and unknown fields, refuse IDs that start with "-", time out instead of hanging, and check the real state afterwards. Responses include "verified"; a VM shutdown or reboot still in progress returns verified false
+- A container created through the API keeps its Unraid template even when it exits right after starting, and a failed create reports Docker's error without echoing environment values
+- /api/health stays public and unlogged when called with a query string
+- Settings Apply reports when the service did not end up running or stopped, and no longer restarts the service when the settings file could not be written
+- Describe the Disk Info permission without SMART data, which the disk endpoints do not return
 - Include the unraidclaw command-line client at /usr/local/bin/unraidclaw, with the same tools and permissions as OpenClaw and MCP. Remote clients can build the unraidclaw-cli package from the repository; it is not yet published to npm
 - Make CLI connection errors actionable, shorten tables and help, format logs and nested values for reading, show certificate details once when trusting in table mode, and let supported dry runs proceed without confirmation
 - Show the TLS certificate SHA-256 fingerprint in Settings so remote CLI users can verify it before trusting the certificate

@@ -72,7 +72,7 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
 
   // Activity logging hook
   app.addHook("onResponse", async (request, reply) => {
-    if (request.url === "/api/health") return;
+    if (request.routeOptions.url === "/api/health") return;
     const activity = isMcpPath(request.url)
       ? mcpActivity(request, reply.statusCode)
       : { ...routeActivity(request.method, request.url), statusCode: reply.statusCode, tool: undefined };

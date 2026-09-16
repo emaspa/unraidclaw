@@ -83,7 +83,7 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
     permissions: [
       { key: "array:read", label: "Array Status", description: "View array state, capacity, and disk status" },
       { key: "array:update", label: "Array Operations", description: "Start/stop array, parity check control" },
-      { key: "disk:read", label: "Disk Info", description: "View individual disk details and SMART data" },
+      { key: "disk:read", label: "Disk Info", description: "View array data and parity disk details, temperature, status and available disk usage" },
       { key: "share:read", label: "List Shares", description: "List and view share configurations" },
       { key: "share:update", label: "Edit Share Settings", description: "Update share comment, allocator, split level, floor" },
     ],
