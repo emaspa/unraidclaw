@@ -8,7 +8,7 @@ This is the [OpenClaw](https://github.com/openclaw/openclaw) plugin for **[Unrai
 
 ## Prerequisites
 
-1. **The UnraidClaw plugin installed on your Unraid server.** Install it from the Unraid Community Apps store, or see the [main repo](https://github.com/emaspa/unraidclaw). It runs the gateway on port `9876` (HTTPS).
+1. **The UnraidClaw plugin installed on your Unraid server.** Install it from the Unraid Community Apps store, or see the [main repo](https://github.com/emaspa/unraidclaw). It runs the gateway on port `9876` (HTTPS) by default.
 2. **An UnraidClaw API key.** Generate one on the **Settings > UnraidClaw** page in the Unraid WebGUI.
 3. **OpenClaw** installed (`openclaw --version`).
 
@@ -65,8 +65,8 @@ Edit `~/.openclaw/openclaw.json`.
       "unraidclaw": {
         "config": {
           "servers": [
-            { "name": "home", "serverUrl": "https://192.168.1.100:9876", "apiKey": "...", "tlsSkipVerify": true, "default": true },
-            { "name": "work", "serverUrl": "https://10.0.0.50:9876", "apiKey": "..." }
+            { "name": "home", "serverUrl": "https://<home-server>:9876", "apiKey": "<api-key>", "tlsSkipVerify": true, "default": true },
+            { "name": "work", "serverUrl": "https://<work-server>:9876", "apiKey": "<api-key>" }
           ]
         }
       }
@@ -75,7 +75,7 @@ Edit `~/.openclaw/openclaw.json`.
 }
 ```
 
-With multi-server config, every tool accepts an optional `server` parameter (e.g. `unraid_docker_list(server: "work")`); the default server is used when it's omitted.
+With multi-server config, every tool accepts an optional `server` parameter (e.g. `unraid_docker_list(server: "work")`); the first server marked `default` is used when it's omitted, or the first configured server if none is marked.
 
 Set `tlsSkipVerify: true` to accept the gateway's self-signed certificate. The plugin does not verify the certificate in that mode, so regenerating the certificate on the server does not affect it. The repository README's [TLS certificate](https://github.com/emaspa/unraidclaw#tls-certificate) section explains what the certificate contains and how strict clients can trust it.
 
@@ -137,7 +137,7 @@ Once installed and configured, ask your agent:
 
 The six plugin tools manage Unraid `.plg` plugins through Unraid's own plugin manager. Installing one runs vendor code as root, checking for an update downloads a plugin file and stages it, and removing one runs the plugin's removal script, which may take its data with it. All four mutating tools take `dryRun`.
 
-Every tool is gated by a 30-key `resource:action` permission matrix configured from the Unraid WebGUI, so you control exactly what agents can do.
+Tools use the gateway's 30-key `resource:action` permission matrix configured from the Unraid WebGUI. Health requires no permission.
 
 ## Links
 
@@ -147,7 +147,7 @@ Every tool is gated by a 30-key `resource:action` permission matrix configured f
 
 ## Gateway MCP mode
 
-The gateway has an optional MCP endpoint at `/mcp` that serves the same 55 tools to MCP clients. It is off by default and is switched on with **Enable MCP** in the gateway's Settings tab. This plugin does not use it: OpenClaw keeps calling `/api/*` whether MCP is on or off. The tool definitions in this package are shared with the gateway through the `unraidclaw/tools` export, so both transports expose the same tools. See the [repository README](https://github.com/emaspa/unraidclaw#mcp) for MCP client setup.
+The gateway has an optional MCP endpoint at `/mcp` that serves the same 55 tools to MCP clients. It is off by default and is switched on with **Enable MCP** in the gateway's Settings tab. This plugin does not use it: OpenClaw keeps calling `/api/*` whether MCP is on or off. The tool definitions in this package are shared with the gateway through the `unraidclaw/tools` export, so OpenClaw, MCP and the standalone CLI use the same tools and the `READ_ONLY` set exported by `src/registry.ts`. The CLI is the separate `unraidclaw-cli` package, with command `unraidclaw`; it is not yet published to npm. See the [CLI guide](../cli/README.md). See the [repository README](https://github.com/emaspa/unraidclaw#mcp) for MCP client setup.
 
 ## License
 

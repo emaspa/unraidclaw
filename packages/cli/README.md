@@ -4,21 +4,22 @@
 
 ## Install
 
-The Unraid plugin installs `/usr/local/bin/unraidclaw` automatically. For another machine, build and install from this repository for now:
+The Unraid plugin installs `/usr/local/bin/unraidclaw` automatically. For another machine, run these commands from the repository root to build and install:
 
 ```sh
-corepack pnpm install --frozen-lockfile
-corepack pnpm build
+corepack enable pnpm
+pnpm install --frozen-lockfile
+pnpm build
 npm install -g ./packages/cli
 unraidclaw --version
 ```
 
-You can also copy `packages/cli/dist/unraidclaw.cjs` to another machine and run `node unraidclaw.cjs help`. Once the package is published, installation will be `npm install -g unraidclaw-cli`. This change does not publish it. The CLI package is named `unraidclaw-cli`; the OpenClaw plugin is the separate `unraidclaw` npm package.
+You can also copy `packages/cli/dist/unraidclaw.cjs` to another machine and run `node unraidclaw.cjs help`. Once the package is published, installation will be `npm install -g unraidclaw-cli`. The package is not yet published to npm. The CLI package is named `unraidclaw-cli`; the OpenClaw plugin is the separate `unraidclaw` npm package.
 
 ## Configure a remote machine
 
 ```sh
-unraidclaw config set url https://tower.local:9876
+unraidclaw config set url "https://<server>:9876"
 unraidclaw trust
 unraidclaw config set-key
 unraidclaw docker list
@@ -41,13 +42,13 @@ Precedence is command-line flags, environment variables, config file, then local
 | Trusted certificate | `--ca-cert` | `UNRAIDCLAW_CA_CERT` | `caCert` |
 | Skip TLS verification | `--insecure`, `--no-insecure` | `UNRAIDCLAW_INSECURE` | `insecure` |
 
-`UNRAIDCLAW_TLS_SKIP` is an alias used only when `UNRAIDCLAW_INSECURE` is absent. Environment booleans accept `true/false`, `yes/no` and `1/0`. `--tls-skip` also aliases `--insecure`. Skipping verification prints a warning. `--key` prints a warning because argv is visible in the process list. Environment variables still override saved settings after `trust`.
+`UNRAIDCLAW_TLS_SKIP` is an alias used only when `UNRAIDCLAW_INSECURE` is absent. Environment booleans accept `true/false`, `yes/no` and `1/0`. `--tls-skip` also aliases `--insecure`. Executing a tool with verification disabled prints a warning. `--key` prints a warning because argv is visible in the process list. Environment variables still override saved settings after `trust`.
 
 The JSON file accepts only `url`, `key`, `caCert` and `insecure`. For example, settings without a saved key:
 
 ```json
 {
-  "url": "https://tower.local:9876",
+  "url": "https://<server>:9876",
   "insecure": false
 }
 ```
@@ -73,7 +74,7 @@ unraidclaw config path
 
 ## Use on the Unraid server
 
-The CLI detects `/boot/config/plugins/unraidclaw/unraidclaw.cfg`. Without a configured URL, it reads `PORT` from simple `KEY="value"` lines, defaulting to `9876`. It never executes the cfg. If `tls/cert.pem` exists, the default is `https://127.0.0.1:<port>` and that certificate is trusted locally. Otherwise the default is `http://127.0.0.1:<port>`. The automatic local CA is not applied to an explicitly configured remote URL.
+The CLI detects `/boot/config/plugins/unraidclaw/unraidclaw.cfg`. Without a configured URL, it reads `PORT` from simple `KEY="value"` lines, defaulting to `9876`. It never executes the cfg. If `tls/cert.pem` exists, the default is `https://127.0.0.1:<port>` and that certificate is trusted locally. Otherwise the default is `http://127.0.0.1:<port>`. The automatic local CA is only applied when the URL is discovered and no CA is already configured. An explicit URL, even a local one, disables this discovery. Discovery does not read `HOST`, `TLS_CERT` or `TLS_KEY`; use explicit URL and certificate settings for those configurations.
 
 Run `unraidclaw config set-key` once, then commands such as `unraidclaw array status`. `/root` does not survive reboots, so config is saved on flash. **This stores the CLI key in plain text on the flash drive**, alongside the Unraid API key already held in `unraidclaw.cfg`. Protect flash backups. Use an environment variable instead if you do not want to persist the key.
 
@@ -120,12 +121,25 @@ unraidclaw docker remove jellyfin --no-force --yes
 unraidclaw vm start my-vm --yes
 ```
 
+Global flags (also shown by `--help`):
+
+| Flag | Purpose |
+|------|---------|
+| `--url <origin>`, `--key <key>`, `--ca-cert <path>` | Override connection settings |
+| `--insecure`, `--no-insecure`, `--tls-skip` | Enable or disable TLS verification skipping |
+| `--config <path>` | Select the config file |
+| `--output table\|json` | Select output format |
+| `--yes` | Skip interactive confirmation, including for `trust` |
+| `--args-json <json\|@file>` | Supply tool arguments |
+| `--help`, `-h` | Show help |
+| `--version` | Show the CLI package version |
+
 Booleans use `--force` or `--no-force`, never `--force=false`. Numbers and enums are validated against the tool's schema. Repeat a primitive array flag for each element. Objects and complex arrays take a JSON value. `--args-json '<json>'` or `--args-json @file.json` supplies the argument object; explicit flags and positional targets override fields from that object. Unknown fields and flags, invalid JSON and schema errors are rejected before any request. A scalar flag cannot be repeated.
 
 Global flags can appear before or after the command. There is one collision: `plugin install` has its own `url` property. Put the gateway `--url` before the command and the plugin source `--url` after it:
 
 ```sh
-unraidclaw --url https://tower.local:9876 plugin install --url https://example.invalid/plugin.plg --dry-run
+unraidclaw --url "https://<server>:9876" plugin install --url https://example.invalid/plugin.plg --dry-run
 ```
 
 ## Safety and output

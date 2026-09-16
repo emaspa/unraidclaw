@@ -8,4 +8,6 @@ Features:
 - Activity logging with JSONL format
 - HTTPS with a self-signed certificate that names the server's host name and addresses
 - Optional MCP endpoint at /mcp, off by default, using the same API key and permissions
+- Command-line client at /usr/local/bin/unraidclaw, using the same tools and permissions
+- TLS certificate details, SHA-256 fingerprint and regeneration in Settings
 - Requires Node.js 22+ (built-in on Unraid 7.x)

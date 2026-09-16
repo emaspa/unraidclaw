@@ -15,13 +15,14 @@
 
 <CHANGES>
 ### Unreleased
-- Include the unraidclaw command-line client on the server, with the same tools and permissions as OpenClaw and MCP
+- Include the unraidclaw command-line client at /usr/local/bin/unraidclaw, with the same tools and permissions as OpenClaw and MCP. Remote clients can build the unraidclaw-cli package from the repository; it is not yet published to npm
 - Make CLI connection errors actionable, shorten tables and help, format logs and nested values for reading, show certificate details once when trusting in table mode, and let supported dry runs proceed without confirmation
 - Show the TLS certificate SHA-256 fingerprint in Settings so remote CLI users can verify it before trusting the certificate
-- Add optional MCP support: a Streamable HTTP endpoint at /mcp on the service port, off by default and switched on with Enable MCP in Settings. It exposes the same 55 tools with the same API key, permissions, input validation and activity logging. Log entries for tool calls name the tool and show the outcome of the API route it ran; the requests clients make to connect are logged only when they fail. REST and the OpenClaw plugin keep working as before
+- Add optional MCP support: a Streamable HTTP endpoint at /mcp on the service port, off by default and switched on with Enable MCP in Settings. It exposes the same 55 tools with the same API key, permissions, input validation and activity logging. Log entries for tool calls name the tool and show the outcome of the API route it ran; successful MCP handshakes and GET/DELETE responses with status 405 are omitted from the activity log. Other failed connection requests are logged. REST and the OpenClaw plugin keep working as before
 - Generate TLS certificates with the server's host name, .local name, loopback and stable global addresses in subjectAltName, so clients that trust the certificate can verify the host name. A certificate without subjectAltName is replaced once on the next service start, with the previous pair kept as cert.pem.bak and key.pem.bak
 - Show the TLS certificate's subject, alternative names and expiry in Settings, with a Regenerate certificate button for when the server's address or host name changed. Regenerating keeps the old pair as .bak files (older backups get numbered suffixes) and restarts the service; clients that trusted the old certificate must trust the new one
 - Requests to paths that do not exist now return 404 instead of 401 when sent without a key, and no longer count toward the failed-login limit. MCP clients that probe for OAuth metadata locked themselves out before connecting
+- Remove the unused vms:create permission from the VM Manager preset
 - Fix /api/health reporting the previous version after an upgrade until the service restarted again. The package now records its own version instead of the service reading it from the .plg, which Unraid saves only after the install script restarts the service
 
 ### 0.1.32

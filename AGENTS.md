@@ -27,7 +27,7 @@ pnpm test
 pnpm --filter unraidclaw check-contracts
 ```
 
-These are the CI checks. `pnpm test` runs the CLI suite (offline checks and a loopback HTTPS test), the offline server suite (Node's test runner through tsx), the archive-safety suite, which builds a throwaway package and extracts it against synthetic host layouts, including one where `/etc/rc.d` is a symlink, and the rc TLS suite. The TLS suite needs `python3`, Bash and OpenSSL and sources the real service functions with temporary flash paths, fixture host addresses and a stubbed process launch to test SANs, migration, backups and failure handling without starting the gateway, accessing `/boot` or using the network. All five must be green before you call a change done. Run one server test file during development from the server package with `pnpm --filter @unraidclaw/server exec tsx --test test/<file>.test.ts`; run the TLS suite with `pnpm test:tls`.
+These are the CI checks. `pnpm test` runs the CLI suite (offline checks and a loopback HTTPS test), the offline server suite (Node's test runner through tsx), the archive-safety suite, which builds a throwaway package and extracts it against synthetic host layouts, including one where `/etc/rc.d` is a symlink, and the rc TLS suite. The TLS suite needs `python3`, Bash and OpenSSL and sources the real service functions with temporary flash paths, fixture host addresses and a stubbed process launch to test SANs, migration, backups and failure handling without starting the gateway, accessing `/boot` or using the network. All five commands above must succeed before you call a change done; `pnpm test` covers four suites. Run one server test file during development from the server package with `pnpm --filter @unraidclaw/server exec tsx --test test/<file>.test.ts`; run the TLS suite with `pnpm test:tls`.
 
 ## Where things are
 
@@ -42,15 +42,15 @@ These are the CI checks. `pnpm test` runs the CLI suite (offline checks and a lo
 
 - Permissions are defined once in `packages/shared` and mirrored by hand in the WebGUI page, the WebGUI JavaScript, and the README table. A permission change updates all of them or it is wrong.
 - New permissions default to off. A preset grants only what its description promises.
-- Request bodies are validated by hand. Unknown fields are rejected and `dryRun` must be a real boolean, so a mistyped dry run cannot become a real operation. Mutating OpenClaw tools declare `additionalProperties: false` and re-check their parameters before making any HTTP request.
+- CA and plugin request bodies are validated by hand. Unknown fields are rejected and `dryRun` must be a real boolean, so a mistyped dry run cannot become a real operation. Mutating CA and plugin OpenClaw tools declare `additionalProperties: false` and re-check their parameters before making any HTTP request.
 - An unsupported template or container setting becomes a blocker with a code, never a silent drop. If the gateway cannot reproduce a setting exactly, it refuses and says why.
-- A mutation is verified against real state afterward, such as `docker inspect` or the plugin registration, not the exit code of a helper.
+- CA and plugin mutations verify real state afterward, such as `docker inspect` or the plugin registration, not just the exit code of a helper. Follow this pattern for new mutations.
 - Masked secrets stay redacted in previews, errors, and logs.
 - The release package carries no directory headers, and the manifest installs it with `TAR_OPTIONS="--keep-directory-symlink --no-overwrite-dir"`. tar replaces a host directory symlink such as `/etc/rc.d` with a plain directory when an archive carries that directory's header, which once left a server unable to shut down. Keep `build.sh` and the manifest this way and keep the archive-safety suite green.
 - XML parsing goes through `src/xml.ts`. Do not hand-roll a parser or reach for a regex.
 - The tool definitions live once, in `packages/openclaw-plugin/src/tools/`, and reach OpenClaw and MCP through the same registry (`unraidclaw/tools`). The MCP adapter in `src/mcp-tools.ts` runs each call through the gateway's own `/api/` route with `app.inject`; it is never a network client, and a read-only tool must be listed in the registry's exported `READ_ONLY` set to get `readOnlyHint`.
 - The CLI consumes the same registry and `READ_ONLY` set as MCP. Validate schemas before HTTP requests, never expose the OpenClaw `server` parameter, and keep API keys out of output. CLI tests inject filesystem roots, environment and terminal behavior; HTTPS integration uses loopback only. Build its single CommonJS bundle into the Unraid archive without adding directory headers.
-- MCP is off by default and stays off unless `MCP_ENABLED="yes"` is in the cfg. The Origin allowlist is built at startup from loopback, the local interfaces and the configured Listen Host; never derive it from request headers.
+- MCP is off by default. `MCP_ENABLED="yes"` in the cfg enables it; when that setting is absent, the server also accepts `OCC_MCP_ENABLED="yes"` from its environment. The Origin allowlist is built at startup from loopback, the local interfaces and the configured Listen Host; never derive it from request headers.
 
 ## The real host
 

@@ -16,7 +16,7 @@ UnraidClaw gives AI agents 55 tools across 13 categories to monitor and manage a
 - **Plugins** - List and inspect installed .plg plugins, install one from a URL, check for updates, update, and remove
 - **VMs** - List, inspect, start, stop, force-stop, pause, resume, and reboot virtual machines
 - **Array** - View array status, start/stop array, run parity checks
-- **Disks** - List disks, view SMART data and individual disk details
+- **Disks** - List array data and parity disks, view temperature, status and available disk usage
 - **Shares** - List shares, view details, update share settings (allocator, floor, split level, comment)
 - **System** - System info, CPU/memory/uptime, list services, reboot, shutdown
 - **Notifications** - List, create, archive, and delete notifications
@@ -25,7 +25,7 @@ UnraidClaw gives AI agents 55 tools across 13 categories to monitor and manage a
 - **Logs** - Read syslog entries
 - **Health** - Server health check
 
-Every tool is gated by a 30-key permission matrix (resource:action) configurable from the Unraid WebGUI. The server logs all API activity. The gateway also has an optional MCP endpoint, off by default, that exposes the same tools to MCP clients; this plugin does not use it.
+Tools use a 30-key permission matrix (resource:action) configurable from the Unraid WebGUI; health requires no permission. Activity logging excludes the public health probe, successful MCP handshakes and MCP GET/DELETE responses with status 405. The gateway also has an optional MCP endpoint, off by default, that exposes the same tools to MCP clients; this plugin does not use it.
 
 ## Updating and removing an installed app
 
@@ -41,13 +41,13 @@ Both take `dryRun: true`. Use it first for a removal, and read the result back t
 
 Unraid plugins are .plg files that install files and run scripts on the server itself. They are not Docker containers. Some are listed in Community Applications, but these tools manage them directly without CA. Someone asking to install an app almost always means a container, so reach for `unraid_ca_install`. Use `unraid_plugin_install` only when they give you a .plg URL or name a plugin such as Unassigned Devices.
 
-A .plg file is an installer Unraid runs as root, so installing one from a URL runs whatever code that URL serves. Install only from a URL the user gave you or a source they trust, and show them the dry run first. Every mutating tool takes `dryRun`, which returns the plan and touches nothing.
+A .plg file is an installer Unraid runs as root, so installing one from a URL runs whatever code that URL serves. Install only from a URL the user gave you or a source they trust, and show them the dry run first. Every mutating plugin tool takes `dryRun`, which returns the plan and touches nothing.
 
 Updating is two steps. `unraid_plugin_check_updates` downloads the plugin's published version and stages it; `unraid_plugin_update` installs what was staged. The check is not a read-only lookup: it arms an update the Unraid WebGUI will also offer. Update verifies afterwards that the installed version changed, so a result without `verified: true` is not a completed update.
 
 Removal runs the plugin's own removal script. Some plugins keep their configuration and data, others delete it. Tell the user that before removing anything rather than promising their data survives.
 
-OS plugins are protected from mutation. UnraidClaw can list, inspect and check itself, but cannot install over, update or remove itself through this API because its scripts stop the server handling the request. Use the Unraid WebGUI or CLI for self-management.
+OS plugins are protected from mutation. UnraidClaw can list, inspect and check itself, but cannot install over, update or remove itself through this API because its scripts stop the server handling the request. Use the Unraid WebGUI or Unraid's `plugin` command for self-management. The `unraidclaw` CLI uses the same API and cannot bypass this restriction.
 
 ## Requirements
 
@@ -58,7 +58,7 @@ OS plugins are protected from mutation. UnraidClaw can list, inspect and check i
 
 | Field | Description |
 |-------|-------------|
-| `serverUrl` | URL of your UnraidClaw server (e.g. `https://192.168.1.100:9876`) |
+| `serverUrl` | URL of your UnraidClaw server (e.g. `https://<home-server>:9876`) |
 | `apiKey` | API key from the UnraidClaw settings page |
 | `tlsSkipVerify` | Set to `true` to accept the gateway's self-signed certificate. This disables certificate verification for that server |
 

@@ -114,7 +114,7 @@ $certificateReadable = $certificate['present'] && !isset($certificate['error']);
               <option value="no" <?=($cfg['MCP_ENABLED'] ?? 'no') !== 'yes' ? 'selected' : ''?>>No</option>
               <option value="yes" <?=($cfg['MCP_ENABLED'] ?? 'no') === 'yes' ? 'selected' : ''?>>Yes</option>
             </select>
-            <span class="occ-hint">Expose MCP at /mcp on this service's port. Uses the same API key and permissions.</span>
+            <span class="occ-hint">Expose MCP at /mcp on this service's port using Streamable HTTP. Off by default. Uses the same API key and permissions.</span>
           </td>
         </tr>
         <tr>
@@ -214,7 +214,7 @@ $certificateReadable = $certificate['present'] && !isset($certificate['error']);
           <td>Regenerate:</td>
           <td>
             <button type="button" id="occ-regenerate-cert-btn" class="occ-btn occ-btn-warning" onclick="occRegenerateCertificate()">Regenerate certificate</button>
-            <span class="occ-hint">Regenerate if the server's IP address or host name changed after the certificate was created.</span>
+            <span class="occ-hint">Regenerate if the server's IP address or host name changed after the certificate was created. This restarts the service and keeps the previous files as backups. Clients must trust the new certificate.</span>
             <span id="occ-cert-status" role="status" style="font-weight: bold;"></span>
           </td>
         </tr>
@@ -230,7 +230,7 @@ $certificateReadable = $certificate['present'] && !isset($certificate['error']);
           <td>Max Log Size (bytes):</td>
           <td>
             <input type="number" name="MAX_LOG_SIZE" value="<?=$cfg['MAX_LOG_SIZE'] ?? '10485760'?>" min="1048576" max="104857600">
-            <span class="occ-hint">Default: 10 MB (10485760)</span>
+            <span class="occ-hint">Default: 10 MiB (10485760 bytes)</span>
           </td>
         </tr>
       </tbody>
@@ -351,7 +351,7 @@ $certificateReadable = $certificate['present'] && !isset($certificate['error']);
       <div class="occ-perm-body" style="display:none;">
         <label class="occ-perm-item"><input type="checkbox" name="array:read" data-category="storage" <?=!empty($permissions['array:read']) ? 'checked' : ''?>><span class="occ-perm-label">Array Status</span><span class="occ-perm-desc">View array state, capacity, and disk status</span></label>
         <label class="occ-perm-item"><input type="checkbox" name="array:update" data-category="storage" <?=!empty($permissions['array:update']) ? 'checked' : ''?>><span class="occ-perm-label">Array Operations</span><span class="occ-perm-desc">Start/stop array, parity check control</span></label>
-        <label class="occ-perm-item"><input type="checkbox" name="disk:read" data-category="storage" <?=!empty($permissions['disk:read']) ? 'checked' : ''?>><span class="occ-perm-label">Disk Info</span><span class="occ-perm-desc">View individual disk details and SMART data</span></label>
+        <label class="occ-perm-item"><input type="checkbox" name="disk:read" data-category="storage" <?=!empty($permissions['disk:read']) ? 'checked' : ''?>><span class="occ-perm-label">Disk Info</span><span class="occ-perm-desc">View array data and parity disk details, temperature, status and available disk usage</span></label>
         <label class="occ-perm-item"><input type="checkbox" name="share:read" data-category="storage" <?=!empty($permissions['share:read']) ? 'checked' : ''?>><span class="occ-perm-label">List Shares</span><span class="occ-perm-desc">List and view share configurations</span></label>
         <label class="occ-perm-item"><input type="checkbox" name="share:update" data-category="storage" <?=!empty($permissions['share:update']) ? 'checked' : ''?>><span class="occ-perm-label">Edit Share Settings</span><span class="occ-perm-desc">Update share comment, allocator, split level, floor</span></label>
       </div>

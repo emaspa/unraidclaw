@@ -23,7 +23,7 @@ pnpm test                        # server, CLI, archive-safety and rc TLS suites
 pnpm --filter unraidclaw check-contracts   # openclaw.plugin.json tools match src registrations
 ```
 
-These are the checks CI runs on every push and pull request. A change is ready when all five are green.
+These are the checks CI runs on pushes and pull requests to `main`. A change is ready when all five are green.
 
 The server tests are offline and deterministic. The Community Applications suite runs against a trimmed catalog fixture in `packages/unraid-plugin/server/test/fixtures`, and the install, update, remove and plugin paths run against injected files and a recording command runner, so the suite never reaches the network and never runs docker or the Unraid plugin manager. Run one file during development from the server package:
 
@@ -63,7 +63,7 @@ Real Unraid is the final test for anything that mutates state. The offline suite
 - **Tests and docs travel with the change.**
   - A new or changed endpoint goes into the README's endpoint table, and its permission into the Permissions section.
   - A new permission key must be added in every place that mirrors it: `packages/shared/src/resources.ts` and `packages/shared/src/permissions.ts`, the WebGUI page `packages/unraid-plugin/src/usr/local/emhttp/plugins/unraidclaw/unraidclaw.page`, the WebGUI script `javascript/unraidclaw.js` (both `OCC_PRESETS` and `OCC_CATEGORIES`), and the README table. These five are kept in step by hand; a change to one without the others is a bug.
-  - A new OpenClaw tool is registered in its category file under `packages/openclaw-plugin/src/tools/` and wired through `src/registry.ts`, which both the OpenClaw entry (`src/index.ts`) and the gateway's MCP adapter (`packages/unraid-plugin/server/src/mcp-tools.ts`) consume, so one registration serves OpenClaw, MCP and the CLI. It must also be declared in `openclaw.plugin.json` under `contracts.tools` and documented in the plugin's README and SKILL.md. `check-contracts` fails the build if the manifest and the registrations drift, because an undeclared tool is silently hidden from the agent. A read-only tool also belongs in the `READ_ONLY` set exported by `packages/openclaw-plugin/src/registry.ts`, or MCP clients see it as destructive.
+  - A new OpenClaw tool is registered in its category file under `packages/openclaw-plugin/src/tools/` and wired through `src/registry.ts`, which both the OpenClaw entry (`src/index.ts`) and the gateway's MCP adapter (`packages/unraid-plugin/server/src/mcp-tools.ts`) consume, so one registration serves OpenClaw, MCP and the CLI. It must also be declared in `openclaw.plugin.json` under `contracts.tools` and documented in the plugin's README and SKILL.md. `check-contracts` fails the build if the manifest and the registrations drift, because an undeclared tool is silently hidden from the agent. A read-only tool also belongs in the `READ_ONLY` set exported by `packages/openclaw-plugin/src/registry.ts`, or MCP clients see it as destructive and the CLI requires confirmation.
   - A change to MCP behavior or to the TLS certificate goes into the README's MCP or TLS certificate section.
   - A user-facing behavior change gets a line under `### Unreleased` in `packages/unraid-plugin/unraidclaw.plg`.
 - **Do not bump the version anywhere and do not edit the `md5` entity.** Releases rewrite the plugin version and md5 in one commit through the release workflow. A pull request that touches them will be asked to drop that change.
@@ -72,7 +72,7 @@ Real Unraid is the final test for anything that mutates state. The offline suite
 
 ## Code conventions
 
-- The gateway talks to Unraid three ways: its GraphQL API, the `docker` and `plugin` CLIs, and the filesystem. Mutating paths run bounded commands with timeouts and verify the result afterward, for example with `docker inspect`, rather than trusting an exit code.
+- The gateway talks to Unraid three ways: its GraphQL API, the `docker` and `plugin` CLIs, and the filesystem. CA and plugin mutating paths run bounded commands with timeouts and verify the result afterward, for example with `docker inspect`, rather than trusting an exit code.
 - Request bodies are validated by hand. The CA and plugin routes reject unknown fields and a non-boolean `dryRun` instead of letting schema coercion drop or reshape them. A new mutating route follows the same rule.
 - Unsupported configurations become blockers with a code and a message, never a silent drop. If the gateway cannot reproduce a template or container setting exactly, it refuses the operation and says why.
 - Secrets are redacted. Values a template marks as masked never appear in a preview, an error, or a log line.
