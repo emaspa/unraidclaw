@@ -2,7 +2,7 @@
 
 Thanks for helping. This page says how the project works so a change lands on the first try. Questions before you start are welcome in a GitHub issue.
 
-UnraidClaw is a permission-enforcing REST gateway that runs on an Unraid server, plus an OpenClaw plugin that turns the gateway into tools for an AI agent. It is a pnpm monorepo with three packages: `packages/shared` (types and the permission matrix), `packages/unraid-plugin/server` (the Fastify gateway, bundled to one CommonJS file), and `packages/openclaw-plugin` (the OpenClaw plugin, bundled to an ESM entry plus a transport-neutral tool registry and published to npm as `unraidclaw`).
+UnraidClaw is a permission-enforcing REST gateway that runs on an Unraid server, plus an OpenClaw plugin that turns the gateway into tools for an AI agent. It is a pnpm monorepo with four packages: `packages/shared` (types and the permission matrix), `packages/unraid-plugin/server` (the Fastify gateway, bundled to one CommonJS file), `packages/cli` (the standalone Node.js command-line client), and `packages/openclaw-plugin` (the OpenClaw plugin, bundled to an ESM entry plus a transport-neutral tool registry and published to npm as `unraidclaw`).
 
 ## What helps most
 
@@ -17,9 +17,9 @@ You need Node.js 22 or newer and pnpm 9. From the repository root:
 
 ```sh
 pnpm install --frozen-lockfile   # the committed lockfile must match
-pnpm build                       # shared, then server, then the openclaw plugin
-pnpm typecheck                   # tsc --noEmit across all three packages
-pnpm test                        # server, archive-safety and rc TLS suites
+pnpm build                       # shared, tool registry, server and CLI in dependency order
+pnpm typecheck                   # tsc --noEmit across all four packages
+pnpm test                        # server, CLI, archive-safety and rc TLS suites
 pnpm --filter unraidclaw check-contracts   # openclaw.plugin.json tools match src registrations
 ```
 
@@ -30,6 +30,8 @@ The server tests are offline and deterministic. The Community Applications suite
 ```sh
 pnpm --filter @unraidclaw/server exec tsx --test test/ca.test.ts
 ```
+
+The CLI suite in `packages/cli/test` checks schemas, confirmation, private config files, credential redaction and bundled execution. Its HTTPS integration starts the real gateway with a temporary certificate on loopback, and skips with a reason if OpenSSL is missing or socket binding is denied. The CLI guide lives in `packages/cli/README.md`.
 
 Two tests exercise the real public catalog. They are skipped unless you opt in, and they download about 17 MB and install nothing:
 
@@ -61,7 +63,7 @@ Real Unraid is the final test for anything that mutates state. The offline suite
 - **Tests and docs travel with the change.**
   - A new or changed endpoint goes into the README's endpoint table, and its permission into the Permissions section.
   - A new permission key must be added in every place that mirrors it: `packages/shared/src/resources.ts` and `packages/shared/src/permissions.ts`, the WebGUI page `packages/unraid-plugin/src/usr/local/emhttp/plugins/unraidclaw/unraidclaw.page`, the WebGUI script `javascript/unraidclaw.js` (both `OCC_PRESETS` and `OCC_CATEGORIES`), and the README table. These five are kept in step by hand; a change to one without the others is a bug.
-  - A new OpenClaw tool is registered in its category file under `packages/openclaw-plugin/src/tools/` and wired through `src/registry.ts`, which both the OpenClaw entry (`src/index.ts`) and the gateway's MCP adapter (`packages/unraid-plugin/server/src/mcp-tools.ts`) consume, so one registration serves both transports. It must also be declared in `openclaw.plugin.json` under `contracts.tools` and documented in the plugin's README and SKILL.md. `check-contracts` fails the build if the manifest and the registrations drift, because an undeclared tool is silently hidden from the agent. A read-only tool also belongs in the `READ_ONLY` set in `mcp-tools.ts`, or MCP clients see it as destructive.
+  - A new OpenClaw tool is registered in its category file under `packages/openclaw-plugin/src/tools/` and wired through `src/registry.ts`, which both the OpenClaw entry (`src/index.ts`) and the gateway's MCP adapter (`packages/unraid-plugin/server/src/mcp-tools.ts`) consume, so one registration serves OpenClaw, MCP and the CLI. It must also be declared in `openclaw.plugin.json` under `contracts.tools` and documented in the plugin's README and SKILL.md. `check-contracts` fails the build if the manifest and the registrations drift, because an undeclared tool is silently hidden from the agent. A read-only tool also belongs in the `READ_ONLY` set exported by `packages/openclaw-plugin/src/registry.ts`, or MCP clients see it as destructive.
   - A change to MCP behavior or to the TLS certificate goes into the README's MCP or TLS certificate section.
   - A user-facing behavior change gets a line under `### Unreleased` in `packages/unraid-plugin/unraidclaw.plg`.
 - **Do not bump the version anywhere and do not edit the `md5` entity.** Releases rewrite the plugin version and md5 in one commit through the release workflow. A pull request that touches them will be asked to drop that change.

@@ -332,7 +332,7 @@ class RegenerateCertificate(TlsFixture):
 namespace TlsFixture;
 function exec($command, &$output, &$code) {
     $inspect = 'openssl x509 -in ' . escapeshellarg(getenv('TLS_TEST_DIRECTORY') . '/cert.pem') .
-        ' -noout -subject -nameopt RFC2253 -enddate -ext subjectAltName 2>/dev/null';
+        ' -noout -subject -nameopt RFC2253 -enddate -fingerprint -sha256 -ext subjectAltName 2>/dev/null';
     $restart = escapeshellarg(getenv('TLS_TEST_SERVICE')) . ' restart 2>&1';
     if ($command !== $inspect && $command !== $restart) throw new \Exception('Unexpected command');
     if ($command === $restart) file_put_contents(getenv('TEST_ROOT') . '/restarted', 'yes');
@@ -397,6 +397,8 @@ $_GET = ['action' => getenv('TLS_TEST_ACTION')];
         self.assertEqual(response["certificate"], {
             "present": True, "subject": f"CN={HOSTNAME}",
             "subjectAltName": EXPECTED_SAN,
+            "fingerprint": self.openssl("x509", "-in", self.tls / "cert.pem",
+                                        "-noout", "-fingerprint", "-sha256").split("=", 1)[1],
             "expiry": self.openssl("x509", "-in", self.tls / "cert.pem",
                                    "-noout", "-enddate").removeprefix("notAfter="),
         })
@@ -548,6 +550,7 @@ $_GET = ['action' => getenv('TLS_TEST_ACTION')];
         certificate = self.php(script)
         self.assertEqual(certificate["subjectAltName"], [])
         self.assertEqual(certificate["subject"], "CN=unraidclaw")
+        self.assertRegex(certificate["fingerprint"], r"^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$")
         (self.tls / "cert.pem").write_text("invalid certificate\n")
         self.assertIn("error", self.php(script))
         self.assert_not_restarted()
@@ -568,6 +571,7 @@ $_GET = ['action' => getenv('TLS_TEST_ACTION')];
         missing = self.php(script)
         self.assertIn('id="occ-cert-state">No certificate yet</td>', missing)
         self.assertIn('id="occ-cert-subject-row" style="display:none;"', missing)
+        self.assertIn('id="occ-cert-fingerprint-row" style="display:none;"', missing)
         self.seed_pair(subject="/CN=<fixture>")
         legacy = self.php(script)
         self.assertIn(r'id="occ-cert-subject">CN=\&lt;fixture\&gt;</td>', legacy)
@@ -578,6 +582,8 @@ $_GET = ['action' => getenv('TLS_TEST_ACTION')];
         self.assertIn('id="occ-cert-state-row" style="display:none;"', current)
         self.assertIn('id="occ-cert-san-warning" class="occ-hint" style="display:none;"', current)
         self.assertIn(', '.join(EXPECTED_SAN), current)
+        self.assertIn(self.openssl("x509", "-in", self.tls / "cert.pem", "-noout",
+                                  "-fingerprint", "-sha256").split("=", 1)[1], current)
         self.assertIn(self.openssl("x509", "-in", self.tls / "cert.pem", "-noout",
                                   "-enddate").removeprefix("notAfter="), current)
 

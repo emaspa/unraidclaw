@@ -27,15 +27,16 @@ pnpm test
 pnpm --filter unraidclaw check-contracts
 ```
 
-These are the CI checks. `pnpm test` runs the offline server suite (Node's test runner through tsx), the archive-safety suite, which builds a throwaway package and extracts it against synthetic host layouts, including one where `/etc/rc.d` is a symlink, and the rc TLS suite. The TLS suite needs `python3`, Bash and OpenSSL and sources the real service functions with temporary flash paths, fixture host addresses and a stubbed process launch to test SANs, migration, backups and failure handling without starting the gateway, accessing `/boot` or using the network. All five must be green before you call a change done. Run one server test file during development from the server package with `pnpm --filter @unraidclaw/server exec tsx --test test/<file>.test.ts`; run the TLS suite with `pnpm test:tls`.
+These are the CI checks. `pnpm test` runs the CLI suite (offline checks and a loopback HTTPS test), the offline server suite (Node's test runner through tsx), the archive-safety suite, which builds a throwaway package and extracts it against synthetic host layouts, including one where `/etc/rc.d` is a symlink, and the rc TLS suite. The TLS suite needs `python3`, Bash and OpenSSL and sources the real service functions with temporary flash paths, fixture host addresses and a stubbed process launch to test SANs, migration, backups and failure handling without starting the gateway, accessing `/boot` or using the network. All five must be green before you call a change done. Run one server test file during development from the server package with `pnpm --filter @unraidclaw/server exec tsx --test test/<file>.test.ts`; run the TLS suite with `pnpm test:tls`.
 
 ## Where things are
 
-- `packages/shared`: permission keys, presets, resource categories, and API types. Both other packages import from here.
+- `packages/shared`: permission keys, presets, resource categories, and API types. The gateway and OpenClaw tool types use these definitions.
 - `packages/unraid-plugin/server`: the Fastify gateway. Routes in `src/routes/`, Community Applications feed and template logic in `src/ca-*.ts`, plugin management in `src/plugins.ts`, the bounded XML parser in `src/xml.ts`. MCP transport in `src/routes/mcp.ts`, tool adapter in `src/mcp-tools.ts`, Origin and header helpers in `src/mcp-security.ts`, activity log details for MCP requests in `src/mcp-log.ts`. Tests in `test/`, fixtures in `test/fixtures/`.
 - `packages/unraid-plugin/src/usr/local/emhttp/plugins/unraidclaw`: the WebGUI page and its JavaScript.
 - `packages/unraid-plugin/unraidclaw.plg`: the plugin manifest, changelog, and install steps. `scripts/build.sh` builds the `.txz`; `scripts/smoke-mcp.mjs` runs the CJS bundle on loopback with temporary configuration; `scripts/test_archive_safety.py` regresses install and rollback extraction; `scripts/test_rc_tls.py` tests certificate generation and migration from `rc.d/rc.unraidclaw`.
 - `packages/openclaw-plugin`: the OpenClaw tools in `src/tools/`, their transport-neutral registration in `src/registry.ts` and OpenClaw entry in `src/index.ts`, and the contract check in `scripts/check-contracts.mjs`.
+- `packages/cli`: the standalone `unraidclaw` client. Commands and schemas come from `unraidclaw/tools`; HTTP transport, private configuration, certificate trust and terminal handling live in `src/`, with offline and loopback tests in `test/`.
 
 ## Rules the code already follows
 
@@ -47,7 +48,8 @@ These are the CI checks. `pnpm test` runs the offline server suite (Node's test 
 - Masked secrets stay redacted in previews, errors, and logs.
 - The release package carries no directory headers, and the manifest installs it with `TAR_OPTIONS="--keep-directory-symlink --no-overwrite-dir"`. tar replaces a host directory symlink such as `/etc/rc.d` with a plain directory when an archive carries that directory's header, which once left a server unable to shut down. Keep `build.sh` and the manifest this way and keep the archive-safety suite green.
 - XML parsing goes through `src/xml.ts`. Do not hand-roll a parser or reach for a regex.
-- The tool definitions live once, in `packages/openclaw-plugin/src/tools/`, and reach OpenClaw and MCP through the same registry (`unraidclaw/tools`). The MCP adapter in `src/mcp-tools.ts` runs each call through the gateway's own `/api/` route with `app.inject`; it is never a network client, and a read-only tool must be listed in its `READ_ONLY` set to get `readOnlyHint`.
+- The tool definitions live once, in `packages/openclaw-plugin/src/tools/`, and reach OpenClaw and MCP through the same registry (`unraidclaw/tools`). The MCP adapter in `src/mcp-tools.ts` runs each call through the gateway's own `/api/` route with `app.inject`; it is never a network client, and a read-only tool must be listed in the registry's exported `READ_ONLY` set to get `readOnlyHint`.
+- The CLI consumes the same registry and `READ_ONLY` set as MCP. Validate schemas before HTTP requests, never expose the OpenClaw `server` parameter, and keep API keys out of output. CLI tests inject filesystem roots, environment and terminal behavior; HTTPS integration uses loopback only. Build its single CommonJS bundle into the Unraid archive without adding directory headers.
 - MCP is off by default and stays off unless `MCP_ENABLED="yes"` is in the cfg. The Origin allowlist is built at startup from loopback, the local interfaces and the configured Listen Host; never derive it from request headers.
 
 ## The real host

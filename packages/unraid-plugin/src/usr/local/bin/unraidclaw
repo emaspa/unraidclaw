@@ -1,0 +1,12 @@
+#!/bin/bash
+bundle=/usr/local/emhttp/plugins/unraidclaw/cli/unraidclaw.cjs
+for runtime in /usr/local/bin/node /usr/bin/node; do
+  if [ -x "$runtime" ]; then
+    exec "$runtime" "$bundle" "$@"
+  fi
+done
+if command -v node >/dev/null 2>&1; then
+  exec node "$bundle" "$@"
+fi
+echo "unraidclaw requires Node.js 22 or newer." >&2
+exit 1

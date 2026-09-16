@@ -1,0 +1,25 @@
+{
+  "name": "unraidclaw-cli",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Command-line client for the UnraidClaw gateway",
+  "type": "module",
+  "bin": { "unraidclaw": "dist/unraidclaw.cjs" },
+  "files": ["dist/unraidclaw.cjs", "README.md"],
+  "engines": { "node": ">=22.0.0" },
+  "scripts": {
+    "build": "tsup --config tsup.bundle.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "unraidclaw": "workspace:*",
+    "ajv": "^8.18.0",
+    "@unraidclaw/server": "workspace:*",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

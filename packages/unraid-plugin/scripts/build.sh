@@ -33,11 +33,20 @@ if [ ! -f "$BUNDLE_FILE" ]; then
   exit 1
 fi
 
+# Build the standalone CLI after the shared registry.
+cd "$ROOT_DIR"
+pnpm --filter unraidclaw-cli build
+
 # 3. Assemble package structure
 echo "[3/4] Assembling package..."
 STAGE="${BUILD_DIR}/staging"
 mkdir -p "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/server"
 mkdir -p "${STAGE}/etc/rc.d"
+mkdir -p "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/cli"
+mkdir -p "${STAGE}/usr/local/bin"
+cp "$ROOT_DIR/packages/cli/dist/unraidclaw.cjs" "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/cli/unraidclaw.cjs"
+cp "$PLUGIN_DIR/src/usr/local/bin/unraidclaw" "${STAGE}/usr/local/bin/unraidclaw"
+chmod 755 "${STAGE}/usr/local/bin/unraidclaw"
 
 # Copy server bundle
 cp "$BUNDLE_FILE" "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/server/index.cjs"

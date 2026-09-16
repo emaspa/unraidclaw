@@ -15,6 +15,9 @@
 
 <CHANGES>
 ### Unreleased
+- Include the unraidclaw command-line client on the server, with the same tools and permissions as OpenClaw and MCP
+- Make CLI connection errors actionable, shorten tables and help, format logs and nested values for reading, show certificate details once when trusting in table mode, and let supported dry runs proceed without confirmation
+- Show the TLS certificate SHA-256 fingerprint in Settings so remote CLI users can verify it before trusting the certificate
 - Add optional MCP support: a Streamable HTTP endpoint at /mcp on the service port, off by default and switched on with Enable MCP in Settings. It exposes the same 55 tools with the same API key, permissions, input validation and activity logging. Log entries for tool calls name the tool and show the outcome of the API route it ran; the requests clients make to connect are logged only when they fail. REST and the OpenClaw plugin keep working as before
 - Generate TLS certificates with the server's host name, .local name, loopback and stable global addresses in subjectAltName, so clients that trust the certificate can verify the host name. A certificate without subjectAltName is replaced once on the next service start, with the previous pair kept as cert.pem.bak and key.pem.bak
 - Show the TLS certificate's subject, alternative names and expiry in Settings, with a Regenerate certificate button for when the server's address or host name changed. Regenerating keeps the old pair as .bak files (older backups get numbered suffixes) and restarts the service; clients that trusted the old certificate must trust the new one
@@ -262,6 +265,7 @@ removepkg ${PLUGIN}-&version;-x86_64-1 2>/dev/null
 # Remove plugin files (keep config on flash for re-install)
 rm -rf /usr/local/emhttp/plugins/${PLUGIN}
 rm -f /etc/rc.d/rc.${PLUGIN}
+rm -f /usr/local/bin/unraidclaw
 
 echo "&name; removed."
 echo "Config files preserved in /boot/config/plugins/${PLUGIN}/"

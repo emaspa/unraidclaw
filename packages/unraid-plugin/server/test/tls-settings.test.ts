@@ -72,12 +72,13 @@ test("certificate regeneration uses GET and refreshes details as text without re
   assert.equal(request.sent, true);
   assert.equal(ui.element("occ-regenerate-cert-btn").disabled, true);
   request.respond(200, { success: true, certificate: {
-    subject: "CN=<fixture>", subjectAltName: ["DNS:tls-test", "IP Address:192.0.2.10"], expiry: "fixture expiry",
+    subject: "CN=<fixture>", subjectAltName: ["DNS:tls-test", "IP Address:192.0.2.10"], expiry: "fixture expiry", fingerprint: "fixture fingerprint",
   } });
   assert.equal(ui.element("occ-cert-subject").textContent, "CN=<fixture>");
   assert.equal(ui.element("occ-cert-san").textContent, "DNS:tls-test, IP Address:192.0.2.10");
   assert.equal(ui.element("occ-cert-expiry").textContent, "fixture expiry");
-  for (const field of ["subject", "san", "expiry"]) {
+  assert.equal(ui.element("occ-cert-fingerprint").textContent, "fixture fingerprint");
+  for (const field of ["subject", "san", "expiry", "fingerprint"]) {
     assert.equal(ui.element(`occ-cert-${field}-row`).style.display, "");
   }
   assert.equal(ui.element("occ-cert-state-row").style.display, "none");
@@ -90,7 +91,7 @@ test("a regenerated certificate without SAN keeps the strict-client warning visi
   const ui = fixture();
   ui.context.occRegenerateCertificate();
   ui.requests[0].respond(200, { success: true, certificate: {
-    subject: "CN=fixture", subjectAltName: [], expiry: "fixture expiry",
+    subject: "CN=fixture", subjectAltName: [], expiry: "fixture expiry", fingerprint: "fixture fingerprint",
   } });
   assert.equal(ui.element("occ-cert-san-warning").style.display, "");
   assert.equal(ui.element("occ-cert-san").textContent, "");

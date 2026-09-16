@@ -44,3 +44,14 @@ export function registerTools(
   registerUserTools(api, getClient);
   registerLogTools(api, getClient);
 }
+
+// Older mutating registrations do not all declare optional. Only known reads
+// receive readOnlyHint; new tools conservatively default to destructive.
+export const READ_ONLY = new Set([
+  "unraid_health_check", "unraid_docker_list", "unraid_docker_inspect", "unraid_docker_logs",
+  "unraid_ca_search", "unraid_ca_app", "unraid_plugins_list", "unraid_plugin_info",
+  "unraid_vm_list", "unraid_vm_inspect", "unraid_array_status", "unraid_parity_status", "unraid_disk_list",
+  "unraid_disk_details", "unraid_share_list", "unraid_share_details", "unraid_system_info",
+  "unraid_system_metrics", "unraid_service_list", "unraid_notification_list",
+  "unraid_network_info", "unraid_user_me", "unraid_syslog",
+]);

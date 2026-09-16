@@ -8,8 +8,8 @@ function occReadTlsCertificate($certFile) {
     $output = [];
     $code = 0;
     exec('openssl x509 -in ' . escapeshellarg($certFile) .
-        ' -noout -subject -nameopt RFC2253 -enddate -ext subjectAltName 2>/dev/null', $output, $code);
-    $certificate = ['present' => true, 'subject' => '', 'subjectAltName' => [], 'expiry' => ''];
+        ' -noout -subject -nameopt RFC2253 -enddate -fingerprint -sha256 -ext subjectAltName 2>/dev/null', $output, $code);
+    $certificate = ['present' => true, 'subject' => '', 'subjectAltName' => [], 'expiry' => '', 'fingerprint' => ''];
     $readingSan = false;
     foreach ($output as $line) {
         $line = trim($line);
@@ -17,6 +17,9 @@ function occReadTlsCertificate($certFile) {
             $certificate['subject'] = trim(substr($line, 8));
         } elseif (strpos($line, 'notAfter=') === 0) {
             $certificate['expiry'] = trim(substr($line, 9));
+        } elseif (stripos($line, 'sha256 Fingerprint=') === 0) {
+            $certificate['fingerprint'] = trim(substr($line, strpos($line, '=') + 1));
+            $readingSan = false;
         } elseif (strpos($line, 'X509v3 Subject Alternative Name:') === 0) {
             $readingSan = true;
         } elseif ($readingSan && $line !== '') {
@@ -25,7 +28,7 @@ function occReadTlsCertificate($certFile) {
             );
         }
     }
-    if ($code !== 0 || $certificate['subject'] === '' || $certificate['expiry'] === '') {
+    if ($code !== 0 || $certificate['subject'] === '' || $certificate['expiry'] === '' || $certificate['fingerprint'] === '') {
         return ['present' => true, 'error' => 'Unable to read the TLS certificate with OpenSSL.'];
     }
     return $certificate;

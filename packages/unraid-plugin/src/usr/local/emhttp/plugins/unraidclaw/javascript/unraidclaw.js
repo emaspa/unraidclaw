@@ -132,12 +132,13 @@ function occRegenerateCertificate() {
       if (xhr.status === 200 && resp.success) {
         var cert = resp.certificate;
         document.getElementById('occ-cert-state-row').style.display = 'none';
-        ['subject', 'san', 'expiry'].forEach(function(field) {
+        ['subject', 'san', 'expiry', 'fingerprint'].forEach(function(field) {
           document.getElementById('occ-cert-' + field + '-row').style.display = '';
         });
         document.getElementById('occ-cert-subject').textContent = cert.subject;
         document.getElementById('occ-cert-san').textContent = cert.subjectAltName.join(', ');
         document.getElementById('occ-cert-expiry').textContent = cert.expiry;
+        document.getElementById('occ-cert-fingerprint').textContent = cert.fingerprint;
         document.getElementById('occ-cert-san-warning').style.display = cert.subjectAltName.length ? 'none' : '';
         status.textContent = 'Certificate regenerated. Service restarted. Clients must trust the new certificate.';
         status.style.color = '#51cf66';

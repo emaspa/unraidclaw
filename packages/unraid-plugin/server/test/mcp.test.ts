@@ -11,9 +11,8 @@ process.env.FLASH_BASE = flash;
 const { loadConfig, loadPermissions } = await import("../src/config.js");
 const { hashApiKey } = await import("../src/auth.js");
 const { createServer } = await import("../src/server.js");
-const { registerTools, isErrorResult } = await import("unraidclaw/tools");
+const { registerTools, isErrorResult, READ_ONLY } = await import("unraidclaw/tools");
 const { MCP_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS } = await import("../src/routes/mcp.js");
-const { READ_ONLY } = await import("../src/mcp-tools.js");
 const { mcpOrigins, validMcpOrigin } = await import("../src/mcp-security.js");
 
 // Ephemeral material stays in memory and is never printed or saved to fixtures.

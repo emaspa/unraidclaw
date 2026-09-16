@@ -1,20 +1,9 @@
 import Ajv from "ajv";
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { registerTools, isErrorResult, type ToolClient, type ToolDefinition, type ToolOptions } from "unraidclaw/tools";
+import { registerTools, isErrorResult, READ_ONLY, type ToolClient, type ToolDefinition, type ToolOptions } from "unraidclaw/tools";
 import type { ApiResponse } from "@unraidclaw/shared";
 import { recordMcpApiCall } from "./mcp-log.js";
 import { mcpApiKey } from "./mcp-security.js";
-
-// Older mutating registrations do not all declare optional. Only known reads
-// receive readOnlyHint; new tools conservatively default to destructive.
-export const READ_ONLY = new Set([
-  "unraid_health_check", "unraid_docker_list", "unraid_docker_inspect", "unraid_docker_logs",
-  "unraid_ca_search", "unraid_ca_app", "unraid_plugins_list", "unraid_plugin_info",
-  "unraid_vm_list", "unraid_vm_inspect", "unraid_array_status", "unraid_parity_status", "unraid_disk_list",
-  "unraid_disk_details", "unraid_share_list", "unraid_share_details", "unraid_system_info",
-  "unraid_system_metrics", "unraid_service_list", "unraid_notification_list",
-  "unraid_network_info", "unraid_user_me", "unraid_syslog",
-]);
 
 function collectTools(client: ToolClient) {
   const tools = new Map<string, { tool: ToolDefinition; options?: ToolOptions }>();

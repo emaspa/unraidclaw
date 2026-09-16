@@ -28,6 +28,7 @@ UnraidClaw sits between AI agents and your Unraid servers, providing a unified R
 - **Activity logging** with JSONL format, filter, and search
 - **OpenClaw plugin** available on ClawHub and npm (`openclaw plugins install clawhub:unraidclaw --accept-capabilities`)
 - **Optional MCP** at `/mcp` for Streamable HTTP clients, off by default, using the same API key and permissions as the REST API
+- **Command-line client** on Unraid and remote Linux, macOS and Windows machines, using the shared tool registry. See [CLI](#cli)
 - **Single-file server**, no `node_modules` needed on Unraid
 
 ## Requirements
@@ -70,7 +71,19 @@ The server starts on port `9876` over HTTPS by default. A self-signed TLS certif
 | Unraid WebUI Port | Port of the Unraid WebGUI, used to build the GraphQL URL |
 | Unraid API Key | The Unraid API key with the ADMIN role. Leave blank to keep the stored key |
 
-The **API Key Management** section generates the UnraidClaw API key. The **TLS Certificate** section shows the current certificate's subject, subject alternative names and expiry date, warns when the certificate has no `subjectAltName`, and has a **Regenerate certificate** button. [TLS certificate](#tls-certificate) says what regenerating does and what clients must do afterwards.
+The **API Key Management** section generates the UnraidClaw API key. The **TLS Certificate** section shows the current certificate's subject, subject alternative names, expiry date and SHA-256 fingerprint, warns when the certificate has no `subjectAltName`, and has a **Regenerate certificate** button. [TLS certificate](#tls-certificate) says what regenerating does and what clients must do afterwards.
+
+## CLI
+
+The Unraid plugin includes the `unraidclaw` command. It also runs on Linux, macOS and Windows with Node.js 22+, using the same tool definitions and gateway permissions as OpenClaw and MCP.
+
+```sh
+unraidclaw config set-key
+unraidclaw docker list
+unraidclaw array status --output json
+```
+
+On Unraid, it discovers the local gateway and certificate. On another machine, configure the gateway URL and run `unraidclaw trust`, comparing the fingerprint with the WebGUI before accepting. Mutating commands require confirmation or `--yes`, except supported dry runs with `dryRun` set to true. See the [CLI guide](packages/cli/README.md) for installation from the repository, credentials, certificate trust, all commands and exit codes.
 
 ## API
 
@@ -324,7 +337,9 @@ The service generates a self-signed certificate on first start and stores it as 
 
 A certificate created by an earlier version has no `subjectAltName`. It is replaced once, on the first service start after the upgrade, and the old pair is kept as `cert.pem.bak` and `key.pem.bak` in the same directory. A certificate that already has a `subjectAltName` is never replaced automatically, including when the server's addresses change. If OpenSSL is missing or generation fails, the service starts with the existing files. On a fresh install with an OpenSSL that cannot add extensions it falls back to a certificate without `subjectAltName`, and without OpenSSL at all it serves plain HTTP.
 
-To replace a certificate whose names or addresses are out of date, open **Settings > UnraidClaw > Settings** and use the **TLS Certificate** section. It shows the certificate's subject, subject alternative names and expiry date, and warns when `subjectAltName` is missing. **Regenerate certificate** asks for confirmation, then moves the current pair to `cert.pem.bak` and `key.pem.bak` (an existing backup moves to the first free numbered suffix, such as `cert.pem.bak.1`), restarts the service so it generates a new pair, and refreshes the displayed details. If the files cannot be moved, the originals are restored and the service is not restarted. If the restart fails or produces no usable certificate, the previous pair stays available as `.bak` files. Only one regeneration runs at a time. The WebGUI reads the certificate's public details with OpenSSL and never opens the private key.
+To replace a certificate whose names or addresses are out of date, open **Settings > UnraidClaw > Settings** and use the **TLS Certificate** section. It shows the certificate's subject, subject alternative names, expiry date and SHA-256 fingerprint, and warns when `subjectAltName` is missing. **Regenerate certificate** asks for confirmation, then moves the current pair to `cert.pem.bak` and `key.pem.bak` (an existing backup moves to the first free numbered suffix, such as `cert.pem.bak.1`), restarts the service so it generates a new pair, and refreshes the displayed details. If the files cannot be moved, the originals are restored and the service is not restarted. If the restart fails or produces no usable certificate, the previous pair stays available as `.bak` files. Only one regeneration runs at a time. The WebGUI reads the certificate's public details with OpenSSL and never opens the private key.
+
+The CLI displays the same SHA-256 fingerprint during `unraidclaw trust`. Compare it with the WebGUI before accepting the certificate.
 
 What this means for clients:
 
@@ -481,19 +496,20 @@ The WebGUI includes **Read Only**, **Docker Manager**, **VM Manager**, **Full Ad
                                └──────────────────┘                 notifications
 ```
 
-OpenClaw calls `/api/*` over HTTPS. MCP clients, when MCP is enabled, call `/mcp` on the same gateway. The tool definitions live once, in the openclaw-plugin package, which exports them as a transport-neutral registry (`unraidclaw/tools`, from `src/registry.ts`). The OpenClaw entry registers that registry with OpenClaw and sends HTTP requests to the gateway. The gateway's MCP adapter imports the same registry and runs each tool call through its own `/api/` route in process, so authentication, permission checks and activity logging are shared and no second network connection is made.
+OpenClaw and the CLI call `/api/*` over HTTPS. MCP clients, when MCP is enabled, call `/mcp` on the same gateway. The tool definitions live once, in the openclaw-plugin package, which exports them as a transport-neutral registry (`unraidclaw/tools`, from `src/registry.ts`). The OpenClaw entry registers that registry with OpenClaw and sends HTTP requests to the gateway. The gateway's MCP adapter imports the same registry and runs each tool call through its own `/api/` route in process, so authentication, permission checks and activity logging are shared and no second network connection is made.
 
-This is a pnpm monorepo with three packages:
+This is a pnpm monorepo with four packages:
 
 | Package | Description |
 |---------|-------------|
 | `packages/shared` | Shared TypeScript types, permission definitions, API interfaces |
 | `packages/unraid-plugin/server` | Fastify REST API and optional MCP endpoint, bundles to a single CJS file |
-| `packages/openclaw-plugin` | OpenClaw plugin entry plus the transport-neutral tool registry (`unraidclaw/tools`) that the gateway's MCP adapter consumes, published to npm as `unraidclaw` |
+| `packages/cli` | Standalone `unraidclaw` command, bundled as CommonJS for local Unraid and remote Node.js clients |
+| `packages/openclaw-plugin` | OpenClaw plugin entry plus the transport-neutral tool registry (`unraidclaw/tools`) that the gateway's MCP adapter and the CLI consume, published to npm as `unraidclaw` |
 
 ## Security
 
-- API keys are hashed with SHA-256 before storage; the plaintext key is never persisted
+- The gateway stores a SHA-256 hash of its API key. A CLI user can save the plaintext client key in a private config file, or on Unraid flash where POSIX file modes are unavailable. See the [CLI security notes](packages/cli/README.md#use-on-the-unraid-server)
 - REST requests require `x-api-key`, except the public `/api/health` probe. MCP requests accept `x-api-key` or `Authorization: Bearer` and always require a key. When MCP is off, `/mcp` does not exist
 - MCP rejects any `Origin` outside an allowlist built at startup from loopback, the local interface addresses and the configured Listen Host, which blocks DNS rebinding from a browser. Requests without an `Origin` header are allowed, so for non-browser clients the API key is the only protection
 - Failed authentication is limited per IP to 10 attempts per minute; REST and MCP share the counter. Requests to paths that do not exist return 404 without checking the key and do not count, so MCP clients probing for OAuth metadata do not lock themselves out

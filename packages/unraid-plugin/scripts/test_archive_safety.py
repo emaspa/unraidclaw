@@ -22,6 +22,8 @@ import xml.etree.ElementTree as ET
 PACKAGE = Path(sys.argv.pop(1)).resolve()
 MANIFEST = Path(__file__).resolve().parents[1] / "unraidclaw.plg"
 RC = "etc/rc.d/rc.unraidclaw"
+CLI = "usr/local/emhttp/plugins/unraidclaw/cli/unraidclaw.cjs"
+WRAPPER = "usr/local/bin/unraidclaw"
 SERVER = "usr/local/emhttp/plugins/unraidclaw/server/index.cjs"
 VERSION_FILE = "usr/local/emhttp/plugins/unraidclaw/VERSION"
 OLD_RC = b"#!/bin/sh\n# previous unraidclaw service\n"
@@ -147,6 +149,8 @@ class ArchiveSafety(unittest.TestCase):
                              "shared directory headers can replace host symlinks")
             by_name = {m.name.removeprefix("./"): m for m in members}
             self.assertIn(SERVER, by_name)
+            self.assertIn(CLI, by_name)
+            self.assertTrue(by_name[WRAPPER].mode & 0o111)
             self.assertTrue(by_name[RC].mode & 0o111)
             self.assertTrue(all(m.uid == 0 and m.gid == 0 for m in members))
 
@@ -169,6 +173,8 @@ class ArchiveSafety(unittest.TestCase):
                             if m.name.removeprefix("./") == RC)
         self.assertEqual((self.root / RC).read_bytes(), expected)
         self.assertTrue((self.root / SERVER).is_file())
+        self.assertTrue((self.root / CLI).is_file())
+        self.assertTrue((self.root / WRAPPER).stat().st_mode & 0o111)
         self.assertTrue((self.root / RC).stat().st_mode & 0o111)
 
     def test_fresh_install_through_directory_symlink(self):
@@ -178,6 +184,8 @@ class ArchiveSafety(unittest.TestCase):
         self.assert_preserved()
         self.assertTrue((self.root / RC).is_file())
         self.assertTrue((self.root / SERVER).is_file())
+        self.assertTrue((self.root / CLI).is_file())
+        self.assertTrue((self.root / WRAPPER).stat().st_mode & 0o111)
 
     def test_new_package_survives_unprotected_direct_install(self):
         self.fixture("relative")
@@ -188,6 +196,8 @@ class ArchiveSafety(unittest.TestCase):
         self.assert_preserved()
         self.assertNotEqual((self.root / RC).read_bytes(), OLD_RC)
         self.assertTrue((self.root / SERVER).is_file())
+        self.assertTrue((self.root / CLI).is_file())
+        self.assertTrue((self.root / WRAPPER).stat().st_mode & 0o111)
 
     def check_legacy_roundtrip(self, links):
         self.fixture(links)
