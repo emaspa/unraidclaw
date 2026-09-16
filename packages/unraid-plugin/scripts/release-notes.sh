@@ -31,6 +31,6 @@ ${CHANGES}
 ## Downloads
 
 - \`unraidclaw-${VERSION}-x86_64-1.txz\`: the Unraid plugin package. Install or update the plugin from the Unraid WebGUI rather than downloading this file.
-- \`unraidclaw-cli-${VERSION}.tar.gz\`: the \`unraidclaw\` command-line client for managing Unraid from another machine. Needs Node.js 22 or newer on Linux, macOS or Windows. See the [CLI guide](https://github.com/emaspa/unraidclaw/blob/main/packages/cli/README.md).
+- \`unraidclaw-cli-${VERSION}.tar.gz\`: the \`unraidclaw\` command-line client for managing Unraid from another machine, also available with \`npm install -g unraidclaw-cli\`. Needs Node.js 22 or newer on Linux, macOS or Windows. See the [CLI guide](https://github.com/emaspa/unraidclaw/blob/main/packages/cli/README.md).
 - \`.md5\` and \`.sha256\` files hold checksums for the downloads above.
 NOTES

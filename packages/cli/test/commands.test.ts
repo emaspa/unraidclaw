@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { registerTools, READ_ONLY, type ToolDefinition } from "unraidclaw/tools";
 import { commands, aliases, parse, argumentsFor, help, kebab } from "../src/commands.js";
 import { capture, fixture, randomKey, recordingClient } from "./helpers.js";
+import { version as packageVersion } from "../package.json";
 
 const catalog = commands(recordingClient().client);
 const args = (argv: string[]) => argumentsFor(parse(argv, catalog));
@@ -140,7 +141,7 @@ test("tools and built-in help expose their commands", async t => {
   assert.equal(JSON.parse(listed.stdout).length, 55);
   assert.match((await cli.run(["plugin", "--help"])).stdout, /plugin list/);
   assert.match((await cli.run(["config", "--help"])).stdout, /config set-key/);
-  assert.match((await cli.run(["--version"])).stdout, /^unraidclaw 0\.1\.0/);
+  assert.equal((await cli.run(["--version"])).stdout, `unraidclaw ${packageVersion}\n`);
 });
 
 test("top-level help is a compact group overview for every spelling", async t => {

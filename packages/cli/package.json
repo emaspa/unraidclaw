@@ -1,17 +1,46 @@
 {
   "name": "unraidclaw-cli",
-  "version": "0.1.0",
+  "version": "0.1.33",
   "private": false,
   "description": "Command-line client for the UnraidClaw gateway",
+  "keywords": [
+    "unraid",
+    "cli",
+    "unraidclaw",
+    "homelab",
+    "docker",
+    "vm"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/emaspa/unraidclaw/tree/main/packages/cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emaspa/unraidclaw.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/emaspa/unraidclaw/issues"
+  },
   "type": "module",
-  "bin": { "unraidclaw": "dist/unraidclaw.cjs" },
-  "files": ["dist/unraidclaw.cjs", "README.md"],
-  "engines": { "node": ">=22.0.0" },
+  "bin": {
+    "unraidclaw": "dist/unraidclaw.cjs"
+  },
+  "files": [
+    "dist/unraidclaw.cjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "build": "tsup --config tsup.bundle.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test test/*.test.ts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepack": "cp ../../LICENSE LICENSE",
+    "postpack": "rm -f LICENSE",
+    "prepublishOnly": "pnpm --filter \"unraidclaw-cli^...\" build && pnpm run build && pnpm run test"
   },
   "devDependencies": {
     "unraidclaw": "workspace:*",
