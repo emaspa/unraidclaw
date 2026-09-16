@@ -25,7 +25,7 @@ UnraidClaw gives AI agents 55 tools across 13 categories to monitor and manage a
 - **Logs** - Read syslog entries
 - **Health** - Server health check
 
-Every tool is gated by a 30-key permission matrix (resource:action) configurable from the Unraid WebGUI. The server logs all API activity.
+Every tool is gated by a 30-key permission matrix (resource:action) configurable from the Unraid WebGUI. The server logs all API activity. The gateway also has an optional MCP endpoint, off by default, that exposes the same tools to MCP clients; this plugin does not use it.
 
 ## Updating and removing an installed app
 
@@ -60,7 +60,7 @@ OS plugins are protected from mutation. UnraidClaw can list, inspect and check i
 |-------|-------------|
 | `serverUrl` | URL of your UnraidClaw server (e.g. `https://192.168.1.100:9876`) |
 | `apiKey` | API key from the UnraidClaw settings page |
-| `tlsSkipVerify` | Set to `true` for self-signed TLS certificates |
+| `tlsSkipVerify` | Set to `true` to accept the gateway's self-signed certificate. This disables certificate verification for that server |
 
 ## Install
 

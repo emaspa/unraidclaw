@@ -17,7 +17,7 @@
 
 ---
 
-UnraidClaw sits between AI agents and your Unraid servers, providing a unified REST API with fine-grained access control. It combines Unraid's GraphQL API with direct system integration (CLI commands for parity checks, reboot/shutdown, and syslog; filesystem operations for share config editing and notification management; network introspection via `ip`) to expose capabilities that no single Unraid API covers. Every call is authenticated, authorized against a configurable permission matrix, and logged.
+UnraidClaw sits between AI agents and your Unraid servers, providing a unified REST API with fine-grained access control. It combines Unraid's GraphQL API with direct system integration (CLI commands for parity checks, reboot/shutdown, and syslog; filesystem operations for share config editing and notification management; network introspection via `ip`) to expose capabilities that no single Unraid API covers. Every call is authenticated, authorized against a configurable permission matrix, and logged. An optional MCP endpoint, off by default, exposes the same tools to MCP clients under the same permissions.
 
 ## Features
 
@@ -27,7 +27,7 @@ UnraidClaw sits between AI agents and your Unraid servers, providing a unified R
 - **SHA-256 API key** authentication
 - **Activity logging** with JSONL format, filter, and search
 - **OpenClaw plugin** available on ClawHub and npm (`openclaw plugins install clawhub:unraidclaw --accept-capabilities`)
-- **Optional MCP** at `/mcp` for Streamable HTTP clients, off by default and sharing the REST permissions
+- **Optional MCP** at `/mcp` for Streamable HTTP clients, off by default, using the same API key and permissions as the REST API
 - **Single-file server**, no `node_modules` needed on Unraid
 
 ## Requirements
@@ -55,7 +55,22 @@ plugin install https://raw.githubusercontent.com/emaspa/unraidclaw/main/packages
 4. Configure permissions on the **Permissions** tab
 5. Set Service to **Enabled** and click Apply
 
-The server starts on port `9876` over HTTPS by default. A self-signed TLS certificate is auto-generated on first start.
+The server starts on port `9876` over HTTPS by default. A self-signed TLS certificate is generated on first start; see [TLS certificate](#tls-certificate) for what it contains and how clients trust it.
+
+### Settings tab
+
+**Settings > UnraidClaw > Settings** holds the service configuration. **Apply** writes `/boot/config/plugins/unraidclaw/unraidclaw.cfg` and restarts the service, or stops it when the service is disabled.
+
+| Row | What it does |
+|-----|--------------|
+| Enable Service | Starts the gateway (`SERVICE="enable"`) |
+| Enable MCP | Serves MCP at `/mcp` on the same port (`MCP_ENABLED="yes"`). Off by default. See [MCP](#mcp) |
+| Listen Port | Port for the REST API and MCP, `9876` by default |
+| Listen Host | Bind address, `0.0.0.0` by default. An explicit address is also added to the MCP Origin allowlist |
+| Unraid WebUI Port | Port of the Unraid WebGUI, used to build the GraphQL URL |
+| Unraid API Key | The Unraid API key with the ADMIN role. Leave blank to keep the stored key |
+
+The **API Key Management** section generates the UnraidClaw API key. The **TLS Certificate** section shows the current certificate's subject, subject alternative names and expiry date, warns when the certificate has no `subjectAltName`, and has a **Regenerate certificate** button. [TLS certificate](#tls-certificate) says what regenerating does and what clients must do afterwards.
 
 ## API
 
@@ -231,9 +246,9 @@ Every mutating Plugins endpoint accepts `{"dryRun": true}` to return a plan with
 
 ## MCP
 
-MCP is off by default. In **Settings > UnraidClaw > Settings**, set **Enable MCP** to **Yes** and click **Apply**. The endpoint is `https://<server>:9876/mcp`.
+MCP is off by default. In **Settings > UnraidClaw > Settings**, set **Enable MCP** to **Yes** and click **Apply**. This writes `MCP_ENABLED="yes"` to `/boot/config/plugins/unraidclaw/unraidclaw.cfg` and restarts the service. The endpoint is `https://<server>:9876/mcp`, on the same port as the REST API. While MCP is off, `/mcp` returns HTTP 404 for every method, with or without a key.
 
-Authenticate with the UnraidClaw API key using `x-api-key: <key>` or `Authorization: Bearer <key>`; `x-api-key` takes precedence if both are sent. Query parameters cannot supply the key.
+Authenticate with the UnraidClaw API key using `x-api-key: <key>` or `Authorization: Bearer <key>`; `x-api-key` takes precedence if both are sent. Query parameters cannot supply the key. Failed attempts count toward the same per-IP limit as the REST API.
 
 For [Claude Code](https://code.claude.com/docs/en/mcp):
 
@@ -257,11 +272,7 @@ For clients that accept an HTTP MCP server entry:
 }
 ```
 
-Replace the placeholders locally. The gateway's default certificate is self-signed. Node-based clients such as Claude Code can trust it with [`NODE_EXTRA_CA_CERTS`](https://nodejs.org/api/cli.html#node_extra_ca_certsfile) pointing to a local copy of `/boot/config/plugins/unraidclaw/tls/cert.pem`. New certificates name the server's host name, its `.local` name, `localhost`, the loopback IPs and all global scope IPv4 and IPv6 interface addresses in `subjectAltName`, so clients can verify those names and addresses after trusting the certificate.
-
-A certificate created by an older version without `subjectAltName` is replaced once when the service restarts after the upgrade. The previous pair is kept as `cert.pem.bak` and `key.pem.bak` in the same TLS directory. Clients that trusted the old certificate must refresh their local copy once. Certificates with `subjectAltName` are kept unchanged, including after IP address changes. If SAN generation is unavailable or fails, startup continues with the existing files, or attempts a certificate without SAN on a fresh install.
-
-If the server's IP address or host name changed after the certificate was created, open the **Settings** tab in **Settings > UnraidClaw** and use **TLS Certificate > Regenerate certificate**. This table shows the certificate's subject, `subjectAltName` entries and expiry date, and warns when SAN is missing. After confirmation, regeneration keeps the current certificate and key as `cert.pem.bak` and `key.pem.bak`, restarts the service to generate a new pair, and refreshes the displayed details. Older backups are preserved with numbered suffixes such as `.bak.1`. Clients that trusted the old certificate must trust the new one, for example by replacing their local `cert.pem` copy and restarting the client.
+Replace the placeholders locally. The gateway's certificate is self-signed, so the client must either trust it or skip verification; see [TLS certificate](#tls-certificate).
 
 Supported protocol versions are `2025-11-25`, `2025-06-18` and `2025-03-26`. Initialization echoes a supported version or returns the latest for an unknown version. Send `Content-Type: application/json`, `Accept: application/json, text/event-stream` and the negotiated `MCP-Protocol-Version` header. An absent version header defaults to `2025-03-26`; an unsupported value returns HTTP 400 with JSON-RPC error `-32600` listing the supported versions.
 
@@ -273,9 +284,23 @@ The transport uses stateless JSON responses without SSE or sessions. It supports
 | GET, DELETE | `/mcp` | HTTP 405 when enabled |
 | Any | `/mcp` | HTTP 404 when disabled |
 
-Each endpoint exposes the 55 tools for one server, without OpenClaw's `server` argument. Existing permissions, body validation, dry-run rules and blockers still apply. OpenClaw continues using `/api/*` whether MCP is enabled or disabled.
+The endpoint exposes the same 55 tools as the OpenClaw plugin, without OpenClaw's `server` argument. Read-only tools carry `readOnlyHint`; every other tool carries `destructiveHint`. Each call runs through the gateway's own `/api/` route in process, so the permission matrix, body validation, dry-run rules and blockers apply unchanged. OpenClaw keeps using `/api/*` whether MCP is on or off.
 
-If present, `Origin` must exactly match the gateway's configured scheme and port with a loopback address, a local interface IP or the explicit **Listen Host**; other origins receive HTTP 403. The allowlist is built at startup without trusting incoming Host or forwarded headers, so a browser frontend or reverse proxy using a different public origin is rejected.
+If present, `Origin` must exactly match the gateway's configured scheme and port with a loopback address, a local interface IP or the explicit **Listen Host**; other origins receive HTTP 403. The allowlist is built at startup without trusting incoming Host or forwarded headers, so a browser frontend or reverse proxy using a different public origin is rejected. Requests without an `Origin` header, which non-browser clients normally send, are accepted.
+
+## TLS certificate
+
+The service generates a self-signed certificate on first start and stores it as `cert.pem` and `key.pem` in `/boot/config/plugins/unraidclaw/tls`. The key is EC prime256v1 and the certificate is valid for ten years. Its `subjectAltName` names the server's host name, `<host>.local`, `localhost`, `127.0.0.1`, `::1` and the host's stable global IPv4 and IPv6 addresses. Temporary and deprecated IPv6 privacy addresses are left out because they rotate on their own.
+
+A certificate created by an earlier version has no `subjectAltName`. It is replaced once, on the first service start after the upgrade, and the old pair is kept as `cert.pem.bak` and `key.pem.bak` in the same directory. A certificate that already has a `subjectAltName` is never replaced automatically, including when the server's addresses change. If OpenSSL is missing or generation fails, the service starts with the existing files. On a fresh install with an OpenSSL that cannot add extensions it falls back to a certificate without `subjectAltName`, and without OpenSSL at all it serves plain HTTP.
+
+To replace a certificate whose names or addresses are out of date, open **Settings > UnraidClaw > Settings** and use the **TLS Certificate** section. It shows the certificate's subject, subject alternative names and expiry date, and warns when `subjectAltName` is missing. **Regenerate certificate** asks for confirmation, then moves the current pair to `cert.pem.bak` and `key.pem.bak` (an existing backup moves to the first free numbered suffix, such as `cert.pem.bak.1`), restarts the service so it generates a new pair, and refreshes the displayed details. If the files cannot be moved, the originals are restored and the service is not restarted. If the restart fails or produces no usable certificate, the previous pair stays available as `.bak` files. Only one regeneration runs at a time. The WebGUI reads the certificate's public details with OpenSSL and never opens the private key.
+
+What this means for clients:
+
+- A client that trusts the certificate can verify the server's host name or IP address against the `subjectAltName`. Node-based clients such as Claude Code can trust it with [`NODE_EXTRA_CA_CERTS`](https://nodejs.org/api/cli.html#node_extra_ca_certsfile) pointing to a local copy of `cert.pem`. After the one-time replacement or a regeneration, the client must replace its copy and restart, because the new certificate has a different key and fingerprint.
+- The OpenClaw plugin accepts the self-signed certificate with `tlsSkipVerify: true`. That disables verification entirely, so it is unaffected by regeneration but also does not check which server it is talking to.
+- A certificate created before this change has no alternative names until it is replaced, so strict clients cannot verify it even when they trust it. The Settings tab shows a warning in that case.
 
 ## OpenClaw Plugin
 
@@ -356,7 +381,7 @@ Edit `~/.openclaw/openclaw.json`:
 
 With multi-server, every tool accepts an optional `server` parameter (e.g. `unraid_docker_list(server: "work")`). If omitted, the default server is used.
 
-Set `tlsSkipVerify: true` when using the auto-generated self-signed certificate.
+Set `tlsSkipVerify: true` to accept the gateway's self-signed certificate. The plugin does not verify the certificate in that mode; see [TLS certificate](#tls-certificate).
 
 **Keeping the API key out of the config file:** you don't have to hard-code the key in `openclaw.json`. OpenClaw expands `${VAR}` references from the environment at config-load time, so you can point `apiKey` at an environment variable:
 
@@ -366,7 +391,7 @@ Set `tlsSkipVerify: true` when using the auto-generated self-signed certificate.
 
 The secret then lives in your environment (shell, systemd `EnvironmentFile`, or container secret) and never in `openclaw.json`. This works for `servers[].apiKey` in the multi-server form too.
 
-**Provider-backed secrets (`SecretRef`):** `apiKey` also accepts an OpenClaw `SecretRef` object, so the key can come from one of your configured secret providers (file, env, exec). OpenClaw resolves it before the plugin loads — the plugin only ever sees the resolved string:
+**Provider-backed secrets (`SecretRef`):** `apiKey` also accepts an OpenClaw `SecretRef` object, so the key can come from one of your configured secret providers (file, env, exec). OpenClaw resolves it before the plugin loads, so the plugin only ever sees the resolved string:
 
 ```json
 "apiKey": { "source": "file", "provider": "default", "id": "/unraidclaw_key" }
@@ -417,16 +442,16 @@ The WebGUI includes **Read Only**, **Docker Manager**, **VM Manager**, **Full Ad
                                                         GraphQL ──> Unraid API
                                                        /            (list queries, array, disks)
 ┌─────────────┐     HTTPS      ┌──────────────────┐──+
-│  AI Agent   │ ──────────────> │   UnraidClaw     │   \
-│  (OpenClaw) │   x-api-key    │   (Fastify)      │    CLI ──────> docker, virsh, mdcmd,
-└─────────────┘                 │                  │   /            reboot, ip, ...
-                                │  - Auth          │──+
-                                │  - Permissions   │   \
-                                │  - Activity Log  │    Filesystem > share configs, syslog,
-                                └──────────────────┘                 notifications
+│  AI Agent   │ ─────────────> │   UnraidClaw     │   \
+│  (OpenClaw  │   x-api-key    │   (Fastify)      │    CLI ──────> docker, virsh, mdcmd,
+│  or MCP)    │                │                  │   /            reboot, ip, ...
+└─────────────┘                │  - Auth          │──+
+                               │  - Permissions   │   \
+                               │  - Activity Log  │    Filesystem > share configs, syslog,
+                               └──────────────────┘                 notifications
 ```
 
-OpenClaw calls `/api/*` over HTTPS. Optional MCP clients call `/mcp` on the same gateway. The MCP adapter reuses the OpenClaw tool registry and dispatches through the REST routes in process, sharing authentication, permission checks and activity logging. It does not make a second network connection to the gateway.
+OpenClaw calls `/api/*` over HTTPS. MCP clients, when MCP is enabled, call `/mcp` on the same gateway. The tool definitions live once, in the openclaw-plugin package, which exports them as a transport-neutral registry (`unraidclaw/tools`, from `src/registry.ts`). The OpenClaw entry registers that registry with OpenClaw and sends HTTP requests to the gateway. The gateway's MCP adapter imports the same registry and runs each tool call through its own `/api/` route in process, so authentication, permission checks and activity logging are shared and no second network connection is made.
 
 This is a pnpm monorepo with three packages:
 
@@ -434,16 +459,17 @@ This is a pnpm monorepo with three packages:
 |---------|-------------|
 | `packages/shared` | Shared TypeScript types, permission definitions, API interfaces |
 | `packages/unraid-plugin/server` | Fastify REST API and optional MCP endpoint, bundles to a single CJS file |
-| `packages/openclaw-plugin` | OpenClaw plugin with a single ESM entry and a transport-neutral tool registry export, published to npm as `unraidclaw` |
+| `packages/openclaw-plugin` | OpenClaw plugin entry plus the transport-neutral tool registry (`unraidclaw/tools`) that the gateway's MCP adapter consumes, published to npm as `unraidclaw` |
 
 ## Security
 
 - API keys are hashed with SHA-256 before storage; the plaintext key is never persisted
-- REST requests require `x-api-key`, except the public `/api/health` probe. MCP also accepts Bearer authentication and requires a key for all protocol requests
-- MCP validates exact browser Origins to prevent DNS rebinding; it shares the REST per-IP authentication failure limit
-- Every API call is checked against the permission matrix before execution
-- Activity logging records all requests with timestamps, endpoints, and results
-- HTTPS with auto-generated EC (prime256v1) certificates, 10-year validity and host names and IP addresses in `subjectAltName`; older certificates without SAN are replaced once with the previous pair kept as `.bak` files
+- REST requests require `x-api-key`, except the public `/api/health` probe. MCP requests accept `x-api-key` or `Authorization: Bearer` and always require a key. When MCP is off, `/mcp` does not exist
+- MCP rejects any `Origin` outside an allowlist built at startup from loopback, the local interface addresses and the configured Listen Host, which blocks DNS rebinding from a browser. Requests without an `Origin` header are allowed, so for non-browser clients the API key is the only protection
+- Failed authentication is limited per IP to 10 attempts per minute; REST and MCP share the counter
+- Every API call, including an MCP tool call, is checked against the permission matrix before execution
+- Activity logging records all requests with timestamps, endpoints, and results. An MCP tool call is logged as the `/mcp` request plus the `/api/` route it ran in process
+- HTTPS uses a self-signed EC (prime256v1) certificate valid for ten years, with the server's names and stable addresses in `subjectAltName`. This lets a client that trusts the certificate verify the host name. It does not protect a client that skips verification, and a client that has not trusted it sees a warning or refuses to connect. See [TLS certificate](#tls-certificate)
 - The server runs locally on your Unraid box, no cloud dependencies
 
 ## Contributing

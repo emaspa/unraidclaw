@@ -1,6 +1,6 @@
 # unraidclaw
 
-> OpenClaw plugin to manage your Unraid server through AI agents — Docker, VMs, array, shares, system, notifications, and more, with permission control.
+> OpenClaw plugin to manage your Unraid server through AI agents: Docker, VMs, array, shares, system, notifications, and more, with permission control.
 
 [![npm](https://img.shields.io/npm/v/unraidclaw)](https://www.npmjs.com/package/unraidclaw)
 
@@ -8,8 +8,8 @@ This is the [OpenClaw](https://github.com/openclaw/openclaw) plugin for **[Unrai
 
 ## Prerequisites
 
-1. **The UnraidClaw plugin installed on your Unraid server** — install it from the Unraid Community Apps store, or see the [main repo](https://github.com/emaspa/unraidclaw). It runs the gateway on port `9876` (HTTPS).
-2. **An UnraidClaw API key** — generate one on the **Settings → UnraidClaw** page in the Unraid WebGUI.
+1. **The UnraidClaw plugin installed on your Unraid server.** Install it from the Unraid Community Apps store, or see the [main repo](https://github.com/emaspa/unraidclaw). It runs the gateway on port `9876` (HTTPS).
+2. **An UnraidClaw API key.** Generate one on the **Settings > UnraidClaw** page in the Unraid WebGUI.
 3. **OpenClaw** installed (`openclaw --version`).
 
 ## Install
@@ -77,19 +77,19 @@ Edit `~/.openclaw/openclaw.json`.
 
 With multi-server config, every tool accepts an optional `server` parameter (e.g. `unraid_docker_list(server: "work")`); the default server is used when it's omitted.
 
-Set `tlsSkipVerify: true` when using UnraidClaw's auto-generated self-signed certificate.
+Set `tlsSkipVerify: true` to accept the gateway's self-signed certificate. The plugin does not verify the certificate in that mode, so regenerating the certificate on the server does not affect it. The repository README's [TLS certificate](https://github.com/emaspa/unraidclaw#tls-certificate) section explains what the certificate contains and how strict clients can trust it.
 
 ### Keeping the API key out of the config file
 
 You don't have to hard-code the key in `openclaw.json`. Two options:
 
-**Environment variable** — OpenClaw expands `${VAR}` references at config-load time:
+**Environment variable.** OpenClaw expands `${VAR}` references at config-load time:
 
 ```json
 "apiKey": "${UNRAID_API_KEY}"
 ```
 
-**Provider-backed secret (`SecretRef`)** — point `apiKey` at one of your configured secret providers; OpenClaw resolves it before the plugin loads, so the plugin only ever sees the resolved string:
+**Provider-backed secret (`SecretRef`).** Point `apiKey` at one of your configured secret providers; OpenClaw resolves it before the plugin loads, so the plugin only ever sees the resolved string:
 
 ```json
 "apiKey": { "source": "file", "provider": "default", "id": "/unraidclaw_key" }
@@ -99,7 +99,7 @@ You don't have to hard-code the key in `openclaw.json`. Two options:
 
 ## Usage
 
-Once installed and configured, just ask your agent:
+Once installed and configured, ask your agent:
 
 - "List all running Docker containers"
 - "Stop the plex container"
@@ -147,7 +147,7 @@ Every tool is gated by a 30-key `resource:action` permission matrix configured f
 
 ## Gateway MCP mode
 
-Gateway MCP mode is off by default; enable it in the gateway Settings tab. OpenClaw keeps using `/api/*` whether MCP is enabled or disabled. See the [repository README](https://github.com/emaspa/unraidclaw#mcp) for MCP client setup and TLS guidance.
+The gateway has an optional MCP endpoint at `/mcp` that serves the same 55 tools to MCP clients. It is off by default and is switched on with **Enable MCP** in the gateway's Settings tab. This plugin does not use it: OpenClaw keeps calling `/api/*` whether MCP is on or off. The tool definitions in this package are shared with the gateway through the `unraidclaw/tools` export, so both transports expose the same tools. See the [repository README](https://github.com/emaspa/unraidclaw#mcp) for MCP client setup.
 
 ## License
 

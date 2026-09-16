@@ -6,4 +6,6 @@ Features:
 - Full resource:action permission matrix configurable from the WebGUI
 - SHA-256 API key authentication
 - Activity logging with JSONL format
+- HTTPS with a self-signed certificate that names the server's host name and addresses
+- Optional MCP endpoint at /mcp, off by default, using the same API key and permissions
 - Requires Node.js 22+ (built-in on Unraid 7.x)

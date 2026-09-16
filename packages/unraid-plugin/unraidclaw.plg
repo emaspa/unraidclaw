@@ -15,9 +15,9 @@
 
 <CHANGES>
 ### Unreleased
-- View TLS certificate details and regenerate it from Settings when the server's address or host name changed after creation, keeping backups and restarting the service; clients must trust the new certificate
-- Generate TLS certificates with the server's host name and IP addresses for hostname verification. Replace older certificates without SAN once on restart, keeping the old certificate and key as .bak files; clients that trusted the old certificate will see it change once
-- Add optional MCP Streamable HTTP at /mcp, off by default and switchable in Settings. Reuse all existing tools, API key authentication, permissions and activity logging while keeping REST and OpenClaw available
+- Add optional MCP support: a Streamable HTTP endpoint at /mcp on the service port, off by default and switched on with Enable MCP in Settings. It exposes the same 55 tools with the same API key, permissions, input validation and activity logging. REST and the OpenClaw plugin keep working as before
+- Generate TLS certificates with the server's host name, .local name, loopback and stable global addresses in subjectAltName, so clients that trust the certificate can verify the host name. A certificate without subjectAltName is replaced once on the next service start, with the previous pair kept as cert.pem.bak and key.pem.bak
+- Show the TLS certificate's subject, alternative names and expiry in Settings, with a Regenerate certificate button for when the server's address or host name changed. Regenerating keeps the old pair as .bak files (older backups get numbered suffixes) and restarts the service; clients that trusted the old certificate must trust the new one
 - Fix /api/health reporting the previous version after an upgrade until the service restarted again. The package now records its own version instead of the service reading it from the .plg, which Unraid saves only after the install script restarts the service
 
 ### 0.1.32
@@ -136,6 +136,8 @@ It exposes Docker, VMs, Community Applications, Plugins, Array, Disks, Shares, S
 - Full resource:action permission matrix configurable from the WebGUI
 - SHA-256 API key authentication
 - Activity logging with JSONL format
+- HTTPS with a self-signed certificate that names the server's host name and addresses
+- Optional MCP endpoint at /mcp, off by default, using the same API key and permissions
 - Tabbed settings UI (Dashboard, Settings, Permissions, Activity Log)
 - Requires Node.js 22+ (built-in on Unraid 7.x)
 </README>

@@ -12,7 +12,7 @@ The rest of this page is for the agent. [CONTRIBUTING.md](CONTRIBUTING.md) holds
 - **Commit messages say what changed and why**, in plain sentences, prefixed by area (`feat:`, `fix:`, `docs:`, `chore:`). No attribution trailers, no tool names, no references to reviews.
 - **No em dashes in prose, code comments, docs, or messages.** Plain sentences, sentence case.
 - Every change carries its tests and its docs. Where the docs live:
-  - `README.md` for the endpoint table, the permission table, and the request/response examples.
+  - `README.md` for the endpoint table, the permission table, the request/response examples, and the MCP and TLS certificate sections.
   - `packages/unraid-plugin/unraidclaw.plg` under `### Unreleased` for user-facing behavior.
   - `packages/openclaw-plugin/README.md` and `SKILL.md` for the tool list and agent guidance.
   - `packages/openclaw-plugin/openclaw.plugin.json` under `contracts.tools` for every registered tool.
@@ -47,6 +47,8 @@ These are the CI checks. `pnpm test` runs the offline server suite (Node's test 
 - Masked secrets stay redacted in previews, errors, and logs.
 - The release package carries no directory headers, and the manifest installs it with `TAR_OPTIONS="--keep-directory-symlink --no-overwrite-dir"`. tar replaces a host directory symlink such as `/etc/rc.d` with a plain directory when an archive carries that directory's header, which once left a server unable to shut down. Keep `build.sh` and the manifest this way and keep the archive-safety suite green.
 - XML parsing goes through `src/xml.ts`. Do not hand-roll a parser or reach for a regex.
+- The tool definitions live once, in `packages/openclaw-plugin/src/tools/`, and reach OpenClaw and MCP through the same registry (`unraidclaw/tools`). The MCP adapter in `src/mcp-tools.ts` runs each call through the gateway's own `/api/` route with `app.inject`; it is never a network client, and a read-only tool must be listed in its `READ_ONLY` set to get `readOnlyHint`.
+- MCP is off by default and stays off unless `MCP_ENABLED="yes"` is in the cfg. The Origin allowlist is built at startup from loopback, the local interfaces and the configured Listen Host; never derive it from request headers.
 
 ## The real host
 
