@@ -14,7 +14,7 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API and MCP gateway that allows AI agents to manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
-### Unreleased
+### 0.1.33
 - Fix a parity check started with "correct" sent as the text "false" running as a correcting check. The field must now be true or false
 - Reject share comments containing quotes, backslashes, $, backticks or control characters, which could write extra keys into the share's config file. Share settings are now written atomically and read back
 - Docker, VM, array, parity and notification actions now reject malformed input and unknown fields, refuse IDs that start with "-", time out instead of hanging, and check the real state afterwards. Responses include "verified"; a VM shutdown or reboot still in progress returns verified false
