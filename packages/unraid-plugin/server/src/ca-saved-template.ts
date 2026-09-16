@@ -497,8 +497,8 @@ function sameList(a: unknown, b: unknown): boolean {
  *
  * `docker inspect` on a container reports the image's own defaults as if they
  * were the container's, so entrypoint, command, user and working directory are
- * compared against the image the container was created from — the old one, not
- * the freshly pulled one, whose defaults may legitimately differ. Anything that
+ * compared against the image the container was created from, which is the old
+ * one rather than the freshly pulled one, whose defaults may legitimately differ. Anything that
  * diverges came from somewhere this module cannot see (Extra Parameters, a
  * hand-run docker command), and is a refusal rather than a silent loss.
  */
@@ -702,8 +702,8 @@ export function redactArgv(secrets: string[], argv: string[]): string[] {
  *
  * Mirrors what Unraid's xmlToCommand builds from the same template, with two
  * deliberate differences: it is an argv rather than a shell string, and the
- * container is created rather than run, so the caller decides when — and
- * whether — it starts.
+ * container is created rather than run, so the caller decides whether it
+ * starts, and when.
  *
  * `HOST_CONTAINERNAME` is the template's name even when the container is
  * created under a temporary one, because that is the name the app will have by

@@ -76,7 +76,7 @@ export function registerShareRoutes(app: FastifyInstance, gql: GraphQLClient): v
     },
   });
 
-  // Get share by name (filter from list — no singular share query in Unraid 7)
+  // Get share by name (filter from list, no singular share query in Unraid 7)
   app.get<{ Params: { name: string } }>("/api/shares/:name", {
     preHandler: requirePermission(Resource.SHARE, Action.READ),
     handler: async (req, reply) => {

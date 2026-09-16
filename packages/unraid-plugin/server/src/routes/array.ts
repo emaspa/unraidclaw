@@ -100,7 +100,7 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
     },
   });
 
-  // Parity status (from `mdcmd status` — see note above and issue #14)
+  // Parity status (from `mdcmd status`, see note above and issue #14)
   app.get("/api/array/parity/status", {
     preHandler: requirePermission(Resource.ARRAY, Action.READ),
     handler: async (_req, reply) => {
@@ -113,7 +113,7 @@ export function registerArrayRoutes(app: FastifyInstance, gql: GraphQLClient): v
         // A check is in progress while the resync position is non-zero
         // (mdResyncSize/mdResyncAction persist when idle, so they can't gate this).
         const running = position > 0 || mdNum(s.mdResync) > 0;
-        // KiB/s — mirrors Unraid's mdResyncDb/mdResyncDt (instantaneous; the webGUI
+        // KiB/s, mirroring Unraid's mdResyncDb/mdResyncDt (instantaneous; the webGUI
         // shows an averaged-since-start figure, so the two differ slightly mid-ramp).
         const speed = dt > 0 ? db / dt : 0;
         const progress = size > 0 ? Math.min(100, (position / size) * 100) : 0;

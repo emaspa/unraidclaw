@@ -47,7 +47,6 @@ const DOCKER_MANAGER_KEYS: PermissionKey[] = [
 
 const VM_MANAGER_KEYS: PermissionKey[] = [
   "vms:read",
-  "vms:create",
   "vms:update",
   "vms:delete",
   "info:read",

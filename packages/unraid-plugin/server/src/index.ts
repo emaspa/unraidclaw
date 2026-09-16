@@ -21,7 +21,7 @@ async function main(): Promise<void> {
         cert: readFileSync(config.tlsCert),
         key: readFileSync(config.tlsKey),
       };
-      console.log("[unraidclaw] TLS enabled — loaded cert from", config.tlsCert);
+      console.log("[unraidclaw] TLS enabled, loaded cert from", config.tlsCert);
     } catch (err) {
       console.warn("[unraidclaw] Failed to load TLS certs, falling back to HTTP:", err);
     }

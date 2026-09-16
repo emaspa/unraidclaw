@@ -93,7 +93,7 @@ export function registerDiskRoutes(app: FastifyInstance, gql: GraphQLClient): vo
     },
   });
 
-  // Disk details (filter from combined list — no singular disk query available)
+  // Disk details (filter from combined list, no singular disk query available)
   app.get<{ Params: { id: string } }>("/api/disks/:id", {
     preHandler: requirePermission(Resource.DISK, Action.READ),
     handler: async (req, reply) => {
