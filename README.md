@@ -76,7 +76,7 @@ The **API Key Management** section generates the UnraidClaw API key. The **TLS C
 
 ## CLI
 
-`unraidclaw` manages the gateway from a terminal. It uses the same tool definitions and gateway permissions as OpenClaw and MCP, and runs on Unraid and on Linux, macOS and Windows machines with Node.js 22 or newer.
+The `unraidclaw-cli` package provides the `unraidclaw` command, which manages the gateway from a terminal. It uses the same tool definitions and gateway permissions as OpenClaw and MCP, and runs on Unraid and on Linux, macOS and Windows machines with Node.js 22 or newer.
 
 ### Install
 
