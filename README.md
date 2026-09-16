@@ -5,7 +5,7 @@
 <h1 align="center">UnraidClaw</h1>
 
 <p align="center">
-  AI Agent Gateway for Unraid. Permission-enforcing REST API and MCP server that lets AI agents manage your server.
+  AI Agent Gateway for Unraid. Permission-enforcing REST API and MCP server that allows AI agents to manage your server.
 </p>
 
 <p align="center">

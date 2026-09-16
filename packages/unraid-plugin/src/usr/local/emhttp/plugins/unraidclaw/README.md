@@ -1,4 +1,4 @@
-**UnraidClaw** is a permission-enforcing REST API and MCP gateway that lets AI agents manage your Unraid server.
+**UnraidClaw** is a permission-enforcing REST API and MCP gateway that allows AI agents to manage your Unraid server.
 
 It exposes Docker, VMs, Community Applications, Plugins, Array, Disks, Shares, System, Notifications, Network, and Logs management with fine-grained access control, so you can safely grant an AI tool only what it needs. Requests reach Unraid through its GraphQL API, the docker and plugin CLIs, and the filesystem.
 
