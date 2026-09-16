@@ -214,13 +214,18 @@ test("read calls reach real REST routes, preserve data, hot-reload permissions a
   ]);
 });
 
-test("MCP log entries name the method or tool, never client-supplied names", async (t) => {
+test("MCP log entries name the method or tool, never client-supplied names, and skip a successful handshake", async (t) => {
   const app = harness(t);
   const ip = "127.0.0.5";
-  const send = (payload: unknown) => app.inject({ method: "POST", url: "/mcp", headers, payload: payload as object, remoteAddress: ip });
+  const send = (payload: unknown, extra: Record<string, string> = {}) => app.inject({ method: "POST", url: "/mcp", headers: { ...headers, ...extra }, payload: payload as object, remoteAddress: ip });
   await send(rpc("initialize", init));
   await send(rpc("tools/list"));
   await send({ jsonrpc: "2.0", method: "notifications/initialized" });
+  await send(rpc("ping"));
+  await app.inject({ method: "GET", url: "/mcp", headers, remoteAddress: ip });
+  await app.inject({ method: "DELETE", url: "/mcp", headers, remoteAddress: ip });
+  await send(rpc("ping"), { "mcp-protocol-version": "1999-01-01" });
+  await app.inject({ method: "POST", url: "/mcp", payload: rpc("initialize", init), remoteAddress: ip });
   await send(rpc("made/up-method-name"));
   await send(rpc("tools/call", { name: "unraid_made_up_tool" }));
   await send(rpc("tools/call", { name: "unraid_health_check", arguments: { unexpected: true } }));
@@ -228,13 +233,12 @@ test("MCP log entries name the method or tool, never client-supplied names", asy
   const entries = (await readFile(config.logFile, "utf8")).trim().split("\n").map((line) => JSON.parse(line))
     .filter((entry) => entry.ip === ip);
   assert.deepEqual(entries.map(({ tool, resource, action, statusCode }) => ({ tool, resource, action, statusCode })), [
-    { tool: undefined, resource: "mcp", action: "initialize", statusCode: 200 },
-    { tool: undefined, resource: "mcp", action: "tools/list", statusCode: 200 },
-    { tool: undefined, resource: "mcp", action: "notification", statusCode: 202 },
+    { tool: undefined, resource: "mcp", action: "ping", statusCode: 400 },
+    { tool: undefined, resource: "mcp", action: "rejected", statusCode: 401 },
     { tool: undefined, resource: "mcp", action: "invalid", statusCode: 400 },
     { tool: undefined, resource: "mcp", action: "tools/call", statusCode: 400 },
     { tool: "unraid_health_check", resource: "mcp", action: "tools/call", statusCode: 200 },
-    { tool: undefined, resource: "mcp", action: "request", statusCode: 400 },
+    { tool: undefined, resource: "mcp", action: "rejected", statusCode: 400 },
   ]);
   assert(!entries.some((entry) => JSON.stringify(entry).includes("made")));
 });

@@ -312,7 +312,7 @@ The endpoint exposes the same 55 tools as the OpenClaw plugin, without OpenClaw'
 
 ### Activity log
 
-Each MCP request writes one entry for `/mcp`. A tool call writes the tool name in `tool`, and takes `resource`, `action` and `statusCode` from the `/api/` route the tool ran, so a call refused by the permission matrix shows 403 even though the MCP response itself is HTTP 200. The route also gets its own entry, with its full path. Other MCP requests use resource `mcp` and the method as the action, such as `initialize` or `tools/list`. A tool call rejected before it reached a route, for example over invalid arguments, keeps resource `mcp` and action `tools/call`. The Activity Log tab shows the tool name after the path.
+A tool call writes one entry for `/mcp` with the tool name in `tool`, and takes `resource`, `action` and `statusCode` from the `/api/` route the tool ran, so a call refused by the permission matrix shows 403 even though the MCP response itself is HTTP 200. The route also gets its own entry, with its full path. A tool call rejected before it reached a route, for example over invalid arguments, keeps resource `mcp` and action `tools/call`. The requests every client makes to connect (`initialize`, `notifications/initialized`, `ping`, `tools/list`, and a GET or DELETE answered with 405) are logged only when they fail, with the method as the action. A request refused before its method was read, such as one with a missing key or malformed JSON, uses action `rejected`. The Activity Log tab and the Recent Activity card on the Dashboard show the tool name, or for other `/mcp` entries the action, after the path.
 
 ### Origin
 
@@ -498,7 +498,7 @@ This is a pnpm monorepo with three packages:
 - MCP rejects any `Origin` outside an allowlist built at startup from loopback, the local interface addresses and the configured Listen Host, which blocks DNS rebinding from a browser. Requests without an `Origin` header are allowed, so for non-browser clients the API key is the only protection
 - Failed authentication is limited per IP to 10 attempts per minute; REST and MCP share the counter. Requests to paths that do not exist return 404 without checking the key and do not count, so MCP clients probing for OAuth metadata do not lock themselves out
 - Every API call, including an MCP tool call, is checked against the permission matrix before execution
-- Activity logging records all requests with timestamps, endpoints, and results. An MCP tool call is logged as the `/mcp` request, with the tool name and the route's outcome, plus the `/api/` route it ran in process
+- Activity logging records all requests with timestamps, endpoints, and results. An MCP tool call is logged as the `/mcp` request, with the tool name and the route's outcome, plus the `/api/` route it ran in process. Successful MCP connection requests are not logged; failed ones are
 - HTTPS uses a self-signed EC (prime256v1) certificate valid for ten years, with the server's names and stable addresses in `subjectAltName`. This lets a client that trusts the certificate verify the host name. It does not protect a client that skips verification, and a client that has not trusted it sees a warning or refuses to connect. See [TLS certificate](#tls-certificate)
 - The server runs locally on your Unraid box, no cloud dependencies
 

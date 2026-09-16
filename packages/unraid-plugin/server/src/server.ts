@@ -73,9 +73,11 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
   // Activity logging hook
   app.addHook("onResponse", async (request, reply) => {
     if (request.url === "/api/health") return;
-    const { tool, ...details } = isMcpPath(request.url)
+    const activity = isMcpPath(request.url)
       ? mcpActivity(request, reply.statusCode)
       : { ...routeActivity(request.method, request.url), statusCode: reply.statusCode, tool: undefined };
+    if (!activity) return;
+    const { tool, ...details } = activity;
 
     const entry: ActivityLogEntry = {
       timestamp: new Date().toISOString(),

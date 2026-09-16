@@ -265,7 +265,7 @@ function occRefreshLog() {
         html += '<tr class="occ-log-row">' +
           '<td>' + escapeHtml(e.timestamp) + '</td>' +
           '<td>' + escapeHtml(e.method) + '</td>' +
-          '<td>' + escapeHtml(e.path) + (e.tool ? ' ' + escapeHtml(e.tool) : '') + '</td>' +
+          '<td>' + occLogPath(e) + '</td>' +
           '<td>' + escapeHtml(e.resource) + '</td>' +
           '<td class="' + statusClass + '">' + e.statusCode + '</td>' +
           '<td>' + e.durationMs + 'ms</td>' +
@@ -319,7 +319,7 @@ function occLoadRecentActivity() {
         var m = t.match(/T(\d{2}:\d{2}:\d{2})/);
         var short_t = m ? m[1] : t.substring(11, 19);
         var statusCls = e.statusCode >= 200 && e.statusCode < 300 ? 'occ-status-2xx' : (e.statusCode >= 400 ? 'occ-status-4xx' : '');
-        html += '<tr><td>' + escapeHtml(short_t) + '</td><td>' + escapeHtml(e.method) + '</td><td>' + escapeHtml(e.path) + '</td><td class="' + statusCls + '">' + e.statusCode + '</td></tr>';
+        html += '<tr><td>' + escapeHtml(short_t) + '</td><td>' + escapeHtml(e.method) + '</td><td>' + occLogPath(e) + '</td><td class="' + statusCls + '">' + e.statusCode + '</td></tr>';
       }
       html += '</tbody>';
       html += '</table>';
@@ -387,6 +387,13 @@ function occResetDefaults() {
 }
 
 // ── Utility ──
+// Every /mcp request shares one path, so show the tool it ran, or for other
+// MCP requests the action, after it. Returns escaped HTML.
+function occLogPath(e) {
+  var detail = e.tool || (e.path === '/mcp' ? e.action : '');
+  return escapeHtml(e.path) + (detail ? ' ' + escapeHtml(detail) : '');
+}
+
 function escapeHtml(text) {
   if (!text) return '';
   var div = document.createElement('div');
