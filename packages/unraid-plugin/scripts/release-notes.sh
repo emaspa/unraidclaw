@@ -3,34 +3,40 @@
 # release-notes.sh - Print GitHub release notes for a version
 #
 # Usage: release-notes.sh <version>
-# Takes the version's section from <CHANGES> in unraidclaw.plg, which is the
-# user-facing changelog, and adds a short guide to the release assets.
+# Prints release-notes/<version>.md, written by hand for each release (see
+# release-notes/README.md for the layout), followed by the standard install
+# and downloads section. Fails if that file or the version's <CHANGES>
+# section in unraidclaw.plg is missing, so a release cannot go out without
+# notes for GitHub or a changelog for the Unraid WebGUI.
 #
 set -euo pipefail
 
 VERSION="${1:?usage: release-notes.sh <version>}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PLG="$SCRIPT_DIR/../unraidclaw.plg"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+PLG="$ROOT_DIR/packages/unraid-plugin/unraidclaw.plg"
+NOTES="$ROOT_DIR/release-notes/${VERSION}.md"
 
-CHANGES="$(awk -v heading="### ${VERSION}" '
-  $0 == heading { found = 1; next }
-  found && (/^### / || /^<\/CHANGES>/) { exit }
-  found { print }
-' "$PLG" | sed -e '/./,$!d' | sed -e ':a' -e '/^\n*$/{$d;N;ba' -e '}')"
-
-if [ -z "$CHANGES" ]; then
+if ! grep -qxF "### ${VERSION}" "$PLG"; then
   echo "Error: no '### ${VERSION}' section in <CHANGES> of ${PLG}" >&2
   exit 1
 fi
+if [ ! -s "$NOTES" ]; then
+  echo "Error: ${NOTES} is missing or empty. Write it using the layout in release-notes/README.md." >&2
+  exit 1
+fi
+if grep -q '^## Install and downloads' "$NOTES"; then
+  echo "Error: ${NOTES} has its own 'Install and downloads' section; this script adds it." >&2
+  exit 1
+fi
 
-cat <<NOTES
-## Changes
+cat "$NOTES"
+cat <<SECTION
 
-${CHANGES}
+## Install and downloads
 
-## Downloads
-
-- \`unraidclaw-${VERSION}-x86_64-1.txz\`: the Unraid plugin package. Install or update the plugin from the Unraid WebGUI rather than downloading this file.
-- \`unraidclaw-cli-${VERSION}.tar.gz\`: the \`unraidclaw\` command-line client for managing Unraid from another machine, also available with \`npm install -g unraidclaw-cli\`. Needs Node.js 22 or newer on Linux, macOS or Windows. See the [CLI guide](https://github.com/emaspa/unraidclaw/blob/main/packages/cli/README.md).
-- \`.md5\` and \`.sha256\` files hold checksums for the downloads above.
-NOTES
+- **Unraid plugin**: update from the Unraid WebGUI (Plugins > Check for Updates) or install through Community Applications. \`unraidclaw-${VERSION}-x86_64-1.txz\` is the package the WebGUI downloads; you do not need to fetch it by hand.
+- **CLI**: \`npm install -g unraidclaw-cli\`, or download \`unraidclaw-cli-${VERSION}.tar.gz\` for machines without npm. Verify it with the \`.sha256\` file, extract it, and make sure Node.js 22 or newer is on \`PATH\`. Runs on Linux, macOS and Windows; see the [CLI guide](https://github.com/emaspa/unraidclaw/blob/main/packages/cli/README.md).
+- **OpenClaw plugin**: see [OpenClaw plugin](https://github.com/emaspa/unraidclaw#openclaw-plugin) in the README for install and update commands.
+- **Checksums**: the \`.md5\` file covers the \`.txz\` package and the \`.sha256\` file covers the CLI archive.
+SECTION

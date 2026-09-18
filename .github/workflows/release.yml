@@ -44,8 +44,8 @@ jobs:
             exit 1
           fi
 
-      # Notes come from the version's <CHANGES> section. Checking this first
-      # stops a tag without a changelog before anything is built or pushed.
+      # Notes come from release-notes/<version>.md. Checking this first stops a
+      # tag without notes or a <CHANGES> section before anything is built or pushed.
       - name: Release notes
         run: bash packages/unraid-plugin/scripts/release-notes.sh "${{ steps.version.outputs.VERSION }}" > "$RUNNER_TEMP/release-notes.md"
 
