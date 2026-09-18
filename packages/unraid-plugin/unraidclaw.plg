@@ -14,6 +14,9 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API and MCP gateway that allows AI agents to manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
+### 0.1.34
+- Keep serving when /var/log is full. A failed write to /var/log/unraidclaw.log used to leave the service listening but unable to answer requests or stop until it was killed. Log lines that cannot be written are now dropped, the service exits on stop even if closing stalls, and the start script warns when /var/log has no free space. Thanks to @golgoth85 for the report and the diagnosis (#18)
+- Rotate /var/log/unraidclaw.log at 5 MB through Unraid's daily logrotate run, so the request log cannot fill /var/log on its own
 ### 0.1.33
 - Fix a parity check started with "correct" sent as the text "false" running as a correcting check. The field must now be true or false
 - Reject share comments containing quotes, backslashes, $, backticks or control characters, which could write extra keys into the share's config file. Share settings are now written atomically and read back
@@ -273,6 +276,7 @@ removepkg ${PLUGIN}-&version;-x86_64-1 2>/dev/null
 # Remove plugin files (keep config on flash for re-install)
 rm -rf /usr/local/emhttp/plugins/${PLUGIN}
 rm -f /etc/rc.d/rc.${PLUGIN}
+rm -f /etc/logrotate.d/${PLUGIN}
 rm -f /usr/local/bin/unraidclaw
 
 echo "&name; removed."

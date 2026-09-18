@@ -138,6 +138,12 @@ start() {
   fi
   export OCC_VERSION
 
+  # The service drops log lines it cannot write instead of hanging (#18), but a
+  # full /var/log is worth a line here since the log will explain nothing.
+  if [ "$( { df -Pk "${LOGFILE%/*}" | awk 'NR == 2 { print $4 }'; } 2>/dev/null )" = "0" ]; then
+    echo "Warning: ${LOGFILE%/*} has no free space; ${PLUGIN} runs but cannot write ${LOGFILE}"
+  fi
+
   nohup "$NODE_BIN" "$SERVER" >> "$LOGFILE" 2>&1 &
   echo $! > "$PIDFILE"
   echo "${PLUGIN} started (PID $(cat "$PIDFILE"))"

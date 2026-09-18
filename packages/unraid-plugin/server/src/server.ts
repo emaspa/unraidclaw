@@ -1,5 +1,7 @@
 import Fastify from "fastify";
+import type { Writable } from "node:stream";
 import type { ServerConfig } from "./config.js";
+import { createLogStream } from "./log-stream.js";
 import { createAuthHook } from "./auth.js";
 import { GraphQLClient, GraphQLError } from "./graphql-client.js";
 import { ActivityLogger, routeActivity, type ActivityLogEntry } from "./logger.js";
@@ -21,8 +23,8 @@ import { registerNetworkRoutes } from "./routes/network.js";
 import { registerUserRoutes } from "./routes/users.js";
 import { registerLogRoutes } from "./routes/logs.js";
 
-export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; key: Buffer }) {
-  const app = Fastify({ logger: true, ...(httpsOpts ? { https: httpsOpts } : {}) });
+export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; key: Buffer }, logStream: Writable = createLogStream()) {
+  const app = Fastify({ logger: { stream: logStream }, ...(httpsOpts ? { https: httpsOpts } : {}) });
   const gql = new GraphQLClient(config);
   const activityLogger = new ActivityLogger(config);
   const allowedMcpOrigins = config.mcpEnabled ? mcpOrigins(config, !!httpsOpts) : new Set<string>();

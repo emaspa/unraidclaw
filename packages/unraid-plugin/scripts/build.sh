@@ -64,6 +64,12 @@ printf '%s\n' "$VERSION" > "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/VERSIO
 cp "$PLUGIN_DIR/rc.d/rc.${PKG_NAME}" "${STAGE}/etc/rc.d/rc.${PKG_NAME}"
 chmod +x "${STAGE}/etc/rc.d/rc.${PKG_NAME}"
 
+# Rotate the service log through Unraid's daily logrotate run so it cannot
+# fill the /var/log tmpfs on its own.
+mkdir -p "${STAGE}/etc/logrotate.d"
+cp "$PLUGIN_DIR/src/etc/logrotate.d/${PKG_NAME}" "${STAGE}/etc/logrotate.d/${PKG_NAME}"
+chmod 644 "${STAGE}/etc/logrotate.d/${PKG_NAME}"
+
 # Make event scripts executable
 chmod +x "${STAGE}/usr/local/emhttp/plugins/${PKG_NAME}/event/"* 2>/dev/null || true
 

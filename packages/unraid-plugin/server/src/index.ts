@@ -3,6 +3,11 @@ import { loadConfig, loadPermissions, watchPermissions } from "./config.js";
 import { createServer } from "./server.js";
 
 async function main(): Promise<void> {
+  // A failed console write, such as ENOSPC when /var/log is full, must not
+  // become an uncaught exception. The request log handles this in log-stream.ts.
+  process.stdout.on("error", () => {});
+  process.stderr.on("error", () => {});
+
   const config = loadConfig();
   const permissions = loadPermissions();
 
@@ -44,6 +49,8 @@ async function main(): Promise<void> {
   for (const signal of ["SIGINT", "SIGTERM"] as const) {
     process.on(signal, async () => {
       console.log(`[unraidclaw] Received ${signal}, shutting down...`);
+      // Exit even if closing stalls, before rc.unraidclaw gives up and sends SIGKILL.
+      setTimeout(() => process.exit(1), 5000).unref();
       await app.close();
       process.exit(0);
     });
