@@ -141,7 +141,7 @@ test("docker create rejects wrong types, labels and traversal before mkdir", asy
     ...["bridge", "host", "none", "Bridge"].map((network) => ({ image: "alpine", network, staticIp: "192.168.2.50" })),
     { image: "alpine", staticIp: "192.168.2.50" },
     ...["", "a", "0,", "0-", "-1", "0 1", "0;1"].map((cpuset) => ({ image: "alpine", cpuset })),
-    ...["dri", "/dev/dri:dri", "/dev/dri:/dev/dri:x", "/dev/../etc/passwd", "/dev/dri:/../x", "/dev/dri;id", "/dev/dri /dev/snd"].map((device) => ({ image: "alpine", devices: [device] })),
+    ...["dri", "/dev/dri:dri", "/dev/dri:/dev/dri:x", "/dev/../etc/passwd", "/dev/dri:/../x", "/dev/dri;id", "/dev/dri /dev/snd", "/dev/.", "/dev//", "/dev/dri/", "/dev/./dri", "/dev/dri:/dev/."].map((device) => ({ image: "alpine", devices: [device] })),
   ]) assert.equal((await app.inject({ method: "POST", url: "/api/docker/containers", payload })).statusCode, 400, JSON.stringify(payload));
   assert.equal(runner.calls.length, 0);
 });

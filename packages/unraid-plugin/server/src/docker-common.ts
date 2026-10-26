@@ -64,6 +64,19 @@ export const VALID_CPUSET_RE = /^\d{1,4}(-\d{1,4})?(,\d{1,4}(-\d{1,4})?)*$/;
 // value in a Device config entry and passes it back to docker as --device.
 export const VALID_DEVICE_RE = /^\/dev\/[a-zA-Z0-9_.+/-]+(:\/[a-zA-Z0-9_.+/-]+)?(:[rwm]{1,3})?$/;
 
+/**
+ * VALID_DEVICE_RE, and every path segment names something. Docker passes a
+ * directory through as every device under it, so /dev/. or /dev// would hand
+ * the container all of /dev, and .. could leave it.
+ */
+export function validDevice(device: string): boolean {
+  if (!VALID_DEVICE_RE.test(device)) return false;
+  return device
+    .split(":")
+    .filter((part) => part.startsWith("/"))
+    .every((path) => path.slice(1).split("/").every((seg) => seg !== "" && seg !== "." && seg !== ".."));
+}
+
 /** Networks on which docker refuses a fixed container address. */
 export const NETWORKS_WITHOUT_STATIC_IP = new Set(["bridge", "host", "none"]);
 

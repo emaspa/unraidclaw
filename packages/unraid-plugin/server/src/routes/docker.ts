@@ -18,7 +18,7 @@ import {
   VALID_NAME_RE,
   VALID_RESTART_VALUES,
   VALID_CPUSET_RE,
-  VALID_DEVICE_RE,
+  validDevice,
   NETWORKS_WITHOUT_STATIC_IP,
 } from "../docker-common.js";
 
@@ -283,7 +283,7 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient, o
         }
       }
       for (const d of devices) {
-        if (!VALID_DEVICE_RE.test(d) || d.split(":").some((part) => part.split("/").includes(".."))) {
+        if (!validDevice(d)) {
           return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: `Invalid device (expected /dev/<host>[:/<container>][:rwm]): ${d}` } });
         }
       }
