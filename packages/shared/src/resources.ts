@@ -1,6 +1,7 @@
 export enum Resource {
   DOCKER = "docker",
   CA = "ca",
+  TEMPLATE = "template",
   PLUGINS = "plugins",
   VMS = "vms",
   ARRAY = "array",
@@ -56,6 +57,14 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
       { key: "ca:create", label: "Install", description: "Install a CA app as a new Docker container" },
       { key: "ca:update", label: "Update", description: "Pull a newer image for an installed app and recreate it from its saved template" },
       { key: "ca:delete", label: "Remove", description: "Remove an installed app's container, keeping its template, image, volumes and appdata", destructive: true },
+    ],
+  },
+  {
+    name: "Container Settings",
+    description: "Read and edit the saved Unraid template of an installed container",
+    permissions: [
+      { key: "template:read", label: "View Settings", description: "Read an installed container's saved template, with masked and secret-named values hidden" },
+      { key: "template:update", label: "Edit & Rebuild", description: "Change any setting in an installed container's saved template, including privileged mode, devices, Extra Parameters and custom networks, and rebuild the container from it the way the Docker tab does. Privileged mode and devices give the container the host, so treat this as root access", destructive: true },
     ],
   },
   {

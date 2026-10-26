@@ -11,7 +11,8 @@ import { registerMcpRoutes } from "./routes/mcp.js";
 
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerDockerRoutes } from "./routes/docker.js";
-import { registerCaRoutes } from "./routes/ca.js";
+import { createCaRuntime, registerCaRoutes } from "./routes/ca.js";
+import { createTemplateRuntime, registerTemplateRoutes } from "./routes/template.js";
 import { registerPluginRoutes } from "./routes/plugins.js";
 import { registerVMRoutes } from "./routes/vms.js";
 import { registerArrayRoutes } from "./routes/array.js";
@@ -118,7 +119,8 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
   // Register routes
   registerHealthRoutes(app, gql);
   registerDockerRoutes(app, gql);
-  registerCaRoutes(app);
+  const caRuntime = createCaRuntime();
+  registerTemplateRoutes(app, registerCaRoutes(app, caRuntime), createTemplateRuntime(caRuntime));
   registerPluginRoutes(app);
   registerVMRoutes(app, gql);
   registerArrayRoutes(app, gql);

@@ -14,7 +14,7 @@ test("the CommonJS bundle runs outside the checkout without node_modules", async
   // Release builds stamp their own version into the bundle.
   assert.match(version.stdout, /^unraidclaw \d+\.\d+\.\d+\S*\n$/);
   const tools = await childOutput(dir, process.execPath, [path, "tools", "--output", "json"]);
-  assert.equal(JSON.parse(tools.stdout).length, 58);
+  assert.equal(JSON.parse(tools.stdout).length, 60);
   const help = await childOutput(dir, process.execPath, [path, "docker", "--help"]);
   assert.match(help.stdout, /docker inspect/);
   const invalid = await childOutput(dir, process.execPath, [path, "unknown-command"]);

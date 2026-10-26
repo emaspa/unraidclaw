@@ -4,7 +4,7 @@
 
 [![npm](https://img.shields.io/npm/v/unraidclaw)](https://www.npmjs.com/package/unraidclaw)
 
-This is the [OpenClaw](https://github.com/openclaw/openclaw) plugin for **[UnraidClaw](https://github.com/emaspa/unraidclaw)**. It exposes **58 tools** to any AI agent running on OpenClaw, letting it monitor and manage your Unraid server. The plugin talks to the UnraidClaw gateway (a permission-enforcing REST API) running on your Unraid box.
+This is the [OpenClaw](https://github.com/openclaw/openclaw) plugin for **[UnraidClaw](https://github.com/emaspa/unraidclaw)**. It exposes **60 tools** to any AI agent running on OpenClaw, letting it monitor and manage your Unraid server. The plugin talks to the UnraidClaw gateway (a permission-enforcing REST API) running on your Unraid box.
 
 ## Prerequisites
 
@@ -115,13 +115,14 @@ Once installed and configured, ask your agent:
 
 ## Tools
 
-58 tools across 13 categories:
+60 tools across 14 categories:
 
 | Category | Tools |
 |----------|-------|
 | Health | `unraid_health_check` |
 | Docker | `unraid_docker_list`, `unraid_docker_inspect`, `unraid_docker_logs`, `unraid_docker_create`, `unraid_docker_start`, `unraid_docker_stop`, `unraid_docker_restart`, `unraid_docker_pause`, `unraid_docker_unpause`, `unraid_docker_remove`, `unraid_docker_images`, `unraid_docker_prune_images`, `unraid_docker_update_status` |
 | Community Apps | `unraid_ca_search`, `unraid_ca_app`, `unraid_ca_install`, `unraid_ca_update`, `unraid_ca_remove` |
+| Container Settings | `unraid_template_get`, `unraid_template_edit` |
 | Plugins | `unraid_plugins_list`, `unraid_plugin_info`, `unraid_plugin_install`, `unraid_plugin_check_updates`, `unraid_plugin_update`, `unraid_plugin_remove` |
 | VMs | `unraid_vm_list`, `unraid_vm_inspect`, `unraid_vm_start`, `unraid_vm_stop`, `unraid_vm_pause`, `unraid_vm_resume`, `unraid_vm_force_stop`, `unraid_vm_reboot` |
 | Array | `unraid_array_status`, `unraid_array_start`, `unraid_array_stop`, `unraid_parity_status`, `unraid_parity_start`, `unraid_parity_pause`, `unraid_parity_resume`, `unraid_parity_cancel` |
@@ -135,13 +136,15 @@ Once installed and configured, ask your agent:
 
 `unraid_ca_update` and `unraid_ca_remove` act on an installed app, so their `name` is the container's name from the Docker tab, not the app's name in the catalog. Update keeps the configuration saved on the server and restores the running or stopped state; remove deletes the container and leaves appdata, volumes, the image and the template alone. Both take `dryRun`.
 
+`unraid_template_get` reads an installed container's saved settings, and `unraid_template_edit` changes them and rebuilds the container the way the Docker tab's Apply does: ports, paths, variables, labels, devices, network and fixed IP, privileged mode, Extra Parameters and Tailscale. The rebuilt container must start and stay up, or the original comes back and its template is left unchanged. It changes settings, not the app version, unless it is given `pull: true`, which pulls the newest image for the tag and rebuilds on it. It takes `dryRun`.
+
 `unraid_docker_create` takes `image` plus optional `name`, `ports`, `volumes`, `env`, `restart` and `network`, and the advanced settings of Unraid's container form: `extraArgs` (Extra Parameters, docker run options such as `--gpus all` or `--memory=8g`), `postArgs` (Post Arguments, the container command), `staticIp` (a fixed IPv4 or IPv6 address, which needs a macvlan, ipvlan or custom bridge network), `privileged`, `cpuset` and `devices`. Each is saved to the matching field of the container's template. The two free-form fields accept only letters, digits, `: . , / + = _ -` and single spaces, because Unraid passes them to the shell unescaped when it rebuilds a container. A container created with any of these settings in effect cannot be rebuilt by `unraid_ca_update`, which refuses settings it does not reproduce exactly; use the Docker tab for it.
 
 `unraid_docker_images` lists images with the containers that use them, running or stopped, and flags dangling and unused ones with byte totals. `unraid_docker_prune_images` removes images no container references: `mode` `dangling` (default) or `unused`, an optional `olderThanHours`, and `dryRun` to see exactly which images and how many bytes first. Each image is removed by ID with `docker rmi`, without force, and a fresh listing verifies the result; it needs `docker:delete` and declares no extra parameters. `unraid_docker_update_status` reads Unraid's own update cache, `/var/lib/docker/unraid-update-status.json`, and reports per container whether an update is available (`true`, `false` or `"unknown"`), the local and remote digests, and how old the cache is. It never pulls or contacts a registry; Check for Updates on the Docker tab refreshes the cache.
 
 The six plugin tools manage Unraid `.plg` plugins through Unraid's own plugin manager. Installing one runs vendor code as root, checking for an update downloads a plugin file and stages it, and removing one runs the plugin's removal script, which may take its data with it. All four mutating tools take `dryRun`.
 
-Tools use the gateway's 30-key `resource:action` permission matrix configured from the Unraid WebGUI. Health requires no permission.
+Tools use the gateway's 32-key `resource:action` permission matrix configured from the Unraid WebGUI. Health requires no permission.
 
 ## Links
 
@@ -151,7 +154,7 @@ Tools use the gateway's 30-key `resource:action` permission matrix configured fr
 
 ## Gateway MCP mode
 
-The gateway has an optional MCP endpoint at `/mcp` that serves the same 58 tools to MCP clients. It is off by default and is switched on with **Enable MCP** in the gateway's Settings tab. This plugin does not use it: OpenClaw keeps calling `/api/*` whether MCP is on or off. The tool definitions in this package are shared with the gateway through the `unraidclaw/tools` export, so OpenClaw, MCP and the standalone CLI use the same tools and the `READ_ONLY` set exported by `src/registry.ts`. The CLI, command `unraidclaw`, is published to npm as `unraidclaw-cli` and attached to each [GitHub release](https://github.com/emaspa/unraidclaw/releases/latest) as `unraidclaw-cli-<version>.tar.gz`; see the [CLI guide](https://github.com/emaspa/unraidclaw/blob/main/packages/cli/README.md). See the [repository README](https://github.com/emaspa/unraidclaw#mcp) for MCP client setup.
+The gateway has an optional MCP endpoint at `/mcp` that serves the same 60 tools to MCP clients. It is off by default and is switched on with **Enable MCP** in the gateway's Settings tab. This plugin does not use it: OpenClaw keeps calling `/api/*` whether MCP is on or off. The tool definitions in this package are shared with the gateway through the `unraidclaw/tools` export, so OpenClaw, MCP and the standalone CLI use the same tools and the `READ_ONLY` set exported by `src/registry.ts`. The CLI, command `unraidclaw`, is published to npm as `unraidclaw-cli` and attached to each [GitHub release](https://github.com/emaspa/unraidclaw/releases/latest) as `unraidclaw-cli-<version>.tar.gz`; see the [CLI guide](https://github.com/emaspa/unraidclaw/blob/main/packages/cli/README.md). See the [repository README](https://github.com/emaspa/unraidclaw#mcp) for MCP client setup.
 
 ## License
 

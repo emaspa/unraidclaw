@@ -327,6 +327,169 @@ export interface CaRemoveResponse {
   warnings: string[];
 }
 
+// ── Container settings (saved templates) ────────────────
+
+/**
+ * Top-level elements of a saved docker-manager template that a template edit
+ * may set. Everything else in the template is metadata the Docker tab shows and
+ * docker never sees, and an edit leaves it exactly as it was.
+ */
+export type TemplateSettingKey =
+  | "Repository"
+  | "Registry"
+  | "Network"
+  | "MyIP"
+  | "MyMAC"
+  | "ExtraNetworks"
+  | "Privileged"
+  | "ExtraParams"
+  | "PostArgs"
+  | "CPUset"
+  | "Memory"
+  | "WebUI"
+  | "Icon"
+  | "Shell"
+  | "TailscaleEnabled"
+  | "TailscaleIsExitNode"
+  | "TailscaleHostname"
+  | "TailscaleExitNodeIP"
+  | "TailscaleSSH"
+  | "TailscaleLANAccess"
+  | "TailscaleUserspaceNetworking"
+  | "TailscaleServe"
+  | "TailscaleServePort"
+  | "TailscaleServeTarget"
+  | "TailscaleServeLocalPath"
+  | "TailscaleServeProtocol"
+  | "TailscaleServeProtocolPort"
+  | "TailscaleServePath"
+  | "TailscaleWebUI"
+  | "TailscaleDParams"
+  | "TailscaleParams"
+  | "TailscaleRoutes"
+  | "TailscaleAcceptRoutes"
+  | "TailscaleStateDir"
+  | "TailscaleTroubleshooting";
+
+/** One `<Config>` entry of a saved template, as the Docker tab shows it. */
+export interface TemplateConfigView {
+  name: string;
+  /** Container port, container path, variable or label name. Usually empty for a Device. */
+  target: string;
+  type: CaConfigType | string;
+  /** "tcp"/"udp" for a Port, "rw"/"ro" (optionally ",slave" or ",shared") for a Path. */
+  mode: string;
+  /** The configured value. `***` when the entry is masked and set. */
+  value: string;
+  /** The template's default. Empty when the entry is masked. */
+  default: string;
+  description: string;
+  display: string;
+  required: boolean;
+  mask: boolean;
+}
+
+export interface TemplateView {
+  name: string;
+  templatePath: string;
+  /** Every settable element the template carries, with its current text. */
+  settings: Partial<Record<TemplateSettingKey, string>>;
+  config: TemplateConfigView[];
+}
+
+/**
+ * A `<Config>` entry to add or change. An existing entry is matched by type and
+ * target, plus mode for a Port (so 53/tcp and 53/udp are different entries) and
+ * value for a Device (whose target is normally empty). Attributes left out keep
+ * their current value, or take the Docker tab's default on a new entry.
+ */
+export interface TemplateConfigEdit {
+  type: CaConfigType;
+  target?: string;
+  value: string;
+  name?: string;
+  mode?: string;
+  default?: string;
+  description?: string;
+  display?: string;
+  required?: boolean;
+  mask?: boolean;
+  /** For a Device only: the device currently configured, when this edit replaces it with `value`. */
+  replaces?: string;
+}
+
+/** A `<Config>` entry to delete, matched the same way as an edit. */
+export interface TemplateConfigRef {
+  type: CaConfigType;
+  target?: string;
+  mode?: string;
+  /** For a Device: the host device path. */
+  value?: string;
+}
+
+export interface TemplateEditRequest {
+  settings?: Partial<Record<TemplateSettingKey, string>>;
+  config?: TemplateConfigEdit[];
+  removeConfig?: TemplateConfigRef[];
+  /**
+   * Pull the newest image for the template's tag first, and rebuild with it.
+   * With nothing else to change this is an update, for any container,
+   * privileged ones included; when the image is already the newest, nothing
+   * is rebuilt.
+   */
+  pull?: boolean;
+  dryRun?: boolean;
+}
+
+/** One field the edit changes, with masked values shown as `***`. */
+export interface TemplateChange {
+  /** e.g. "Network", or "Variable PUID", "Port 8096/tcp", "Device /dev/dri". */
+  field: string;
+  /** Empty when the field is being added. */
+  before: string;
+  /** Empty when the field is being removed. */
+  after: string;
+}
+
+export interface TemplateEditPlan {
+  name: string;
+  templatePath: string;
+  changes: TemplateChange[];
+  /**
+   * The command Unraid's own docker manager builds from the edited template,
+   * with masked values replaced by `***`. It is a shell string because that is
+   * what the Docker tab runs: Extra Parameters and Post Arguments are shell
+   * fragments by design.
+   */
+  dockerCommand: string;
+  /** Networks the rebuilt container is connected to after it is created. */
+  extraNetworks: string[];
+  /** Host paths the edit adds that do not exist yet, created as nobody:users. */
+  hostPathsToCreate: string[];
+}
+
+export interface TemplateEditResponse {
+  dryRun: boolean;
+  name: string;
+  /** The container as it stands after the call: the rebuilt one once edited. */
+  containerId: string;
+  templatePath: string;
+  /** The copy of the template as it was before the edit. Absent on a dry run. */
+  backupPath?: string;
+  /** True once the container was rebuilt from the edited template. */
+  rebuilt: boolean;
+  running: boolean;
+  /** Whether it was running before, which the rebuild restores. */
+  wasRunning: boolean;
+  /** True when the image was pulled. */
+  pulled?: boolean;
+  /** The image id the container ran before, and the one it runs now. */
+  previousImageId?: string;
+  imageId?: string;
+  plan: TemplateEditPlan;
+  warnings: string[];
+}
+
 // ── Plugins (.plg) ──────────────────────────────────────
 
 export interface PluginSummary {

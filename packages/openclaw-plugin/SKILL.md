@@ -1,6 +1,6 @@
 ---
 name: unraidclaw
-description: Manage your Unraid server through AI agents - 58 tools for Docker, Community Applications, Unraid plugins, VMs, array, shares, system, notifications, and more with permission control.
+description: Manage your Unraid server through AI agents - 60 tools for Docker, Community Applications, container settings, Unraid plugins, VMs, array, shares, system, notifications, and more with permission control.
 ---
 
 # UnraidClaw
@@ -9,10 +9,11 @@ Manage your Unraid server through AI agents with full permission control.
 
 ## What it does
 
-UnraidClaw gives AI agents 58 tools across 13 categories to monitor and manage an Unraid server:
+UnraidClaw gives AI agents 60 tools across 14 categories to monitor and manage an Unraid server:
 
 - **Docker** - List, inspect, start, stop, restart, pause, unpause, remove, and create containers, list and prune unused images, and check which containers have an update
 - **Community Applications** - Search the CA catalog, read an app's template, install an app as a container, update an installed app to a newer image, and remove one
+- **Container Settings** - Read an installed container's saved settings and change them, rebuilding the container the way the Docker tab does
 - **Plugins** - List and inspect installed .plg plugins, install one from a URL, check for updates, update, and remove
 - **VMs** - List, inspect, start, stop, force-stop, pause, resume, and reboot virtual machines
 - **Array** - View array status, start/stop array, run parity checks
@@ -25,7 +26,7 @@ UnraidClaw gives AI agents 58 tools across 13 categories to monitor and manage a
 - **Logs** - Read syslog entries
 - **Health** - Server health check
 
-Tools use a 30-key permission matrix (resource:action) configurable from the Unraid WebGUI; health requires no permission. Activity logging excludes the public health probe, successful MCP handshakes and MCP GET/DELETE responses with status 405. The gateway also has an optional MCP endpoint, off by default, that exposes the same tools to MCP clients; this plugin does not use it.
+Tools use a 32-key permission matrix (resource:action) configurable from the Unraid WebGUI; health requires no permission. Activity logging excludes the public health probe, successful MCP handshakes and MCP GET/DELETE responses with status 405. The gateway also has an optional MCP endpoint, off by default, that exposes the same tools to MCP clients; this plugin does not use it.
 
 ## Updating and removing an installed app
 
@@ -36,6 +37,18 @@ Update keeps the configuration saved on the server, including anything the user 
 Remove deletes the container only. Appdata, Docker volumes, the image and the saved template all stay, so the app can be recreated with the same settings. Say that when the user asks whether their data is safe, and do not offer to delete any of it, because these tools cannot.
 
 Both take `dryRun: true`. Use it first for a removal, and read the result back to the user before doing it for real.
+
+## Changing an installed container's settings
+
+To change how an installed container runs, such as a port, a path, a variable, a device, its network or fixed IP, privileged mode or Extra Parameters, use `unraid_template_edit` rather than removing and recreating the container. It needs the `template:update` permission, which the owner grants separately; if it is refused with 403, say so rather than working around it. Call `unraid_template_get` first to see what the template has, and use the installed container name from `unraid_docker_list`.
+
+Name only what should change: settings and entries the request leaves out are kept as they are. An entry is found by its type and target, plus protocol for a port, so an entry that does not exist yet is added. To change a device, pass the current one as `replaces`.
+
+Always run it with `dryRun: true` first. Show the user the changes and the command, and ask before running it for real. If the rebuilt container does not start or stops within a few seconds, the original comes back unchanged and the error carries the new container's last log lines. Read them, explain what went wrong, and propose a corrected edit.
+
+This tool changes settings, not the app version, unless you pass `pull: true`: then it pulls the newest image for the tag and rebuilds on it. Use `unraid_ca_update` to update an app first; when it refuses because the container is privileged or has Extra Parameters or devices, update it with `unraid_template_edit` and `pull: true` and nothing else. Changing `Repository` to another tag pulls that tag.
+
+`ExtraParams` and `PostArgs` take only letters, digits, `: . , / + = _ -` and single spaces, because Unraid hands them to the shell unescaped.
 
 ## Creating a container by hand
 
@@ -56,7 +69,7 @@ The two free-form fields accept only letters, digits, `: . , / + = _ -` and sing
 
 `unraid_docker_prune_images` removes images no container references. The default `mode` is `dangling`, which only removes untagged leftovers and is the safe choice. `mode: "unused"` also removes tagged images no container uses; an app reinstalled later then has to pull its image again, so say so to the user. `olderThanHours` keeps recent images. Always call it with `dryRun: true` first, show the user the images and `reclaimableBytes`, and only then run it for real. The real run removes exactly the listed images and reports `removed`, `failed` and `verified`. It needs `docker:delete`.
 
-`unraid_docker_update_status` says which containers have an image update, from the cache Unraid's Docker tab writes when it checks for updates. It never pulls or contacts a registry. Read `cache.modifiedAt` and `cache.ageSeconds` and tell the user how old the answer is; `updateAvailable: "unknown"` means Unraid has no usable entry for that image. To refresh it, the user clicks Check for Updates on the Docker tab. To apply an update, use `unraid_ca_update`.
+`unraid_docker_update_status` says which containers have an image update, from the cache Unraid's Docker tab writes when it checks for updates. It never pulls or contacts a registry. Read `cache.modifiedAt` and `cache.ageSeconds` and tell the user how old the answer is; `updateAvailable: "unknown"` means Unraid has no usable entry for that image. To refresh it, the user clicks Check for Updates on the Docker tab. To apply an update, use `unraid_ca_update`, or `unraid_template_edit` with `pull: true` for containers it refuses.
 
 ## Plugins
 

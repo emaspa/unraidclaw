@@ -13,9 +13,9 @@ const args = (argv: string[]) => argumentsFor(parse(argv, catalog));
 test("every tool has one unique derived command, shared read-only status and no server parameter", () => {
   const tools: ToolDefinition[] = [];
   registerTools({ registerTool: tool => { tools.push(tool); } }, () => recordingClient().client);
-  assert.equal(catalog.length, 58);
+  assert.equal(catalog.length, 60);
   assert.equal(catalog.length, tools.length);
-  assert.equal(new Set(catalog.map(command => command.name)).size, 58);
+  assert.equal(new Set(catalog.map(command => command.name)).size, 60);
   assert.deepEqual(catalog.map(command => command.tool.name).sort(), tools.map(tool => tool.name).sort());
   for (const command of catalog) {
     assert.equal(command.readOnly, READ_ONLY.has(command.tool.name));
@@ -153,7 +153,7 @@ test("tools and built-in help expose their commands", async t => {
   const cli = capture(context);
   const listed = await cli.run(["tools", "--output", "json"]);
   assert.equal(listed.code, 0);
-  assert.equal(JSON.parse(listed.stdout).length, 58);
+  assert.equal(JSON.parse(listed.stdout).length, 60);
   assert.match((await cli.run(["plugin", "--help"])).stdout, /plugin list/);
   assert.match((await cli.run(["config", "--help"])).stdout, /config set-key/);
   assert.equal((await cli.run(["--version"])).stdout, `unraidclaw ${packageVersion}\n`);
@@ -224,7 +224,7 @@ test("supported dry runs skip confirmation on TTYs and in scripts using effectiv
   const cli = capture(context, () => client);
   cli.io.confirm = async () => assert.fail("Dry runs must not prompt");
   const supported = catalog.filter(command => Object.hasOwn(command.schema.properties, "dryRun"));
-  assert.equal(supported.length, 8);
+  assert.equal(supported.length, 9);
   for (const interactive of [false, true]) {
     cli.io.interactive = interactive;
     for (const command of supported) {

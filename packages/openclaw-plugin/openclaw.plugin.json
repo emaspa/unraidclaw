@@ -52,6 +52,8 @@
       "unraid_system_metrics",
       "unraid_system_reboot",
       "unraid_system_shutdown",
+      "unraid_template_edit",
+      "unraid_template_get",
       "unraid_user_me",
       "unraid_vm_force_stop",
       "unraid_vm_inspect",

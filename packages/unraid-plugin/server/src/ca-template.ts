@@ -151,7 +151,7 @@ export function isSecretName(name: string): boolean {
  * it, or it is a variable or label with a secret-looking name. Many templates
  * leave Mask="false" on a token or a password.
  */
-export function isSecretEntry(entry: CaConfigEntry): boolean {
+export function isSecretEntry(entry: Pick<CaConfigEntry, "target" | "name" | "mask"> & { type: string }): boolean {
   if (entry.mask) return true;
   if (entry.type !== "Variable" && entry.type !== "Label") return false;
   return isSecretName(entry.target) || isSecretName(entry.name);

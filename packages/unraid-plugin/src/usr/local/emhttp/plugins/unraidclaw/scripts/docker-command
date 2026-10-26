@@ -1,0 +1,91 @@
+#!/usr/bin/php -q
+<?php
+/* UnraidClaw: print the docker command Unraid's own docker manager builds for a
+ * saved template, so a template edit rebuilds the container exactly the way the
+ * Docker tab would on this server. It builds the command and prints it; it
+ * never runs it, and it never changes the template.
+ *
+ * Usage: docker-command <template.xml> <create-name> [<extra-volumes-json>]
+ *
+ *   create-name          name to put in --name, so the replacement can be
+ *                        created next to the running container
+ *   extra-volumes-json   JSON list of "volume:/destination:mode" strings to
+ *                        mount as well: volumes the running container has that
+ *                        the template does not describe
+ *
+ * Prints one JSON object on success. Exits non-zero with a message on stderr
+ * otherwise.
+ *
+ * It has no .php extension, like Unraid's own scripts in
+ * dynamix.docker.manager/scripts, so the web server does not execute it, and it
+ * refuses to run anywhere but the command line in case something does.
+ */
+if (PHP_SAPI !== 'cli') {
+  http_response_code(404);
+  exit;
+}
+
+function fail($message) {
+  fwrite(STDERR, $message."\n");
+  exit(2);
+}
+
+$template     = $argv[1] ?? '';
+$createName   = $argv[2] ?? '';
+$extraVolumes = json_decode($argv[3] ?? '[]', true);
+if ($template === '' || !is_file($template)) fail('The template file does not exist.');
+// DockerClient.php changes the working directory, so a relative path would stop
+// pointing at the template once it is loaded.
+$template = realpath($template);
+if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/', $createName)) fail('The container name to create is not a valid docker name.');
+if (!is_array($extraVolumes)) fail('The extra volumes must be a JSON list.');
+
+$docroot = '/usr/local/emhttp';
+require_once "$docroot/plugins/dynamix.docker.manager/include/DockerClient.php";
+
+// The globals the Docker tab has when it builds a command. DockerClient.php
+// sets $driver, the network drivers. xmlToVar needs $subnet, the networks that
+// exist, and turns a template network that is not among them into "none".
+// xmlToCommand reads the timezone and server name from $var.
+$custom = DockerUtil::custom();
+$subnet = DockerUtil::network($custom);
+$var    = @parse_ini_file('/var/local/emhttp/var.ini') ?: [];
+
+$vars = xmlToVar($template);
+[$cmd, $name, $repository] = xmlToCommand($template, false);
+
+// Swap in the name to create under. The token is exactly what xmlToCommand
+// writes, so it appears once; anything else means the command is not the shape
+// this script understands, and guessing would risk renaming the wrong thing.
+$token = '--name='.escapeshellarg($name);
+if (substr_count($cmd, $token) !== 1) fail('The generated command does not name the container exactly once.');
+$replacement = '--name='.escapeshellarg($createName);
+foreach ($extraVolumes as $volume) {
+  if (!is_string($volume) || $volume === '') fail('Each extra volume must be a non-empty string.');
+  $replacement .= ' -v '.escapeshellarg($volume);
+}
+$cmd = str_replace($token, $replacement, $cmd);
+
+// The Tailscale hook needs the image's own entrypoint and command, which the
+// Docker tab reads from a throwaway container and inserts before the managed
+// label. The image's config holds the same two values, so it is read directly.
+// The quoting matches CreateDocker.php, so the container comes out the same.
+if (strtolower($vars['TailscaleEnabled'] ?? '') === 'true') {
+  $out = [];
+  exec('/usr/bin/docker image inspect --format '.escapeshellarg('{{json .Config}}').' '.escapeshellarg($repository).' 2>/dev/null', $out, $rc);
+  if ($rc !== 0) fail("Could not read the image $repository for the Tailscale hook. Pull it first.");
+  $config  = json_decode(implode("\n", $out), true) ?: [];
+  $ts_env  = isset($config['Entrypoint']) ? '-e ORG_ENTRYPOINT="' . implode(' ', $config['Entrypoint']) . '" ' : '';
+  $ts_env .= isset($config['Cmd']) ? '-e ORG_CMD="' . implode(' ', $config['Cmd']) . '" ' : '';
+  $cmd = str_replace('-l net.unraid.docker.managed=dockerman', $ts_env.'-l net.unraid.docker.managed=dockerman', $cmd);
+}
+
+$raw = @simplexml_load_file($template);
+echo json_encode([
+  'command'          => $cmd,
+  'name'             => $name,
+  'repository'       => $repository,
+  'network'          => $vars['Network'] ?? '',
+  'requestedNetwork' => $raw ? trim(html_entity_decode((string)$raw->Network, ENT_XML1, 'UTF-8')) : '',
+  'extraNetworks'    => array_values(array_filter(preg_split('/[\s,]+/', trim($vars['ExtraNetworks'] ?? '')), 'strlen')),
+], JSON_UNESCAPED_SLASHES), "\n";

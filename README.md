@@ -21,8 +21,8 @@ UnraidClaw sits between AI agents and your Unraid servers. It provides a REST AP
 
 ## Features
 
-- **58 tools** across 13 categories: Health, Docker, Community Applications, Plugins, VMs, Array, Disks, Shares, System, Notifications, Network, Users, Logs
-- **30 permission keys** in a resource:action matrix, configurable from the WebGUI
+- **60 tools** across 14 categories: Health, Docker, Community Applications, Container Settings, Plugins, VMs, Array, Disks, Shares, System, Notifications, Network, Users, Logs
+- **32 permission keys** in a resource:action matrix, configurable from the WebGUI
 - **HTTPS** with auto-generated self-signed TLS certificate
 - **SHA-256 API key** authentication
 - **Activity logging** with JSONL format, filter, and search
@@ -151,6 +151,8 @@ REST authentication uses the `x-api-key: <api-key>` header. `/api/health` is pub
 | | POST | `/api/ca/app/:name/install` | `ca:create` |
 | | POST | `/api/ca/app/:name/update` | `ca:update` |
 | | POST | `/api/ca/app/:name/remove` | `ca:delete` |
+| **Container Settings** | GET | `/api/template/:name` | `template:read` |
+| | POST | `/api/template/:name/edit` | `template:update` |
 | **Plugins** | GET | `/api/plugins` | `plugins:read` |
 | | GET | `/api/plugins/:file` | `plugins:read` |
 | | POST | `/api/plugins/install` | `plugins:create` |
@@ -277,6 +279,36 @@ The replacement is created before stopping the old container. UnraidClaw swaps t
 Updates refuse paused or unstable containers and configurations they cannot reproduce, including unsupported template fields, device access, custom runtime settings and resource limits. Install plans, update previews and their errors redact values marked `Mask="true"` and the values of variables and labels with a secret-looking name, such as `TUNNEL_TOKEN`, `DB_PASSWORD` or `API_KEY`, which templates often leave unmasked.
 
 Remove deletes only the container. Appdata, Docker volumes, the image and the saved template remain. Use **Add Container** on the Docker tab to recreate it from the saved configuration.
+
+### Container settings
+
+`GET /api/template/:name` returns an installed container's saved template: its settings (image, network, fixed IP, privileged mode, Extra Parameters, Post Arguments, CPU pinning, memory limit, Tailscale) and every port, path, variable, label and device. Values marked `Mask="true"` come back as `***`, and so do variables and labels with a secret-looking name, such as `TUNNEL_TOKEN` or `DB_PASSWORD`, the same rule install plans and update previews use.
+
+`POST /api/template/:name/edit` changes the template and rebuilds the container from it, the way editing it on the Docker tab and clicking **Apply** does. The name is the installed container name from the Docker tab.
+
+```json
+{
+  "settings": { "Network": "br0", "MyIP": "192.168.1.60", "ExtraParams": "--device=/dev/dri" },
+  "config": [
+    { "type": "Variable", "target": "PUID", "value": "1000" },
+    { "type": "Path", "target": "/media", "value": "/mnt/user/media", "mode": "ro" }
+  ],
+  "removeConfig": [{ "type": "Port", "target": "1900", "mode": "udp" }],
+  "dryRun": true
+}
+```
+
+`settings` sets template elements as text. `config` adds or changes entries, matched by type and target, plus protocol for a port and device path for a device (`replaces` names the device being changed). `removeConfig` deletes entries. Only what the request names changes. Renaming is not supported.
+
+The command is built by Unraid's own docker manager (`xmlToCommand`, through `scripts/docker-command`), so every setting the Docker tab supports on the server is supported, with the same result. Unlike app updates, edits do not refuse privileged mode, devices, Extra Parameters or custom networks. A network that does not exist is refused, because Unraid would otherwise switch the container to `none`. Unraid hands Extra Parameters and Post Arguments to the shell unescaped, so an edit that sets either accepts only letters, digits, `: . , / + = _ -` and single spaces, as `POST /api/docker/containers` does; a value already in the template is left as it is.
+
+`template:update` is off by default and is in no preset other than full admin. Privileged mode and host devices give a container the host, so grant it as you would root access.
+
+A dry run returns the changes, the command with masked values redacted, the networks the container is connected to afterward, and the host paths that would be created. Nothing is pulled, created or written.
+
+A real edit pulls the image only when it is not on the server yet, so changing settings never updates an app. It creates missing host paths as `nobody:users` and backs up the template to `/boot/config/plugins/unraidclaw/template-backups/`. It then builds the replacement under a temporary name before touching the running container. The swap and rollback work as they do for app updates. A running app must still be running a few seconds after starting. If it is not, the original returns and the new container's last log lines are included in the error. The template is saved only after the rebuilt container passes those checks. Docker volumes the container has that the new command does not mount are carried over. Bind mounts the edit drops are reported. A restarting container can be edited; paused or dying ones are refused.
+
+`"pull": true` pulls the newest image for the template's tag first and rebuilds on it, with the same swap and rollback. With no other change it is an update for any container, including the privileged ones `POST /api/ca/app/:name/update` refuses, and it does nothing when the image is already the newest. The template is left exactly as it is, with no backup or rewrite, when the edit changes no setting. A dry run pulls nothing.
 
 ### Plugins
 
@@ -450,7 +482,7 @@ The transport uses stateless JSON responses without SSE or sessions. It supports
 | OPTIONS | `/mcp` | HTTP 204 when enabled and Origin is allowed; no key required |
 | Any | `/mcp` | HTTP 404 when disabled |
 
-The endpoint exposes the same 58 tools as the OpenClaw plugin, without OpenClaw's `server` argument. Read-only tools carry `readOnlyHint`; every other tool carries `destructiveHint`. Each call runs through the gateway's own `/api/` route in process, so the permission matrix, body validation, dry-run rules and blockers apply unchanged. OpenClaw keeps using `/api/*` whether MCP is on or off.
+The endpoint exposes the same 60 tools as the OpenClaw plugin, without OpenClaw's `server` argument. Read-only tools carry `readOnlyHint`; every other tool carries `destructiveHint`. Each call runs through the gateway's own `/api/` route in process, so the permission matrix, body validation, dry-run rules and blockers apply unchanged. OpenClaw keeps using `/api/*` whether MCP is on or off.
 
 ### Activity log
 
@@ -478,7 +510,7 @@ What this means for clients:
 
 ## OpenClaw plugin
 
-The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 58 tools to any AI agent that supports the OpenClaw protocol.
+The [OpenClaw](https://github.com/openclaw/openclaw) plugin exposes all 60 tools to any AI agent that supports the OpenClaw protocol.
 
 ### Install
 
@@ -580,6 +612,7 @@ The secret then lives in your environment (shell, systemd `EnvironmentFile`, or 
 | Health | `unraid_health_check` |
 | Docker | `unraid_docker_list`, `unraid_docker_inspect`, `unraid_docker_logs`, `unraid_docker_create`, `unraid_docker_start`, `unraid_docker_stop`, `unraid_docker_restart`, `unraid_docker_pause`, `unraid_docker_unpause`, `unraid_docker_remove`, `unraid_docker_images`, `unraid_docker_prune_images`, `unraid_docker_update_status` |
 | Community Apps | `unraid_ca_search`, `unraid_ca_app`, `unraid_ca_install`, `unraid_ca_update`, `unraid_ca_remove` |
+| Container Settings | `unraid_template_get`, `unraid_template_edit` |
 | Plugins | `unraid_plugins_list`, `unraid_plugin_info`, `unraid_plugin_install`, `unraid_plugin_check_updates`, `unraid_plugin_update`, `unraid_plugin_remove` |
 | VMs | `unraid_vm_list`, `unraid_vm_inspect`, `unraid_vm_start`, `unraid_vm_stop`, `unraid_vm_pause`, `unraid_vm_resume`, `unraid_vm_force_stop`, `unraid_vm_reboot` |
 | Array | `unraid_array_status`, `unraid_array_start`, `unraid_array_stop`, `unraid_parity_status`, `unraid_parity_start`, `unraid_parity_pause`, `unraid_parity_resume`, `unraid_parity_cancel` |
@@ -599,6 +632,7 @@ Permissions use a `resource:action` format. Configure them from the WebGUI Permi
 |----------|------------|
 | Docker | `docker:read` (also image lists and update status), `docker:create`, `docker:update`, `docker:delete` (also image pruning) |
 | Community Apps | `ca:read`, `ca:create`, `ca:update`, `ca:delete` |
+| Container Settings | `template:read`, `template:update` |
 | Plugins | `plugins:read`, `plugins:create`, `plugins:update`, `plugins:delete` |
 | VMs | `vms:read`, `vms:update`, `vms:delete` |
 | Array & Storage | `array:read`, `array:update`, `disk:read`, `share:read`, `share:update` |

@@ -300,6 +300,23 @@ $certificateReadable = $certificate['present'] && !isset($certificate['error']);
       </div>
     </div>
 
+    <!-- Container Settings -->
+    <div class="occ-perm-category">
+      <div class="occ-perm-header" onclick="occToggleCategory(this)">
+        <span class="occ-expand-icon">&#9654;</span>
+        <h3>Container Settings</h3>
+        <span class="occ-perm-summary" data-category="template"></span>
+        <div class="occ-cat-toggle">
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('template', true)">All</button>
+          <button type="button" class="occ-btn occ-btn-xs" onclick="event.stopPropagation(); occSetCategory('template', false)">None</button>
+        </div>
+      </div>
+      <div class="occ-perm-body" style="display:none;">
+        <label class="occ-perm-item"><input type="checkbox" name="template:read" data-category="template" <?=!empty($permissions['template:read']) ? 'checked' : ''?>><span class="occ-perm-label">View Settings</span><span class="occ-perm-desc">Read an installed container's saved template, with masked and secret-named values hidden</span></label>
+        <label class="occ-perm-item occ-destructive"><input type="checkbox" name="template:update" data-category="template" <?=!empty($permissions['template:update']) ? 'checked' : ''?>><span class="occ-perm-label">Edit &amp; Rebuild</span><span class="occ-perm-desc">Change any setting in an installed container's saved template, including privileged mode, devices, Extra Parameters and custom networks, and rebuild the container from it the way the Docker tab does. Privileged mode and devices give the container the host, so treat this as root access (destructive)</span></label>
+      </div>
+    </div>
+
     <!-- Plugins -->
     <div class="occ-perm-category">
       <div class="occ-perm-header" onclick="occToggleCategory(this)">
