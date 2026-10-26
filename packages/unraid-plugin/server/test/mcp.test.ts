@@ -176,7 +176,7 @@ test("tools/list reuses every OpenClaw definition, removes server, and annotates
   const registrations: any[] = [];
   registerTools({ registerTool: (tool, options) => registrations.push({ tool, options }) }, () => { throw new Error("Discovery must not request a client"); });
   assert.equal(tools.length, registrations.length);
-  assert.equal(tools.length, 55);
+  assert.equal(tools.length, 58);
   const registeredNames = new Set(registrations.map(({ tool }) => tool.name));
   for (const name of READ_ONLY) assert(registeredNames.has(name), `Read-only tool ${name} must be registered`);
   for (const { tool, options } of registrations) {

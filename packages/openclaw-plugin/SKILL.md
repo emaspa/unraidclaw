@@ -1,6 +1,6 @@
 ---
 name: unraidclaw
-description: Manage your Unraid server through AI agents - 55 tools for Docker, Community Applications, Unraid plugins, VMs, array, shares, system, notifications, and more with permission control.
+description: Manage your Unraid server through AI agents - 58 tools for Docker, Community Applications, Unraid plugins, VMs, array, shares, system, notifications, and more with permission control.
 ---
 
 # UnraidClaw
@@ -9,9 +9,9 @@ Manage your Unraid server through AI agents with full permission control.
 
 ## What it does
 
-UnraidClaw gives AI agents 55 tools across 13 categories to monitor and manage an Unraid server:
+UnraidClaw gives AI agents 58 tools across 13 categories to monitor and manage an Unraid server:
 
-- **Docker** - List, inspect, start, stop, restart, pause, unpause, remove, and create containers
+- **Docker** - List, inspect, start, stop, restart, pause, unpause, remove, and create containers, list and prune unused images, and check which containers have an update
 - **Community Applications** - Search the CA catalog, read an app's template, install an app as a container, update an installed app to a newer image, and remove one
 - **Plugins** - List and inspect installed .plg plugins, install one from a URL, check for updates, update, and remove
 - **VMs** - List, inspect, start, stop, force-stop, pause, resume, and reboot virtual machines
@@ -49,6 +49,14 @@ Both take `dryRun: true`. Use it first for a removal, and read the result back t
 - `devices` lists host devices, as `--device` reads them, for example `["/dev/dri"]` for hardware transcoding.
 
 The two free-form fields accept only letters, digits, `: . , / + = _ -` and single spaces, because Unraid passes them to the shell unescaped when it rebuilds a container. Quotes and shell characters are rejected before docker runs. A container created with any of these settings in effect cannot later be rebuilt by `unraid_ca_update`; tell the user to update it from the Docker tab.
+
+## Cleaning up images and checking for updates
+
+`unraid_docker_images` lists every image with the containers that use it, running or stopped, and marks it `dangling` (no tag) or `unused` (no container references it). The totals give how many bytes dangling and unused images take.
+
+`unraid_docker_prune_images` removes images no container references. The default `mode` is `dangling`, which only removes untagged leftovers and is the safe choice. `mode: "unused"` also removes tagged images no container uses; an app reinstalled later then has to pull its image again, so say so to the user. `olderThanHours` keeps recent images. Always call it with `dryRun: true` first, show the user the images and `reclaimableBytes`, and only then run it for real. The real run removes exactly the listed images and reports `removed`, `failed` and `verified`. It needs `docker:delete`.
+
+`unraid_docker_update_status` says which containers have an image update, from the cache Unraid's Docker tab writes when it checks for updates. It never pulls or contacts a registry. Read `cache.modifiedAt` and `cache.ageSeconds` and tell the user how old the answer is; `updateAvailable: "unknown"` means Unraid has no usable entry for that image. To refresh it, the user clicks Check for Updates on the Docker tab. To apply an update, use `unraid_ca_update`.
 
 ## Plugins
 

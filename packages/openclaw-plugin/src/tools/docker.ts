@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 import type { ClientResolver } from "../registry.js";
-import { textResult, errorResult } from "./util.js";
+import { textResult, errorResult, checkParams } from "./util.js";
 
 export function registerDockerTools(api: any, getClient: ClientResolver): void {
   api.registerTool({
@@ -15,6 +15,77 @@ export function registerDockerTools(api: any, getClient: ClientResolver): void {
     execute: async (_id: string, params: Record<string, unknown>) => {
       try {
         return textResult(await getClient(params.server as string | undefined).get("/api/docker/containers"));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  });
+
+  api.registerTool({
+    name: "unraid_docker_images",
+    description:
+      "List the Docker images on the Unraid server with their tags, size and creation time, which containers (running or stopped) use each one, and whether it is dangling (untagged) or unused (no container references it). Totals give the count and bytes of dangling and unused images. Read-only.",
+    parameters: {
+      type: "object",
+      properties: {
+        server: { type: "string", description: "Target server name (optional, uses default server)" },
+      },
+    },
+    execute: async (_id: string, params: Record<string, unknown>) => {
+      try {
+        return textResult(await getClient(params.server as string | undefined).get("/api/docker/images"));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  });
+
+  api.registerTool({
+    name: "unraid_docker_prune_images",
+    description:
+      "Remove Docker images that no container references, running or stopped. mode 'dangling' (default) removes only untagged images; 'unused' removes every image no container uses, including tagged ones, which then have to be pulled again to be used. olderThanHours keeps images newer than that. Each image is removed by its ID with docker rmi, without force, and a fresh listing verifies it is gone. Always call it with dryRun=true first and show the user the images and bytes it would reclaim.",
+    parameters: {
+      type: "object",
+      properties: {
+        dryRun: { type: "boolean", description: "List what would be removed without removing anything (default: false)" },
+        mode: { type: "string", enum: ["dangling", "unused"], description: "Which unreferenced images to remove (default: dangling)" },
+        olderThanHours: { type: "integer", minimum: 0, maximum: 87600, description: "Only images created at least this many hours ago" },
+        server: { type: "string", description: "Target server name (optional, uses default server)" },
+      },
+      additionalProperties: false,
+    },
+    execute: async (_id: string, params: Record<string, unknown>) => {
+      try {
+        checkParams(params, ["dryRun", "mode", "olderThanHours", "server"]);
+        if (params.mode !== undefined && params.mode !== "dangling" && params.mode !== "unused") {
+          throw new Error(`"mode" must be "dangling" or "unused", not ${JSON.stringify(params.mode)}. Nothing was sent to the server.`);
+        }
+        const hours = params.olderThanHours;
+        if (hours !== undefined && (typeof hours !== "number" || !Number.isSafeInteger(hours) || hours < 0 || hours > 87600)) {
+          throw new Error(`"olderThanHours" must be a whole number from 0 to 87600, not ${JSON.stringify(hours)}. Nothing was sent to the server.`);
+        }
+        const body: Record<string, unknown> = {};
+        for (const key of ["dryRun", "mode", "olderThanHours"]) if (params[key] !== undefined) body[key] = params[key];
+        return textResult(await getClient(params.server as string | undefined).post("/api/docker/images/prune", body));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  }, { optional: true });
+
+  api.registerTool({
+    name: "unraid_docker_update_status",
+    description:
+      "Report which installed containers have an image update available, read from Unraid's own update cache (/var/lib/docker/unraid-update-status.json), which the Docker tab's check for updates and the scheduled update check write. For each container: image, state, updateAvailable (true, false or 'unknown'), local and remote digests. cache.modifiedAt and cache.ageSeconds say how old the answer is. Nothing is pulled and no registry is contacted; to refresh the cache, use Check for Updates on the Docker tab. Read-only.",
+    parameters: {
+      type: "object",
+      properties: {
+        server: { type: "string", description: "Target server name (optional, uses default server)" },
+      },
+    },
+    execute: async (_id: string, params: Record<string, unknown>) => {
+      try {
+        return textResult(await getClient(params.server as string | undefined).get("/api/docker/updates"));
       } catch (err) {
         return errorResult(err);
       }

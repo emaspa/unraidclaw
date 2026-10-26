@@ -1,6 +1,6 @@
 # UnraidClaw command-line client
 
-The `unraidclaw-cli` package provides the `unraidclaw` command, which manages one UnraidClaw gateway through its REST API. It uses the same 55 tool definitions, read-only classification and gateway permissions as OpenClaw and MCP. It runs on Unraid and on Linux, macOS and Windows with Node.js 22 or newer, as a single CommonJS bundle with no runtime `node_modules`.
+The `unraidclaw-cli` package provides the `unraidclaw` command, which manages one UnraidClaw gateway through its REST API. It uses the same 58 tool definitions, read-only classification and gateway permissions as OpenClaw and MCP. It runs on Unraid and on Linux, macOS and Windows with Node.js 22 or newer, as a single CommonJS bundle with no runtime `node_modules`.
 
 The OpenClaw plugin is a separate npm package named `unraidclaw`. Install `unraidclaw-cli` for the command-line client.
 
@@ -125,7 +125,7 @@ The complete current command list, with each action combined with its group:
 | `array` | `start`, `status`, `stop` |
 | `ca` | `app`, `install`, `remove`, `search`, `update` |
 | `disk` | `details`, `list` |
-| `docker` | `create`, `inspect`, `list`, `logs`, `pause`, `remove`, `restart`, `start`, `stop`, `unpause` |
+| `docker` | `create`, `images`, `inspect`, `list`, `logs`, `pause`, `prune-images`, `remove`, `restart`, `start`, `stop`, `unpause`, `update-status` |
 | `health` | `check` |
 | `network` | `info` |
 | `notification` | `archive`, `create`, `delete`, `list` |

@@ -13,9 +13,9 @@ const args = (argv: string[]) => argumentsFor(parse(argv, catalog));
 test("every tool has one unique derived command, shared read-only status and no server parameter", () => {
   const tools: ToolDefinition[] = [];
   registerTools({ registerTool: tool => { tools.push(tool); } }, () => recordingClient().client);
-  assert.equal(catalog.length, 55);
+  assert.equal(catalog.length, 58);
   assert.equal(catalog.length, tools.length);
-  assert.equal(new Set(catalog.map(command => command.name)).size, 55);
+  assert.equal(new Set(catalog.map(command => command.name)).size, 58);
   assert.deepEqual(catalog.map(command => command.tool.name).sort(), tools.map(tool => tool.name).sort());
   for (const command of catalog) {
     assert.equal(command.readOnly, READ_ONLY.has(command.tool.name));
@@ -153,7 +153,7 @@ test("tools and built-in help expose their commands", async t => {
   const cli = capture(context);
   const listed = await cli.run(["tools", "--output", "json"]);
   assert.equal(listed.code, 0);
-  assert.equal(JSON.parse(listed.stdout).length, 55);
+  assert.equal(JSON.parse(listed.stdout).length, 58);
   assert.match((await cli.run(["plugin", "--help"])).stdout, /plugin list/);
   assert.match((await cli.run(["config", "--help"])).stdout, /config set-key/);
   assert.equal((await cli.run(["--version"])).stdout, `unraidclaw ${packageVersion}\n`);
@@ -169,7 +169,7 @@ test("top-level help is a compact group overview for every spelling", async t =>
     assert.equal(result.stdout, expected);
   }
   assert.match(expected, /^Usage: unraidclaw/);
-  assert.match(expected, /docker +Docker containers: create, inspect, list, logs, \.\.\./);
+  assert.match(expected, /docker +Docker containers: create, images, inspect, list, \.\.\./);
   assert.match(expected, /unraidclaw <group> --help/);
   for (const group of new Set(catalog.map(command => command.name.split(" ")[0]))) {
     assert.ok(expected.split("\n").some(line => line.trimStart().startsWith(group + " ")));
@@ -224,11 +224,12 @@ test("supported dry runs skip confirmation on TTYs and in scripts using effectiv
   const cli = capture(context, () => client);
   cli.io.confirm = async () => assert.fail("Dry runs must not prompt");
   const supported = catalog.filter(command => Object.hasOwn(command.schema.properties, "dryRun"));
-  assert.equal(supported.length, 7);
+  assert.equal(supported.length, 8);
   for (const interactive of [false, true]) {
     cli.io.interactive = interactive;
     for (const command of supported) {
-      const target = command.name === "plugin install" ? ["--url", "https://example.invalid/fixture.plg"] : ["fixture"];
+      const target = command.name === "plugin install" ? ["--url", "https://example.invalid/fixture.plg"]
+        : command.name === "docker prune-images" ? ["--mode", "dangling"] : ["fixture"];
       for (const flags of [["--dry-run"], ["--args-json", '{"dryRun":true}'], ["--args-json", '{"dryRun":false}', "--dry-run"]]) {
         const before = calls.length;
         const result = await cli.run([...command.name.split(" "), ...target, ...flags]);

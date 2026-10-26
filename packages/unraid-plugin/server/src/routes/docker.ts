@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import { Resource, Action } from "@unraidclaw/shared";
 import type { DockerContainer, DockerLogsResponse } from "@unraidclaw/shared";
 import type { GraphQLClient } from "../graphql-client.js";
@@ -21,6 +21,14 @@ import {
   validDevice,
   NETWORKS_WITHOUT_STATIC_IP,
 } from "../docker-common.js";
+import {
+  DockerImagesError,
+  UPDATE_STATUS_PATH,
+  listImages,
+  parsePruneBody,
+  pruneImages,
+  updateStatus,
+} from "../docker-images.js";
 
 interface DockerCreateBody {
   image: string;
@@ -93,9 +101,67 @@ export function registerDockerRoutes(app: FastifyInstance, gql: GraphQLClient, o
   run?: CommandRunner;
   templatesDir?: string;
   mkdir?: typeof mkdir;
+  /** Unraid's update cache, written by the Docker tab's update check. */
+  updateStatusPath?: string;
+  now?: () => Date;
 } = {}): void {
   const run = options.run ?? runCommand;
   const makeDirectory = options.mkdir ?? mkdir;
+  const updateStatusPath = options.updateStatusPath ?? UPDATE_STATUS_PATH;
+  const now = options.now ?? (() => new Date());
+  const imagesError = (reply: FastifyReply, err: unknown, code: string) => {
+    if (err instanceof DockerImagesError) {
+      return reply.status(err.statusCode).send({ ok: false, error: { code: err.code, message: err.message } });
+    }
+    const e = err as { stderr?: unknown; message?: unknown };
+    const why = typeof e?.stderr === "string" && e.stderr.trim() !== "" ? e.stderr.trim().split("\n").slice(-3).join(" ") : String(e?.message ?? err);
+    return reply.status(503).send({ ok: false, error: { code, message: `docker could not be queried: ${why.slice(0, 300)}` } });
+  };
+
+  // List images, with the containers that use each one
+  app.get("/api/docker/images", {
+    preHandler: requirePermission(Resource.DOCKER, Action.READ),
+    handler: async (_req, reply) => {
+      try {
+        return reply.send({ ok: true, data: await listImages(run) });
+      } catch (err) {
+        return imagesError(reply, err, "DOCKER_IMAGES_FAILED");
+      }
+    },
+  });
+
+  // Remove images no container references (destructive)
+  app.post<{ Body: unknown }>("/api/docker/images/prune", {
+    preHandler: requirePermission(Resource.DOCKER, Action.DELETE),
+    handler: async (req, reply) => {
+      const parsed = parsePruneBody(req.body);
+      if (typeof parsed === "string") {
+        return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: parsed } });
+      }
+      try {
+        const result = await pruneImages(run, parsed, now());
+        if (!parsed.dryRun && !result.verified) {
+          return reply.status(500).send({ ok: false, error: { code: "VERIFICATION_FAILED", message: "An image docker removed without error is still listed" }, data: result });
+        }
+        return reply.send({ ok: true, data: result });
+      } catch (err) {
+        return imagesError(reply, err, "DOCKER_PRUNE_FAILED");
+      }
+    },
+  });
+
+  // Report container update status from Unraid's own cache. Never contacts a registry.
+  app.get("/api/docker/updates", {
+    preHandler: requirePermission(Resource.DOCKER, Action.READ),
+    handler: async (_req, reply) => {
+      try {
+        return reply.send({ ok: true, data: await updateStatus(run, updateStatusPath, now()) });
+      } catch (err) {
+        return imagesError(reply, err, "DOCKER_UPDATES_FAILED");
+      }
+    },
+  });
+
   // List containers
   app.get("/api/docker/containers", {
     preHandler: requirePermission(Resource.DOCKER, Action.READ),

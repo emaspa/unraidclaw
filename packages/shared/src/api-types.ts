@@ -52,6 +52,90 @@ export interface DockerLogsResponse {
   logs: string;
 }
 
+// ── Docker images and update status ────────────────────────────
+export interface DockerImageInfo {
+  /** Full image ID, sha256:... */
+  id: string;
+  /** Tags such as "lscr.io/linuxserver/plex:latest". Empty for a dangling image. */
+  repoTags: string[];
+  sizeBytes: number;
+  /** Creation time as docker reports it (RFC 3339). */
+  created: string;
+  /** True when the image has no tag. */
+  dangling: boolean;
+  /** Names of the containers, running or stopped, created from this image. */
+  inUseBy: string[];
+  /** True when no container references the image. */
+  unused: boolean;
+}
+
+export interface DockerImagesResponse {
+  images: DockerImageInfo[];
+  totals: {
+    count: number;
+    sizeBytes: number;
+    danglingCount: number;
+    danglingSizeBytes: number;
+    unusedCount: number;
+    unusedSizeBytes: number;
+  };
+}
+
+/** "dangling": untagged images no container uses. "unused": any image no container uses. */
+export type DockerImagePruneMode = "dangling" | "unused";
+
+export interface DockerImagePruneRequest {
+  dryRun?: boolean;
+  mode?: DockerImagePruneMode;
+  /** Only images created at least this many hours ago. */
+  olderThanHours?: number;
+}
+
+export interface DockerImagePruneResponse {
+  dryRun: boolean;
+  mode: DockerImagePruneMode;
+  olderThanHours?: number;
+  /** Exactly the images selected for removal. */
+  images: Array<{ id: string; repoTags: string[]; sizeBytes: number; created: string }>;
+  /** Sum of the selected images' sizes. Shared layers can make the real figure smaller. */
+  reclaimableBytes: number;
+  removed: Array<{ id: string; repoTags: string[]; sizeBytes: number }>;
+  failed: Array<{ id: string; repoTags: string[]; error: string }>;
+  reclaimedBytes: number;
+  /** True when a fresh listing shows every image docker removed without error is gone. */
+  verified: boolean;
+}
+
+export interface DockerUpdateStatusEntry {
+  name: string;
+  id: string;
+  /** The image reference the container was created with. */
+  image: string;
+  /** The key looked up in Unraid's update cache. */
+  cacheKey: string;
+  state: string;
+  updateAvailable: boolean | "unknown";
+  localDigest: string | null;
+  remoteDigest: string | null;
+  /** Unraid's own status string for the entry: "true", "false" or "undef". */
+  cacheStatus: string | null;
+}
+
+export interface DockerUpdateStatusResponse {
+  cache: {
+    path: string;
+    exists: boolean;
+    /** When Unraid last wrote the cache, so the caller can judge how stale it is. */
+    modifiedAt: string | null;
+    ageSeconds: number | null;
+    entries: number;
+    /** Why the cache could not be used, when it could not. Every container is then "unknown". */
+    error?: string;
+  };
+  containers: DockerUpdateStatusEntry[];
+  totals: { containers: number; updatesAvailable: number; upToDate: number; unknown: number };
+}
+
 // ── Community Applications ─────────────────────────────────────
 
 /** One row of a CA search result. */

@@ -48,7 +48,7 @@ export function registerTools(
 // Older mutating registrations do not all declare optional. Only known reads
 // receive readOnlyHint; new tools conservatively default to destructive.
 export const READ_ONLY = new Set([
-  "unraid_health_check", "unraid_docker_list", "unraid_docker_inspect", "unraid_docker_logs",
+  "unraid_health_check", "unraid_docker_list", "unraid_docker_inspect", "unraid_docker_logs", "unraid_docker_images", "unraid_docker_update_status",
   "unraid_ca_search", "unraid_ca_app", "unraid_plugins_list", "unraid_plugin_info",
   "unraid_vm_list", "unraid_vm_inspect", "unraid_array_status", "unraid_parity_status", "unraid_disk_list",
   "unraid_disk_details", "unraid_share_list", "unraid_share_details", "unraid_system_info",
