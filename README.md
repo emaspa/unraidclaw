@@ -271,7 +271,7 @@ Update pulls the current image tag and preserves saved ports, paths, variables a
 
 The replacement is created before stopping the old container. UnraidClaw swaps their names, starts the replacement when needed, verifies its state, then removes the old container without deleting its image or volumes. A failed replacement triggers a rollback. If rollback fails, the error identifies the original container for recovery. Container rollback cannot reverse changes an updated app makes to its data.
 
-Updates refuse paused or unstable containers and configurations they cannot reproduce, including unsupported template fields, device access, custom runtime settings and resource limits. Update previews and errors redact values marked `Mask="true"` in the saved template.
+Updates refuse paused or unstable containers and configurations they cannot reproduce, including unsupported template fields, device access, custom runtime settings and resource limits. Install plans, update previews and their errors redact values marked `Mask="true"` and the values of variables and labels with a secret-looking name, such as `TUNNEL_TOKEN`, `DB_PASSWORD` or `API_KEY`, which templates often leave unmasked.
 
 Remove deletes only the container. Appdata, Docker volumes, the image and the saved template remain. Use **Add Container** on the Docker tab to recreate it from the saved configuration.
 

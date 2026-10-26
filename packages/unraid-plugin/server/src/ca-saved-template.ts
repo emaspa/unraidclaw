@@ -669,35 +669,6 @@ export interface CreateOptions {
 }
 
 /**
- * Values the template marks as secrets, longest first so a value that contains
- * another is replaced before its substring is.
- */
-export function maskedValues(tpl: SavedTemplate): string[] {
-  return tpl.resolved.config
-    .filter((c) => c.mask && c.value.trim() !== "")
-    .map((c) => c.value)
-    .sort((a, b) => b.length - a.length);
-}
-
-/**
- * Replace every masked value with `***`.
- *
- * The plan, the command preview and any error text go back to the caller and
- * into the activity log, and a template's masked fields are its passwords and
- * API keys. The runner still gets the real values; only what is reported is
- * redacted.
- */
-export function redactSecrets(secrets: string[], text: string): string {
-  let out = text;
-  for (const secret of secrets) out = out.split(secret).join("***");
-  return out;
-}
-
-export function redactArgv(secrets: string[], argv: string[]): string[] {
-  return argv.map((arg) => redactSecrets(secrets, arg));
-}
-
-/**
  * The `docker create` argv for rebuilding this template's container.
  *
  * Mirrors what Unraid's xmlToCommand builds from the same template, with two

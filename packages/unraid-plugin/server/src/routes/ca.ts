@@ -20,21 +20,21 @@ import {
   computeBlockers,
   hostPaths,
   missingRequired,
+  redactArgv,
+  redactSecrets,
   resolveOverrides,
   resolveTemplate,
+  secretValues,
   validateResolved,
   type TemplateEnv,
 } from "../ca-template.js";
 import {
   buildCreateArgs,
   containerBlockers,
-  maskedValues,
   normalizeImage,
   parseContainerFacts,
   parseSavedTemplate,
   reconcileMounts,
-  redactArgv,
-  redactSecrets,
   type ContainerFacts,
   type SavedTemplate,
 } from "../ca-saved-template.js";
@@ -636,8 +636,13 @@ export function registerCaRoutes(app: FastifyInstance, runtime: CaRuntime = crea
       }
 
       const templatePath = join(runtime.templatesDir, `my-${containerName}.xml`);
-      const xml = buildTemplateXml(app_, resolved);
-      plan = buildPlan(app_, resolved, templatePath, xml);
+      const now = Date.now();
+      const xml = buildTemplateXml(app_, resolved, now);
+      plan = buildPlan(app_, resolved, templatePath, now);
+      // The plan and every error from here on go back to the caller. Unraid's
+      // rebuild script prints the docker command it ran, values included.
+      const secrets = secretValues(resolved.config);
+      const safe = (err: unknown) => redactSecrets(secrets, String((err as Error)?.message ?? err));
 
       const warnings: string[] = [];
       if ((app_.raw.Requires ?? "").trim() !== "") {
@@ -730,7 +735,7 @@ export function registerCaRoutes(app: FastifyInstance, runtime: CaRuntime = crea
             reply,
             500,
             "CA_HOST_PATH_FAILED",
-            `Could not create host directory ${path}: ${(err as Error).message}. The template was kept at ${templatePath}.`
+            `Could not create host directory ${path}: ${safe(err)}. The template was kept at ${templatePath}.`
           );
         }
       }
@@ -742,7 +747,7 @@ export function registerCaRoutes(app: FastifyInstance, runtime: CaRuntime = crea
           reply,
           500,
           "CA_INSTALL_FAILED",
-          `Unraid could not create the container: ${(err as Error).message}. The template was kept at ${templatePath}, so you can retry or finish the install from the Docker tab.`
+          `Unraid could not create the container: ${safe(err)}. The template was kept at ${templatePath}, so you can retry or finish the install from the Docker tab.`
         );
       }
 
@@ -764,7 +769,7 @@ export function registerCaRoutes(app: FastifyInstance, runtime: CaRuntime = crea
           reply,
           500,
           "CA_INSTALL_FAILED",
-          `Unraid reported no error but no container named "${containerName}" exists, so the image pull or the container creation failed: ${(err as Error).message}. The template was kept at ${templatePath}, so you can retry or finish the install from the Docker tab.`
+          `Unraid reported no error but no container named "${containerName}" exists, so the image pull or the container creation failed: ${safe(err)}. The template was kept at ${templatePath}, so you can retry or finish the install from the Docker tab.`
         );
       }
 
@@ -776,7 +781,7 @@ export function registerCaRoutes(app: FastifyInstance, runtime: CaRuntime = crea
           await runtime.run("docker", ["start", containerName]);
         } catch (err) {
           warnings.push(
-            `The container was created but could not be started: ${(err as Error).message}. Start it from the Docker tab.`
+            `The container was created but could not be started: ${safe(err)}. Start it from the Docker tab.`
           );
         }
       }
@@ -823,9 +828,10 @@ export function registerCaRoutes(app: FastifyInstance, runtime: CaRuntime = crea
           throw err;
         }
 
-        // A template's masked fields are its passwords and API keys. They go to
-        // docker, never into a response, a plan or an error message.
-        const secrets = maskedValues(tpl);
+        // A template's masked and secret-named fields are its passwords and API
+        // keys. They go to docker, never into a response, a plan or an error
+        // message.
+        const secrets = secretValues(tpl.resolved.config);
         const safe = (err: unknown) => redactSecrets(secrets, String((err as Error)?.message ?? err));
 
         // A paused or restarting container has no state an update could put

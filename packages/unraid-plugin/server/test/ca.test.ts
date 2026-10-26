@@ -1417,3 +1417,100 @@ test("empty 7.4 fields install exactly as a 7.3 template does", async () => {
     assert.ok(!plan.dockerCommandPreview.some((a: string) => a.startsWith("--memory")));
   }
 });
+
+// ── Secrets ─────────────────────────────────────────────────────
+
+function feedWithSecrets(): string {
+  const feed = JSON.parse(FIXTURE);
+  const mv = feed.applist.find((a: { Name?: string }) => a.Name === "MeshVault");
+  const field = (Name: string, Target: string, Default: string, Mask: string) => ({
+    "@attributes": { Name, Target, Default, Mode: "", Description: "", Type: "Variable", Display: "always", Required: "false", Mask },
+    value: "",
+  });
+  mv.Config.push(
+    field("Database password", "DB_PASSWORD", "generated-default-pw", "true"),
+    // Templates often leave Mask="false" on a token.
+    field("Tunnel token", "TUNNEL_TOKEN", "", "false"),
+    field("Web UI password", "WEBUI_PASS", "", "false"),
+    field("Keyboard layout", "KEYBOARD_LAYOUT", "us-intl", "false")
+  );
+  return JSON.stringify(feed);
+}
+
+const SECRET_OVERRIDES = { TUNNEL_TOKEN: "tok&en<unmasked>value", WEBUI_PASS: "admin" };
+
+test("an install plan hides masked and secret-named values", async () => {
+  await setPermissions(ALL_CA);
+  const { app } = await harness({}, feedWithSecrets());
+  const res = await app.inject({
+    method: "POST",
+    url: "/api/ca/app/MeshVault/install",
+    payload: { dryRun: true, overrides: SECRET_OVERRIDES },
+  });
+
+  assert.equal(res.statusCode, 200);
+  for (const secret of ["generated-default-pw", "tok&en<unmasked>value", "tok&amp;en&lt;unmasked&gt;value", "WEBUI_PASS=admin", ">admin<"]) {
+    assert.ok(!res.payload.includes(secret), `the plan does not show ${secret}`);
+  }
+  const { plan } = res.json().data;
+  assert.ok(plan.env.includes("DB_PASSWORD=***"), JSON.stringify(plan.env));
+  assert.ok(plan.env.includes("TUNNEL_TOKEN=***"));
+  assert.ok(plan.env.includes("WEBUI_PASS=***"));
+  assert.ok(plan.env.includes("KEYBOARD_LAYOUT=us-intl"), "an ordinary variable is still shown");
+  assert.ok(plan.dockerCommandPreview.includes("TUNNEL_TOKEN=***"));
+  assert.match(plan.templateXml, /Target="TUNNEL_TOKEN" Default="\*\*\*"[^>]*>\*\*\*<\/Config>/);
+});
+
+test("an install writes the real secrets to flash and hides them from the response", async () => {
+  await setPermissions(ALL_CA);
+  const { app, templatesDir } = await harness({}, feedWithSecrets());
+  const res = await app.inject({
+    method: "POST",
+    url: "/api/ca/app/MeshVault/install",
+    payload: { overrides: SECRET_OVERRIDES },
+  });
+
+  assert.equal(res.statusCode, 200);
+  assert.ok(!res.payload.includes("generated-default-pw"));
+  assert.ok(!res.payload.includes("WEBUI_PASS=admin"));
+  const written = await readFile(join(templatesDir, "my-MeshVault.xml"), "utf8");
+  assert.ok(written.includes(">generated-default-pw</Config>"));
+  assert.ok(written.includes(">tok&amp;en&lt;unmasked&gt;value</Config>"));
+  assert.ok(written.includes(">admin</Config>"));
+});
+
+test("a rebuild error quoting the docker command does not leak a secret", async () => {
+  await setPermissions(ALL_CA);
+  const { app } = await harness(
+    {
+      run: async (file) => {
+        if (file === "/fake/rebuild_container") {
+          throw new Error("docker run -d -e 'DB_PASSWORD'='generated-default-pw' -e 'WEBUI_PASS'='admin' failed");
+        }
+        return { stdout: "", stderr: "" };
+      },
+    },
+    feedWithSecrets()
+  );
+  const res = await app.inject({
+    method: "POST",
+    url: "/api/ca/app/MeshVault/install",
+    payload: { overrides: SECRET_OVERRIDES },
+  });
+
+  assert.equal(res.statusCode, 500);
+  const { message } = res.json().error;
+  assert.equal(res.json().error.code, "CA_INSTALL_FAILED");
+  assert.ok(!message.includes("generated-default-pw") && !message.includes("admin"), message);
+  assert.ok(message.includes("'WEBUI_PASS'=***"), message);
+});
+
+test("secret names match whole words and their endings", async () => {
+  const { isSecretName } = await import("../src/ca-template.js");
+  for (const name of ["TUNNEL_TOKEN", "DB_PASSWORD", "WEBPASSWORD", "apiKey", "API_KEY", "CLIENT_SECRET", "BASIC_AUTH", "AWS_CREDENTIALS", "WEBUI_PASS"]) {
+    assert.ok(isSecretName(name), name);
+  }
+  for (const name of ["KEYBOARD_LAYOUT", "AUTHOR", "MAX_TOKENS", "PASSTHROUGH", "TZ", "PUID"]) {
+    assert.ok(!isSecretName(name), name);
+  }
+});

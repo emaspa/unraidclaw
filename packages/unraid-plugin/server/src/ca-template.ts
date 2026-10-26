@@ -132,6 +132,77 @@ export class CaInstallError extends Error {
   }
 }
 
+/**
+ * Words that mark a variable or label as holding a secret. A name matches when
+ * one of its words ends in one of these, so WEBPASSWORD and apiKey match but
+ * KEYBOARD_LAYOUT, AUTHOR and MAX_TOKENS do not.
+ */
+const SECRET_WORDS = ["TOKEN", "SECRET", "PASSWORD", "PASSWD", "PASS", "PWD", "KEY", "AUTH", "CREDENTIAL", "CREDENTIALS"];
+
+export function isSecretName(name: string): boolean {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^A-Za-z0-9]+/)
+    .some((word) => word !== "" && SECRET_WORDS.some((s) => word.toUpperCase().endsWith(s)));
+}
+
+/**
+ * True when a config entry's value must not be reported: the template masks
+ * it, or it is a variable or label with a secret-looking name. Many templates
+ * leave Mask="false" on a token or a password.
+ */
+export function isSecretEntry(entry: CaConfigEntry): boolean {
+  if (entry.mask) return true;
+  if (entry.type !== "Variable" && entry.type !== "Label") return false;
+  return isSecretName(entry.target) || isSecretName(entry.name);
+}
+
+/**
+ * Values to replace wherever they appear in reported text, longest first so a
+ * value that contains another is replaced before its substring is.
+ *
+ * A value kept secret only by its name is left out when it is shorter than six
+ * characters, such as "true" for AUTH_ENABLED: replacing it everywhere would
+ * garble unrelated text. redactSecrets still hides it wherever it appears as
+ * NAME=value.
+ */
+export function secretValues(config: Array<CaConfigEntry & { value: string }>): string[] {
+  const values = config
+    .filter((c) => c.value.trim() !== "" && (c.mask || (isSecretEntry(c) && c.value.trim().length >= 6)))
+    .map((c) => c.value);
+  return [...new Set(values)].sort((a, b) => b.length - a.length);
+}
+
+// NAME=value, the name and the value each bare or quoted, as a shell command
+// or an error quotes it. Unraid's xmlToCommand writes -e 'NAME'='value'.
+const ASSIGNMENT_RE = /(['"]?)([A-Za-z_][A-Za-z0-9_.-]*)\1=('[^']*'|"[^"]*"|[^\s'"]+)/g;
+
+/**
+ * Hide secrets in text that goes back to the caller: every value in `secrets`
+ * becomes `***`, and so does the value of any NAME=value whose name looks
+ * secret. Docker still gets the real values; only what is reported changes.
+ */
+export function redactSecrets(secrets: string[], text: string): string {
+  let out = text;
+  for (const secret of secrets) out = out.split(secret).join("***");
+  return out.replace(ASSIGNMENT_RE, (whole, quote: string, name: string) =>
+    isSecretName(name) ? `${quote}${name}${quote}=***` : whole
+  );
+}
+
+/**
+ * redactSecrets for each entry of an env list, a label list or an argv. An
+ * entry that is itself NAME=value under a secret-looking name loses its whole
+ * value, spaces included.
+ */
+export function redactArgv(secrets: string[], argv: string[]): string[] {
+  return argv.map((arg) => {
+    const eq = arg.indexOf("=");
+    if (eq > 0 && isSecretName(arg.slice(0, eq))) return `${arg.slice(0, eq)}=***`;
+    return redactSecrets(secrets, arg);
+  });
+}
+
 export interface TemplateEnv {
   /** Contents of /etc/unraid-version, e.g. "7.0.0". Null when unknown. */
   unraidVersion: string | null;
@@ -596,18 +667,26 @@ export function buildPlan(
   app: CaApp,
   resolved: ResolvedTemplate,
   templatePath: string,
-  templateXml: string
+  now: number
 ): CaInstallPlan {
+  // The plan goes back to the caller, so secret values are hidden in it. The
+  // template XML is rebuilt from redacted entries rather than searched, since
+  // the copy on flash holds each value entity-encoded.
+  const secrets = secretValues(resolved.config);
+  const shown: ResolvedTemplate = {
+    ...resolved,
+    config: resolved.config.map((c) => (isSecretEntry(c) && c.value !== "" ? { ...c, value: "***" } : c)),
+  };
   return {
     name: resolved.name,
     repo: app.repo,
     image: resolved.image,
     network: resolved.network,
-    ports: resolved.ports,
-    volumes: resolved.volumes,
-    env: resolved.env,
+    ports: redactArgv(secrets, resolved.ports),
+    volumes: redactArgv(secrets, resolved.volumes),
+    env: redactArgv(secrets, resolved.env),
     templatePath,
-    templateXml,
-    dockerCommandPreview: previewDockerCommand(resolved, app),
+    templateXml: buildTemplateXml(app, shown, now),
+    dockerCommandPreview: redactArgv(secrets, previewDockerCommand(resolved, app)),
   };
 }

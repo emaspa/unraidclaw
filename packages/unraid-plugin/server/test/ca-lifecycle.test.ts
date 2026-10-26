@@ -1270,6 +1270,54 @@ test("a docker error quoting the command does not leak a masked value", async ()
   assert.match(res.json().error.message, /API_KEY=\*\*\*/);
 });
 
+const WITH_UNMASKED_SECRETS = templateXml({
+  name: "jellyfin",
+  image: "jellyfin/jellyfin:latest",
+  configs: [
+    { label: "Config", target: "/config", type: "Path", mode: "rw", value: "/mnt/user/appdata/jellyfin-custom" },
+    // Templates often leave Mask="false" on a token or a password.
+    { label: "Tunnel token", target: "TUNNEL_TOKEN", type: "Variable", value: "eyJhIjoiunmasked-tunnel" },
+    { label: "Web UI password", target: "WEBUI_PASS", type: "Variable", value: "admin" },
+    { label: "Keyboard layout", target: "KEYBOARD_LAYOUT", type: "Variable", value: "us-intl" },
+  ],
+});
+
+test("a secret-named value the template leaves unmasked never reaches the response", async () => {
+  await setPermissions(ALL_CA);
+  const docker = runningJellyfin();
+  const { app } = await harness(docker, { "my-jellyfin.xml": WITH_UNMASKED_SECRETS });
+
+  const preview = await post(app, "/api/ca/app/jellyfin/update", { dryRun: true });
+  assert.equal(preview.statusCode, 200);
+  assert.ok(!preview.payload.includes("eyJhIjoiunmasked-tunnel"), "the token is hidden");
+  assert.ok(preview.payload.includes("TUNNEL_TOKEN=***"));
+  // A short value is hidden where it is NAME=value, without replacing "admin"
+  // everywhere else.
+  assert.ok(preview.payload.includes("WEBUI_PASS=***"));
+  assert.ok(!preview.payload.includes("WEBUI_PASS=admin"));
+  assert.ok(preview.payload.includes("KEYBOARD_LAYOUT=us-intl"), "an ordinary variable is still shown");
+
+  const done = await post(app, "/api/ca/app/jellyfin/update");
+  assert.equal(done.statusCode, 200);
+  assert.ok(!done.payload.includes("eyJhIjoiunmasked-tunnel"));
+  const create = docker.runs.find((r) => r[1] === "create")!;
+  assert.ok(create.includes("TUNNEL_TOKEN=eyJhIjoiunmasked-tunnel"), "docker still gets the real token");
+  assert.ok(create.includes("WEBUI_PASS=admin"));
+});
+
+test("a docker error quoting a short secret-named value does not leak it", async () => {
+  await setPermissions(ALL_CA);
+  const docker = runningJellyfin();
+  docker.failures.create = "invalid argument: -e 'WEBUI_PASS'='admin' -e TUNNEL_TOKEN=eyJhIjoiunmasked-tunnel";
+  const { app } = await harness(docker, { "my-jellyfin.xml": WITH_UNMASKED_SECRETS });
+
+  const res = await post(app, "/api/ca/app/jellyfin/update");
+  assert.equal(res.statusCode, 500);
+  const { message } = res.json().error;
+  assert.ok(!message.includes("admin") && !message.includes("eyJhIjoiunmasked-tunnel"), message);
+  assert.ok(message.includes("'WEBUI_PASS'=***"), message);
+});
+
 // ── OpenClaw tools ──────────────────────────────────────────────
 
 test("the OpenClaw tools call the update and remove endpoints they document", async () => {
