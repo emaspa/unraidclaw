@@ -99,9 +99,10 @@ export function createServer(config: ServerConfig, httpsOpts?: { cert: Buffer; k
   // Error handler
   app.setErrorHandler(async (error, _request, reply) => {
     if (error instanceof GraphQLError) {
-      return reply.code(error.statusCode >= 500 ? 502 : error.statusCode).send({
+      const status = error.code === "GRAPHQL_ERROR" && error.statusCode >= 500 ? 502 : error.statusCode;
+      return reply.code(status).send({
         ok: false,
-        error: { code: "GRAPHQL_ERROR", message: error.message },
+        error: { code: error.code, message: error.message },
       });
     }
 

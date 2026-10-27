@@ -7,15 +7,18 @@ const startTime = Date.now();
 
 export function registerHealthRoutes(app: FastifyInstance, gql: GraphQLClient): void {
   app.get<{ Reply: { ok: true; data: HealthResponse } }>("/api/health", async (_req, reply) => {
-    const graphqlReachable = await gql.isReachable();
+    const unraidApiKeyConfigured = gql.hasApiKey;
+    const { reachable: graphqlReachable, message } = await gql.check();
 
     return reply.send({
       ok: true,
       data: {
-        status: graphqlReachable ? "ok" : "degraded",
+        status: graphqlReachable && !message ? "ok" : "degraded",
         version: VERSION,
         uptime: Math.floor((Date.now() - startTime) / 1000),
         graphqlReachable,
+        unraidApiKeyConfigured,
+        ...(message ? { message } : {}),
       },
     });
   });

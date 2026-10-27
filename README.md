@@ -132,6 +132,22 @@ REST API routes return a consistent envelope (MCP uses JSON-RPC):
 
 REST authentication uses the `x-api-key: <api-key>` header. `/api/health` is public and has no permission requirement. Unknown paths return 404 without checking the key, and CORS preflight requests return 204.
 
+Routes that read through Unraid's GraphQL API need the Unraid API key from [Setup](#setup). Without it they fail with HTTP 503 and `UNRAID_API_KEY_MISSING` before contacting Unraid, and when Unraid refuses the key, for example because it was deleted, they fail with HTTP 502 and `UNRAID_API_KEY_REJECTED`, quoting Unraid's own message. Other GraphQL failures keep the code `GRAPHQL_ERROR`. `/api/health` reports `unraidApiKeyConfigured` and checks the key with an authenticated query. When the key is missing or Unraid refuses it, `status` is `degraded` and `message` says what to fix:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "status": "degraded",
+    "version": "0.1.39",
+    "uptime": 42,
+    "graphqlReachable": false,
+    "unraidApiKeyConfigured": false,
+    "message": "The Unraid API key is not configured, so UnraidClaw cannot call Unraid's GraphQL API. Copy an Unraid API key with the ADMIN role from Settings > Management Access and paste it into Unraid API Key in Settings > UnraidClaw."
+  }
+}
+```
+
 ### Endpoints
 
 | Category | Method | Endpoint | Permission |

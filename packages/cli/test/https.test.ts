@@ -29,7 +29,7 @@ test("CLI with the real gateway over loopback HTTPS", async t => {
   const { createServer } = await import("../../unraid-plugin/server/src/server.js");
   const { hashApiKey } = await import("../../unraid-plugin/server/src/auth.js");
   const key = randomKey(), wrongKey = randomKey();
-  const config = { ...loadConfig(), apiKeyHash: hashApiKey(key), unraidApiKey: "", mcpEnabled: false,
+  const config = { ...loadConfig(), apiKeyHash: hashApiKey(key), unraidApiKey: randomKey(), mcpEnabled: false,
     graphqlUrl: "http://127.0.0.1:1/graphql", logFile: join(dir, "activity.jsonl") };
   await writeFile(join(dir, "permissions.json"), JSON.stringify({ "services:read": true }));
   loadPermissions();

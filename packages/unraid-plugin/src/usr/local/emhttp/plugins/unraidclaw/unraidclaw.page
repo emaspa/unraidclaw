@@ -66,6 +66,15 @@ $certificateReadable = $certificate['present'] && !isset($certificate['error']);
       <span class="occ-label">API Key:</span>
       <span><?=empty($cfg['API_KEY_HASH']) ? '<em>Not configured</em>' : 'Configured'?></span>
     </div>
+    <div class="occ-status-row">
+      <span class="occ-label">Unraid API Key:</span>
+      <?php if (empty($cfg['UNRAID_API_KEY'])): ?>
+        <span class="occ-badge occ-badge-stopped">Not configured</span>
+        <span class="occ-hint">Tools that read from Unraid's GraphQL API fail until you paste an Unraid API key with the ADMIN role, from Settings &gt; Management Access, into Unraid API Key on the Settings tab.</span>
+      <?php else: ?>
+        <span>Configured</span>
+      <?php endif; ?>
+    </div>
     <div class="occ-actions">
       <?php if ($isRunning): ?>
         <button class="occ-btn occ-btn-danger" onclick="occServiceControl('stop')">Stop</button>
@@ -143,7 +152,7 @@ $certificateReadable = $certificate['present'] && !isset($certificate['error']);
           <td>
             <?php $hasApiKey = !empty($cfg['UNRAID_API_KEY']); ?>
             <input type="password" name="UNRAID_API_KEY" value="" size="50" autocomplete="off" placeholder="<?=$hasApiKey ? '(key configured - leave blank to keep)' : 'Enter Unraid API key'?>">
-            <?php if ($hasApiKey): ?><span class="occ-badge occ-badge-ok" style="margin-left:8px">Configured</span><?php endif; ?>
+            <?php if ($hasApiKey): ?><span class="occ-badge occ-badge-ok" style="margin-left:8px">Configured</span><?php else: ?><span class="occ-badge occ-badge-stopped" style="margin-left:8px">Not configured</span><?php endif; ?>
             <span class="occ-hint">API key for authenticating to Unraid's GraphQL API. Leave blank to keep existing key.</span>
           </td>
         </tr>

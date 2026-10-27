@@ -4,6 +4,9 @@ export interface HealthResponse {
   version: string;
   uptime: number;
   graphqlReachable: boolean;
+  unraidApiKeyConfigured: boolean;
+  /** Present when the gateway cannot work as configured, saying what to fix. */
+  message?: string;
 }
 
 // ── Docker ─────────────────────────────────────────────────────
