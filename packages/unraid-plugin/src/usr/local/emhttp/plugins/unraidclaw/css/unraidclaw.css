@@ -60,17 +60,10 @@
 }
 
 /* Badges */
-.occ-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-.occ-badge-ok { background: #28a745; color: #fff; }
-.occ-badge-stopped { background: #dc3545; color: #fff; }
-.occ-badge-warn { background: #ffc107; color: #333; }
+.occ-badge { display: inline-block; font-weight: bold; }
+.occ-badge-ok { background: transparent; color: var(--green-800, #28a745); }
+.occ-badge-stopped { background: transparent; color: var(--red-600, #dc3545); }
+.occ-badge-warn { background: transparent; color: var(--orange-300, #e0a800); }
 
 /* Status card */
 .occ-status-card {
@@ -335,4 +328,137 @@
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 3px;
   padding: 4px 8px;
+}
+
+/* Unraid's light themes (White, Azure). The colours above suit the dark themes,
+   so here they follow the theme's own text colour (Unraid 7 sets --text-color). */
+html:is(.Theme--white, .Theme--azure) {
+  --occ-fg: var(--text-color, #1c1b1b);
+
+  & .occ-tabs {
+    border-bottom: 2px solid color-mix(in srgb, var(--occ-fg) 15%, transparent);
+  }
+  & .occ-tab {
+    color: color-mix(in srgb, var(--occ-fg) 65%, transparent);
+  }
+  & .occ-tab:hover {
+    color: var(--occ-fg);
+    background: color-mix(in srgb, var(--occ-fg) 5%, transparent);
+  }
+  & .occ-tab.active {
+    color: var(--occ-fg);
+    background: color-mix(in srgb, var(--occ-fg) 8%, transparent);
+    border-color: color-mix(in srgb, var(--occ-fg) 15%, transparent);
+    border-bottom: 2px solid color-mix(in srgb, var(--occ-fg) 8%, transparent);
+  }
+  & .occ-header h2,
+  & .occ-settings h2,
+  & .occ-permissions h2,
+  & .occ-log-viewer h2 {
+    color: var(--occ-fg);
+  }
+  & .occ-header p {
+    color: color-mix(in srgb, var(--occ-fg) 65%, transparent);
+  }
+  & .occ-status-card {
+    background: color-mix(in srgb, var(--occ-fg) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--occ-fg) 12%, transparent);
+  }
+  & .occ-status-card h3 {
+    border-bottom: 1px solid color-mix(in srgb, var(--occ-fg) 12%, transparent);
+    color: var(--occ-fg);
+  }
+  & .occ-status-row {
+    color: var(--occ-fg);
+  }
+  & .occ-label {
+    color: var(--occ-fg);
+  }
+  & .occ-hint {
+    color: color-mix(in srgb, var(--occ-fg) 65%, transparent);
+  }
+  & .occ-links li {
+    border-bottom: 1px solid color-mix(in srgb, var(--occ-fg) 8%, transparent);
+    color: var(--occ-fg);
+  }
+  & .occ-links a {
+    color: var(--link-text-color, #6cabec);
+  }
+  & .occ-settings table.tablesorter thead tr th,
+  & .occ-log-viewer table.tablesorter thead tr th {
+    color: var(--occ-fg);
+  }
+  & .occ-settings table.tablesorter tbody tr td,
+  & .occ-log-viewer table.tablesorter tbody tr td {
+    color: var(--occ-fg);
+  }
+  & .occ-permissions > p {
+    color: color-mix(in srgb, var(--occ-fg) 65%, transparent);
+  }
+  & .occ-presets {
+    background: color-mix(in srgb, var(--occ-fg) 4%, transparent);
+    border: 1px solid color-mix(in srgb, var(--occ-fg) 12%, transparent);
+  }
+  & .occ-presets .occ-label {
+    color: var(--occ-fg);
+  }
+  & .occ-perm-category {
+    border: 1px solid color-mix(in srgb, var(--occ-fg) 12%, transparent);
+  }
+  & .occ-perm-header {
+    background: color-mix(in srgb, var(--occ-fg) 6%, transparent);
+  }
+  & .occ-perm-header:hover {
+    background: color-mix(in srgb, var(--occ-fg) 9%, transparent);
+  }
+  & .occ-perm-header h3 {
+    color: var(--occ-fg);
+  }
+  & .occ-expand-icon {
+    color: color-mix(in srgb, var(--occ-fg) 65%, transparent);
+  }
+  & .occ-perm-summary {
+    color: color-mix(in srgb, var(--occ-fg) 65%, transparent);
+  }
+  & .occ-perm-body {
+    background: color-mix(in srgb, var(--occ-fg) 3%, transparent);
+  }
+  & .occ-perm-item {
+    border-bottom: 1px solid color-mix(in srgb, var(--occ-fg) 6%, transparent);
+  }
+  & .occ-perm-label {
+    color: var(--occ-fg);
+  }
+  & .occ-destructive .occ-perm-label {
+    color: var(--red-600, #dc3545);
+  }
+  & .occ-perm-desc {
+    color: color-mix(in srgb, var(--occ-fg) 65%, transparent);
+  }
+  & .occ-log-controls {
+    color: var(--occ-fg);
+  }
+  & #occ-log-table th {
+    color: var(--occ-fg);
+  }
+  & #occ-log-table td {
+    color: var(--occ-fg);
+  }
+  & .occ-recent-table th {
+    color: var(--occ-fg);
+    border-bottom: 1px solid color-mix(in srgb, var(--occ-fg) 12%, transparent);
+  }
+  & .occ-recent-table td {
+    color: var(--occ-fg);
+  }
+  & .occ-settings input[type="text"],
+  & .occ-settings input[type="number"],
+  & .occ-settings input[type="password"],
+  & .occ-settings select,
+  & .occ-log-controls input,
+  & .occ-log-controls select {
+    background: color-mix(in srgb, var(--occ-fg) 8%, transparent);
+    color: var(--occ-fg);
+    border: 1px solid color-mix(in srgb, var(--occ-fg) 15%, transparent);
+  }
 }
