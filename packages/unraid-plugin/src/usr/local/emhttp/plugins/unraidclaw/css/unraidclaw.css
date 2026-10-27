@@ -429,6 +429,9 @@ html:is(.Theme--white, .Theme--azure) {
   & .occ-perm-label {
     color: var(--occ-fg);
   }
+  & .occ-destructive .occ-perm-label {
+    color: var(--red-600, #dc3545);
+  }
   & .occ-perm-desc {
     color: color-mix(in srgb, var(--occ-fg) 65%, transparent);
   }
@@ -440,9 +443,6 @@ html:is(.Theme--white, .Theme--azure) {
   }
   & #occ-log-table td {
     color: var(--occ-fg);
-  }
-  & .occ-status-4xx {
-    color: #d39e00;
   }
   & .occ-recent-table th {
     color: var(--occ-fg);
