@@ -415,6 +415,10 @@ A real run removes each selected image with `docker rmi -- <id>`, without force,
 
 Each container is looked up under the key Unraid uses, its image with `library/` added to an official image and `:latest` to an untagged one. `updateAvailable` is `true` when the cached local and remote digests differ, `false` when they match, and `"unknown"` when the entry is missing, has no remote digest or has status `undef` (for example a registry Unraid could not reach). A missing, unreadable or malformed cache file is reported in `cache.error` and makes every container `"unknown"`. To refresh the cache, use Check for Updates on the Docker tab; that script also refreshes templates and may send update notifications, so UnraidClaw does not run it. To apply an update, use `POST /api/ca/app/:name/update` or a container edit with `"pull": true`.
 
+### VMs
+
+`GET /api/vms` and `GET /api/vms/:id` read the VM list from Unraid's GraphQL API, which needs Unraid's VM service (libvirt). That service runs only while VMs are enabled in Settings > VM Manager and the array is started. When it is not running, both routes fail with HTTP 503 and `VMS_UNAVAILABLE` instead of `GRAPHQL_ERROR`, so a stopped VM service is not mistaken for a server without VMs. A server with the service running and no VMs gets an empty list.
+
 ### VM actions
 
 `POST /api/vms/:id/:action` where action is one of: `start`, `stop`, `force-stop`, `pause`, `resume`, `reboot`, `reset`

@@ -88,6 +88,7 @@ OS plugins are protected from mutation. UnraidClaw can list, inspect and check i
 - **Unraid 7.0.0+** with the [UnraidClaw plugin](https://github.com/emaspa/unraidclaw) installed
 - An API key generated from the UnraidClaw settings page
 - The Unraid API key, with the ADMIN role, pasted into Unraid API Key in Settings > UnraidClaw. A tool that fails with `UNRAID_API_KEY_MISSING` or `UNRAID_API_KEY_REJECTED` will keep failing until the user fixes that key, so pass the message on instead of retrying
+- VM tools that fail with `VMS_UNAVAILABLE` mean Unraid's VM service is not running: VMs are disabled in Settings > VM Manager or the array is stopped. Tell the user instead of retrying, and do not report it as a server without VMs
 
 ## Configuration
 

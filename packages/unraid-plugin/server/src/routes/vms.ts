@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { Resource, Action } from "@unraidclaw/shared";
 import type { VM } from "@unraidclaw/shared";
-import type { GraphQLClient } from "../graphql-client.js";
+import { GraphQLError, type GraphQLClient } from "../graphql-client.js";
 import { requirePermission } from "../permissions.js";
 import { runCommand, type CommandRunner } from "../docker-common.js";
 
@@ -21,6 +21,28 @@ const LIST_QUERY = `query {
  */
 function withUuid(d: VM): VM {
   return { ...d, uuid: d.id.slice(d.id.lastIndexOf(":") + 1) };
+}
+
+export const VMS_UNAVAILABLE_MESSAGE =
+  "Unraid reports that VMs are not available because its VM service (libvirt) is not running. " +
+  "It runs only while VMs are enabled in Settings > VM Manager and the array is started.";
+
+/**
+ * Lists the domains. A stopped VM service is its own error rather than an empty
+ * list, so "no VMs" is never confused with "VMs are off". A null `vms` without
+ * an error, which the API's schema allows since 7.4, is an empty list.
+ */
+async function listDomains(gql: GraphQLClient): Promise<VM[]> {
+  let data: { vms: { domains: VM[] | null } | null };
+  try {
+    data = await gql.query<{ vms: { domains: VM[] | null } | null }>(LIST_QUERY);
+  } catch (error) {
+    if (error instanceof GraphQLError && error.code === "GRAPHQL_ERROR" && /VMs are not available/i.test(error.message)) {
+      throw new GraphQLError(VMS_UNAVAILABLE_MESSAGE, 503, "VMS_UNAVAILABLE");
+    }
+    throw error;
+  }
+  return (data?.vms?.domains ?? []).map(withUuid);
 }
 
 // VM names can contain spaces, so accept any printable name up to 255
@@ -57,8 +79,7 @@ export function registerVMRoutes(app: FastifyInstance, gql: GraphQLClient, optio
   app.get("/api/vms", {
     preHandler: requirePermission(Resource.VMS, Action.READ),
     handler: async (_req, reply) => {
-      const data = await gql.query<{ vms: { domains: VM[] } }>(LIST_QUERY);
-      return reply.send({ ok: true, data: data.vms.domains.map(withUuid) });
+      return reply.send({ ok: true, data: await listDomains(gql) });
     },
   });
 
@@ -69,9 +90,8 @@ export function registerVMRoutes(app: FastifyInstance, gql: GraphQLClient, optio
       if (!validVMId(req.params.id)) {
         return reply.status(400).send({ ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid VM ID" } });
       }
-      const data = await gql.query<{ vms: { domains: VM[] } }>(LIST_QUERY);
       const search = req.params.id.toLowerCase();
-      const vm = data.vms.domains.map(withUuid).find(
+      const vm = (await listDomains(gql)).find(
         (d) => d.name.toLowerCase() === search || d.uuid === req.params.id || d.id === req.params.id
       );
       if (!vm) {
