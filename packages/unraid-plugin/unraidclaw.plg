@@ -14,7 +14,7 @@
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="7.0.0" support="https://forums.unraid.net/topic/197498-plugin-support-unraidclaw-ai-agent-gateway-with-permission-control/" description="Permission-enforcing REST API and MCP gateway that allows AI agents to manage your Unraid server with fine-grained access control.">
 
 <CHANGES>
-### Unreleased
+### 0.1.40
 - Fix GET /api/vms and unraid_vm_list failing with a GraphQL error when Unraid's VM service is not running, which is the normal state with VMs disabled in Settings > VM Manager. They now fail with HTTP 503 and VMS_UNAVAILABLE and say why, and GET /api/vms/:id does the same. Unraid 7.4 also lets the API return no VM list without an error, which UnraidClaw answered with HTTP 500; that is now an empty list
 - Fix a container edit warning that a folder would no longer be mounted when the template writes its container path with a trailing slash, such as /mnt/user/media/, which Docker reports without one. For a named Docker volume at such a path, the edit also mounted it a second time, so docker create failed before the running container was touched
 ### 0.1.39
