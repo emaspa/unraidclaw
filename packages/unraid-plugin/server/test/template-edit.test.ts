@@ -713,6 +713,30 @@ test("a volume is carried over even when a template path merely starts the same 
   assert.match(res.json().data.plan.dockerCommand, /-v 'jellyfin-cache:\/cache:rw'/);
 });
 
+test("a mount whose template destination ends in a slash counts as mounted", async () => {
+  await setPermissions(EDIT);
+  // Docker reports /movies for a template path written as /movies/.
+  const h = await harness(runningJellyfin({
+    mounts: [
+      { Type: "bind", Source: "/mnt/user/appdata/jellyfin", Destination: "/config", RW: true },
+      { Type: "bind", Source: "/mnt/user/Movies", Destination: "/movies", RW: true },
+      { Type: "volume", Name: "jellyfin-cache", Destination: "/cache", RW: true },
+    ],
+  }));
+  const res = await edit(h, {
+    dryRun: true,
+    config: [
+      { type: "Path", target: "/movies/", value: "/mnt/user/Movies/" },
+      { type: "Path", target: "/cache/", value: "/mnt/user/appdata/jellyfin/cache/" },
+    ],
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  const data = res.json().data;
+  assert.deepEqual(data.warnings, []);
+  assert.doesNotMatch(data.plan.dockerCommand, /jellyfin-cache/, "a volume mounted at /cache/ is not added again at /cache");
+  assert.equal(data.plan.dockerCommand.match(/:\/cache\/?[:']/g)?.length, 1);
+});
+
 test("a volume the command already mounts through Extra Parameters is not mounted twice", async () => {
   await setPermissions(EDIT);
   const h = await harness(runningJellyfin());

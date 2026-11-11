@@ -366,10 +366,12 @@ export function registerTemplateRoutes(app: FastifyInstance, lifecycle: CaLifecy
         // Covered means mounted at exactly that destination, in the quoted form
         // Unraid writes (-v 'src':'/dst':'rw'), a raw -v in Extra Parameters, or
         // a --mount. A plain substring test would take /cache2 for /cache and
-        // leave the app with an empty volume.
+        // leave the app with an empty volume. Docker reports a destination
+        // without the trailing slash a template may give it (/mnt/user/media/),
+        // so trailing slashes on either side do not count.
         const covered = (destination: string) => {
-          const d = destination.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          return new RegExp(`(?::'?${d}'?|(?:dst|target|destination)=${d})(?=[:,'\\s]|$)`).test(built.command);
+          const d = (destination.replace(/\/+$/, "") || "/").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          return new RegExp(`(?::'?${d}/*'?|(?:dst|target|destination)=${d}/*)(?=[:,'\\s]|$)`).test(built.command);
         };
         const extraVolumes: string[] = [];
         for (const m of facts.mounts) {
